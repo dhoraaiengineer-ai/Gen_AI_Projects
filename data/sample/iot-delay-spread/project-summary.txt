@@ -1,0 +1,29 @@
+Project summary
+
+https://example.org/jawe/2024/03/rms-delay-spread.pdf
+
+Project title: "A Neural Network Model of RMS Delay Spread for Indoor Internet-of-Things Deployments"
+Author: Alex Morgan, Department of Electronics and Communication, Northbridge Institute of Technology, Riverton.
+
+This work was completed as the final-year research project of a Master of Technology programme.
+
+Abstract
+Internet-of-Things (IoT) devices deployed indoors need radio links that stay reliable in offices, corridors,
+laboratories and warehouses. The root-mean-square (RMS) delay spread describes how much a transmitted signal
+is smeared in time by multipath reflections, and it limits the symbol rate a link can support.
+This project proposes a measurement-based RMS delay spread model built on a two-layer feedforward neural network.
+
+The network takes five inputs: the transmitter-receiver distance, the carrier frequency, the antenna height,
+the environment type, and the line-of-sight or non-line-of-sight (LOS/NLOS) condition.
+It has a hidden layer of eight neurons and a single output neuron that predicts the mean RMS delay spread.
+The hidden neurons use the hyperbolic tangent sigmoid activation function, and the network was trained with
+the Levenberg-Marquardt backpropagation algorithm.
+
+The residual between measured and predicted values is modelled as a random variable. Using maximum-likelihood
+estimation, this shadowing term was found to follow a log-normal distribution.
+Compared with the conventional log-distance delay spread model, the neural model reduced the prediction RMSE
+from 9.8 ns to 4.1 ns on the held-out test sites.
+
+The full paper was published in the Journal of Applied Wireless Engineering (ISSN 2799-0417), Volume 14, Issue 3, March 2024.
+
+Note: this is a synthetic document created to test the RAG platform. All names are fictional.

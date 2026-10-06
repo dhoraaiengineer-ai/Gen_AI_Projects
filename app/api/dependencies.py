@@ -1,11 +1,12 @@
 import logging
+from collections.abc import Callable
 
-from fastapi import Depends, HTTPException, Request, status
+from fastapi import Depends, HTTPException, Request, Response, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 from app.container import Container
 from app.core.auth import AuthError, Principal, Role
-from app.core.metrics import AUTH_FAILURES
+from app.core.metrics import AUTH_FAILURES, RATE_LIMITED
 from app.rag.service import RAGService
 
 logger = logging.getLogger(__name__)
@@ -29,19 +30,23 @@ def _unauthorized(reason: str, detail: str) -> HTTPException:
 
 
 def get_principal(
+    request: Request,
     container: Container = Depends(get_container),
     credentials: HTTPAuthorizationCredentials | None = Depends(_bearer),
 ) -> Principal:
     """Authentication: who is calling? 401 if there's no valid token."""
     if container.verifier is None:
-        return LOCAL_DEV_PRINCIPAL
-    if credentials is None:
+        principal = LOCAL_DEV_PRINCIPAL
+    elif credentials is None:
         raise _unauthorized("missing_token", "Sign in required")
-    try:
-        return container.verifier.verify(credentials.credentials)
-    except AuthError as exc:
-        logger.info("rejected token", extra={"reason": str(exc)})
-        raise _unauthorized("invalid_token", "Invalid or expired token") from exc
+    else:
+        try:
+            principal = container.verifier.verify(credentials.credentials)
+        except AuthError as exc:
+            logger.info("rejected token", extra={"reason": str(exc)})
+            raise _unauthorized("invalid_token", "Invalid or expired token") from exc
+    request.state.principal = principal  # for the per-request audit log line
+    return principal
 
 
 def require_user(principal: Principal = Depends(get_principal)) -> Principal:
@@ -55,3 +60,27 @@ def require_admin(principal: Principal = Depends(get_principal)) -> Principal:
         AUTH_FAILURES.labels("forbidden").inc()
         raise HTTPException(status.HTTP_403_FORBIDDEN, detail="Admin role required")
     return principal
+
+
+def rate_limit(bucket: str) -> Callable[..., None]:
+    """Per-user limit for one group of endpoints (see app/core/ratelimit.py). Declare it after the auth
+    dependency: it keys on the caller's user id, and unauthenticated calls are rejected before counting."""
+
+    def check(request: Request, response: Response, principal: Principal = Depends(get_principal)) -> None:
+        limiter = request.app.state.rate_limiters.get(bucket)
+        if limiter is None:
+            return
+        decision = limiter.hit(principal.user_id)
+        headers = {"X-RateLimit-Limit": str(decision.limit), "X-RateLimit-Remaining": str(decision.remaining)}
+        if not decision.allowed:
+            RATE_LIMITED.labels(bucket).inc()
+            logger.info("rate limited", extra={"bucket": bucket, "user_id": principal.user_id})
+            detail = f"Too many requests: limit is {decision.limit} per minute. Try again in {decision.retry_after}s."
+            raise HTTPException(
+                status.HTTP_429_TOO_MANY_REQUESTS,
+                detail=detail,
+                headers={**headers, "Retry-After": str(decision.retry_after)},
+            )
+        response.headers.update(headers)
+
+    return check

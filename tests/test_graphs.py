@@ -8,7 +8,7 @@ from tests.conftest import fake_llm
 
 
 def test_rag_graph_grounds_prompt_in_retrieved_documents(retriever: Retriever) -> None:
-    retriever.ingest("Paris is the capital of France.", source="geo.md")
+    retriever.ingest_text("Paris is the capital of France.", source="geo.md")
     llm = fake_llm("Paris [1].")
 
     state = build_rag_graph(retriever, llm).invoke({"question": "Capital of France?"})
@@ -28,7 +28,7 @@ def test_rag_graph_skips_llm_when_nothing_retrieved(retriever: Retriever) -> Non
 
 
 def test_research_agent_calls_search_tool_then_answers(retriever: Retriever) -> None:
-    retriever.ingest("Paris is the capital of France.", source="geo.md")
+    retriever.ingest_text("Paris is the capital of France.", source="geo.md")
     llm = fake_llm(
         AIMessage(
             "", tool_calls=[{"name": "search_knowledge_base", "args": {"query": "capital of France"}, "id": "c1"}]

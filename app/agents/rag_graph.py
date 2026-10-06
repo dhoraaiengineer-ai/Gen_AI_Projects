@@ -10,13 +10,14 @@ from langgraph.graph import END, START, StateGraph
 from langgraph.graph.state import CompiledStateGraph
 
 from app.rag.prompts import NO_DOCUMENTS_ANSWER, RAG_SYSTEM_PROMPT, RAG_USER_TEMPLATE
-from app.rag.retriever import RetrievedChunk, Retriever, format_context
+from app.rag.retriever import RetrievedChunk, Retriever, format_context, normalize_citations
 
 logger = logging.getLogger(__name__)
 
 
 class RAGState(TypedDict, total=False):
     question: str
+    search_queries: list[str]  # extra phrasings to retrieve with (e.g. the user's original follow-up)
     top_k: int | None
     chunks: list[RetrievedChunk]
     answer: str
@@ -25,7 +26,8 @@ class RAGState(TypedDict, total=False):
 
 def build_rag_graph(retriever: Retriever, llm: Runnable[LanguageModelInput, BaseMessage]) -> CompiledStateGraph:
     def retrieve(state: RAGState) -> RAGState:
-        chunks = retriever.retrieve(state["question"], state.get("top_k"))
+        queries = [state["question"], *state.get("search_queries", [])]
+        chunks = retriever.retrieve(queries, state.get("top_k"))
         logger.info("retrieved chunks", extra={"count": len(chunks)})
         return {"chunks": chunks}
 
@@ -35,7 +37,8 @@ def build_rag_graph(retriever: Retriever, llm: Runnable[LanguageModelInput, Base
     def generate(state: RAGState) -> RAGState:
         prompt = RAG_USER_TEMPLATE.format(context=format_context(state["chunks"]), question=state["question"])
         response = llm.invoke([SystemMessage(RAG_SYSTEM_PROMPT), HumanMessage(prompt)])
-        return {"answer": str(response.content).strip(), "model": response.response_metadata.get("model_name")}
+        answer = normalize_citations(str(response.content).strip())
+        return {"answer": answer, "model": response.response_metadata.get("model_name")}
 
     def no_documents(state: RAGState) -> RAGState:
         # Skip the LLM call entirely: nothing to ground an answer in.

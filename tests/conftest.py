@@ -2,6 +2,7 @@
 
 import time
 from collections.abc import Iterator, Sequence
+from functools import partial
 from typing import Any
 
 import jwt
@@ -14,9 +15,10 @@ from langchain_core.messages import AIMessage, BaseMessage
 from langchain_core.vectorstores import InMemoryVectorStore
 
 from app.config import Settings
-from app.container import Container, build_container_from
+from app.container import Container, build_chunker, build_container_from
 from app.core.auth import TokenVerifier
 from app.main import create_app
+from app.rag.registry import InMemoryDocumentRegistry
 from app.rag.retriever import Retriever
 
 
@@ -52,7 +54,12 @@ def settings() -> Settings:
     return Settings(
         _env_file=None,
         chunk_size=200,
-        chunk_overlap=20,
+        chunk_overlap_pct=10,
+        parent_chunk_size=400,
+        child_chunk_size=100,
+        child_chunk_overlap_pct=10,
+        golden_questions_per_document=0,  # tests that want generation turn it on
+        rerank_enabled=False,  # it would consume scripted LLM responses; test_retrieval.py turns it on
         top_k=3,
         agent_max_iterations=3,
         supabase_url=TEST_SUPABASE_URL,
@@ -67,7 +74,13 @@ def vector_store() -> InMemoryVectorStore:
 
 @pytest.fixture
 def retriever(vector_store: InMemoryVectorStore, settings: Settings) -> Retriever:
-    return Retriever(vector_store, settings.chunk_size, settings.chunk_overlap, settings.top_k)
+    return Retriever(
+        vector_store,
+        partial(build_chunker, settings, vector_store.embeddings),
+        settings.chunking_strategy,
+        settings.top_k,
+        InMemoryDocumentRegistry(),
+    )
 
 
 TEST_SUPABASE_URL = "https://test-project.supabase.co"
@@ -119,6 +132,7 @@ class AppHarness:
         self.auth_enabled = True
         self.fallback_llm: FakeChatModel | None = None
         self.agent_fallback_llm: FakeChatModel | None = None
+        self.web_search: Any = None  # a FakeWebSearch from tests that exercise the web tool
 
     def client(self, *responses: AIMessage | str, role: str | None = "admin") -> TestClient:
         """role="admin"/"user" sends a valid token by default; role=None sends no Authorization header."""
@@ -133,6 +147,7 @@ class AppHarness:
                 verifier=make_test_verifier() if self.auth_enabled else None,
                 fallback_llm=self.fallback_llm,
                 agent_fallback_llm=self.agent_fallback_llm,
+                web_search=self.web_search,
             )
 
         headers = auth_headers(role if role != "user" else None) if role else {}

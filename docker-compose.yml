@@ -1,6 +1,6 @@
 # Local container runs.
 #
-#   docker compose up --build                     # app against Supabase (DATABASE_URL from .env)
+#   docker compose up --build                     # app (+ Redis cache/memory) against Supabase (DATABASE_URL from .env)
 #   docker compose --profile local-db up --build  # also app-local on :8001 against a local pgvector
 #   docker compose --profile monitoring up -d     # + Prometheus (:9090) and Grafana (:3000)
 #
@@ -12,6 +12,7 @@ x-app: &app
   env_file: .env
   environment:
     LOG_FORMAT: json
+    REDIS_URL: redis://redis:6379/0
   read_only: true  # the app writes nothing to disk; catches accidental writes early
   tmpfs:
     - /tmp
@@ -28,6 +29,31 @@ services:
     container_name: rag-app
     ports:
       - "8000:8000"
+    depends_on:
+      redis:
+        condition: service_healthy
+
+  # Cache + short-term conversation memory. Pure cache: no persistence, so a restart just empties it
+  # (long-term memory lives in Postgres).
+  redis:
+    image: redis:7.4-alpine
+    container_name: rag-redis
+    command: ["redis-server", "--save", "", "--appendonly", "no", "--maxmemory", "256mb", "--maxmemory-policy", "allkeys-lru"]
+    read_only: true
+    tmpfs:
+      - /data
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    ports:
+      - "6379:6379"  # so a non-Docker local run can use it too: REDIS_URL=redis://localhost:6379/0
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
 
   app-local:
     <<: *app
@@ -36,10 +62,13 @@ services:
     environment:
       LOG_FORMAT: json
       DATABASE_URL: postgresql+psycopg://rag:rag@pgvector:5432/rag
+      REDIS_URL: redis://redis:6379/1  # separate Redis database from the Supabase-backed app
     ports:
       - "8001:8000"
     depends_on:
       pgvector:
+        condition: service_healthy
+      redis:
         condition: service_healthy
 
   pgvector:

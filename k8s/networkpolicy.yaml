@@ -36,6 +36,13 @@ spec:
           protocol: UDP
         - port: 53
           protocol: TCP
+    # In-cluster Redis (cache + short-term memory).
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: redis
+      ports:
+        - port: 6379
     # EURI API and Supabase Auth JWKS (HTTPS); Supabase Postgres pooler (5432 session, 6543 transaction).
     - ports:
         - port: 443

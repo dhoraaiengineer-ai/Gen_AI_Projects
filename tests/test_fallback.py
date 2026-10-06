@@ -55,7 +55,7 @@ def test_agent_uses_its_own_tool_capable_fallback(harness: AppHarness) -> None:
         c.post("/api/v1/ingest", json=INGEST)
         r = c.post("/api/v1/agent", json={"task": "Capital of France?"})
 
-    assert r.json() == {"answer": "Paris (geo.md).", "tool_calls": 1, "model": "gpt-4o-mini"}
+    assert r.json() == {"answer": "Paris (geo.md).", "tool_calls": 1, "model": "gpt-4o-mini", "web_sources": []}
     assert harness.fallback_llm.seen == []
 
 
@@ -63,3 +63,32 @@ def test_without_fallback_the_error_surfaces_as_429(harness: AppHarness) -> None
     with failing_client(harness) as c:
         c.post("/api/v1/ingest", json=INGEST)
         assert c.post("/api/v1/query", json={"question": "Capital?"}).status_code == 429
+
+
+def test_second_fallback_answers_when_the_first_also_fails(harness: AppHarness) -> None:
+    first = fallback_model("gemini-3.5-flash")
+    first.__class__ = FailingChatModel  # e.g. Gemini's free-tier daily quota is spent too
+    answer = AIMessage("Paris [1].", response_metadata={"model_name": "openai/gpt-oss-120b"})
+    harness.fallback_llm = [first, fallback_model("openai/gpt-oss-120b", answer)]  # type: ignore[assignment]
+
+    with failing_client(harness) as c:
+        c.post("/api/v1/ingest", json=INGEST)
+        r = c.post("/api/v1/query", json={"question": "Capital of France?"})
+
+    assert r.status_code == 200
+    assert r.json()["model"] == "openai/gpt-oss-120b"
+
+
+def test_agent_falls_through_its_chain_to_a_later_tool_capable_model(harness: AppHarness) -> None:
+    first = fallback_model("gpt-4o-mini")
+    first.__class__ = FailingChatModel
+    tool_call = AIMessage("", tool_calls=[{"name": "search_knowledge_base", "args": {"query": "France"}, "id": "c1"}])
+    final = AIMessage("Paris (geo.md).", response_metadata={"model_name": "openai/gpt-oss-120b"})
+    harness.agent_fallback_llm = [first, fallback_model("openai/gpt-oss-120b", tool_call, final)]  # type: ignore[assignment]
+
+    with failing_client(harness) as c:
+        c.post("/api/v1/ingest", json=INGEST)
+        r = c.post("/api/v1/agent", json={"task": "Capital of France?"})
+
+    assert r.json()["answer"] == "Paris (geo.md)."
+    assert r.json()["model"] == "openai/gpt-oss-120b"

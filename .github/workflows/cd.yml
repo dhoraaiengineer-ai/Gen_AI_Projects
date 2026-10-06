@@ -10,7 +10,7 @@ name: CD
 #   EKS_CLUSTER_NAME  output `eks_cluster_name` from Terraform
 #   SUPABASE_URL      https://<ref>.supabase.co
 # Environment secrets (environment "production"):
-#   EURI_API_KEY, DATABASE_URL, SUPABASE_PUBLISHABLE_KEY
+#   EURI_API_KEY, DATABASE_URL, SUPABASE_PUBLISHABLE_KEY, GEMINI_API_KEY, GROQ_API_KEY, TAVILY_API_KEY (all optional)
 
 on:
   workflow_run:
@@ -73,11 +73,17 @@ jobs:
         env:
           EURI_API_KEY: ${{ secrets.EURI_API_KEY }}
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          TAVILY_API_KEY: ${{ secrets.TAVILY_API_KEY }}
         # The `rag` namespace is created by Terraform; the CD role only has rights inside it.
         run: |
           kubectl -n rag create secret generic rag-secrets \
             --from-literal=EURI_API_KEY="$EURI_API_KEY" \
             --from-literal=DATABASE_URL="$DATABASE_URL" \
+            --from-literal=GEMINI_API_KEY="$GEMINI_API_KEY" \
+            --from-literal=GROQ_API_KEY="$GROQ_API_KEY" \
+            --from-literal=TAVILY_API_KEY="$TAVILY_API_KEY" \
             --dry-run=client -o yaml | kubectl apply -f -
 
       - name: Deploy

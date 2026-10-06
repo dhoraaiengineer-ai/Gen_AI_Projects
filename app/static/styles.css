@@ -89,8 +89,12 @@ body {
 .knowledge { overflow-y: auto; }
 .knowledge form { display: flex; flex-direction: column; gap: 6px; }
 .knowledge label { font-size: 13px; color: var(--muted); margin-top: 6px; }
+.knowledge .result { white-space: pre-line; }
+.evaluation { display: flex; flex-direction: column; gap: 6px; margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--border); }
+.evaluation h2 { margin: 0; }
+.knowledge label.check { display: flex; align-items: center; gap: 6px; }
 
-input[type="text"], textarea {
+input[type="text"], input[type="number"], textarea, select {
   width: 100%;
   font: inherit;
   color: inherit;
@@ -101,7 +105,7 @@ input[type="text"], textarea {
   resize: vertical;
 }
 input[type="file"] { font-size: 13px; color: var(--muted); }
-input:focus-visible, textarea:focus-visible, button:focus-visible {
+input:focus-visible, textarea:focus-visible, select:focus-visible, button:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 1px;
 }
@@ -148,6 +152,7 @@ button:disabled { opacity: 0.55; cursor: progress; }
 .msg.pending { color: var(--muted); font-style: italic; }
 
 .meta { font-size: 12px; color: var(--muted); margin-top: 8px; white-space: normal; }
+.meta.warn { color: var(--warn); margin-top: 4px; }
 
 .cite {
   display: inline-block;

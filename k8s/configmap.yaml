@@ -1,4 +1,4 @@
-# Non-secret settings. Secrets (EURI_API_KEY, DATABASE_URL) live in the `rag-secrets` Secret.
+# Non-secret settings. Secrets (EURI_API_KEY, DATABASE_URL, GEMINI_API_KEY, GROQ_API_KEY, TAVILY_API_KEY) live in the `rag-secrets` Secret.
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -15,16 +15,20 @@ data:
   LLM_MODEL: gpt-4.1-nano
   LLM_FALLBACK_MODEL: gemini-2.0-flash
   AGENT_FALLBACK_MODEL: gpt-4o-mini
-  LLM_TEMPERATURE: "0.0"
+  LLM_TEMPERATURE: "0.2"
   LLM_MAX_TOKENS: "1024"
   LLM_MAX_RETRIES: "1"
   EMBEDDING_MODEL: text-embedding-3-small
   EMBEDDING_DIM: "1536"
 
   COLLECTION_NAME: documents
+  CHUNKING_STRATEGY: "recursive"
+  MAX_UPLOAD_MB: "20"
+  GOLDEN_QUESTIONS_PER_DOCUMENT: "3"
   CHUNK_SIZE: "1000"
-  CHUNK_OVERLAP: "150"
+  CHUNK_OVERLAP_PCT: "15"
   TOP_K: "4"
+  REDIS_URL: redis://redis:6379/0  # in-cluster Redis (k8s/redis.yaml); no password, reachable only from rag-api
   AGENT_MAX_ITERATIONS: "6"
 
   AUTH_ENABLED: "true"

@@ -36,7 +36,7 @@
   <main id="app" class="layout" hidden>
     <section id="knowledge" class="panel knowledge" aria-labelledby="kb-title">
       <h2 id="kb-title">Add knowledge</h2>
-      <p class="hint">Paste text or upload .txt / .md files. They're split, embedded and stored in pgvector.</p>
+      <p class="hint">Paste text or upload PDF, Excel, Word, PowerPoint, CSV or text files. Re-uploading a file only re-embeds what changed.</p>
 
       <form id="ingest-form">
         <label for="source">Source name</label>
@@ -46,11 +46,36 @@
         <textarea id="doc-text" name="text" rows="8" placeholder="Paste document text…"></textarea>
 
         <label for="files">Or upload files</label>
-        <input id="files" name="files" type="file" accept=".txt,.md,.markdown,.csv,.json" multiple>
+        <input id="files" name="files" type="file" accept=".pdf,.xlsx,.xlsm,.docx,.pptx,.csv,.tsv,.txt,.md,.markdown,.json" multiple>
+
+        <label for="chunking">Chunking strategy</label>
+        <select id="chunking" name="chunking">
+          <option value="">Default (table for spreadsheets/CSV)</option>
+          <option value="recursive">Recursive: fixed-size chunks</option>
+          <option value="semantic">Semantic: split where the topic changes</option>
+          <option value="parent_child">Parent-child: match small, answer with large</option>
+          <option value="table">Table-aware: keep table rows and headers together</option>
+        </select>
+
+        <label for="overlap">Overlap % (optional)</label>
+        <input id="overlap" name="overlap" type="number" min="0" max="50" step="1"
+               placeholder="Default: 15% for chunks, 10% for parent-child children">
 
         <button type="submit" id="ingest-btn">Add to knowledge base</button>
         <p id="ingest-result" class="result" role="status" aria-live="polite"></p>
       </form>
+
+      <div class="evaluation" aria-labelledby="eval-title">
+        <h2 id="eval-title">Evaluation</h2>
+        <p class="hint">Each new or changed document gets golden Q&amp;A automatically. Run them to measure retrieval and answer quality.</p>
+        <label class="check"><input id="eval-judge" type="checkbox" checked> Grade answers (LLM judge + RAGAS metrics)</label>
+        <label for="eval-limit">Questions to run</label>
+        <input id="eval-limit" type="number" min="1" max="200" value="10">
+        <button type="button" id="eval-btn">Run evaluation</button>
+        <label for="golden-file">Import golden set (.json)</label>
+        <input id="golden-file" type="file" accept=".json">
+        <p id="eval-result" class="result" role="status" aria-live="polite"></p>
+      </div>
     </section>
 
     <section class="panel chat" aria-labelledby="chat-title">
@@ -66,6 +91,7 @@
         <div class="modes" role="radiogroup" aria-label="Answer mode">
           <label><input type="radio" name="mode" value="query" checked> Quick answer</label>
           <label><input type="radio" name="mode" value="agent"> Research</label>
+          <button type="button" id="new-chat-btn" class="link" title="Start a conversation with no memory of this one">New chat</button>
         </div>
         <div class="composer-row">
           <textarea id="question" rows="2" placeholder="Ask a question… (Enter to send, Shift+Enter for a new line)" maxlength="4000" required></textarea>

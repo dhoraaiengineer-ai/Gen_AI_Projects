@@ -16,18 +16,36 @@ class JsonFormatter(logging.Formatter):
             "msg": record.getMessage(),
         }
         # Anything passed via `extra=` becomes a top-level field.
-        payload.update({k: v for k, v in record.__dict__.items() if k not in _RESERVED})
+        payload.update(_extras(record))
         if record.exc_info:
             payload["exc_info"] = self.formatException(record.exc_info)
         return json.dumps(payload, default=str)
 
 
+def _extras(record: logging.LogRecord) -> dict[str, object]:
+    """Fields passed via `extra=`."""
+    return {k: v for k, v in record.__dict__.items() if k not in _RESERVED}
+
+
+class TextFormatter(logging.Formatter):
+    """Human-readable line, with `extra=` fields appended as key=value so local logs show the details too."""
+
+    def __init__(self) -> None:
+        super().__init__("%(asctime)s %(levelname)-7s %(name)s %(message)s")
+
+    def format(self, record: logging.LogRecord) -> str:
+        line = super().format(record)
+        extras = _extras(record)
+        if not extras:
+            return line
+        details = " ".join(f"{k}={v!r}" if isinstance(v, str) and " " in v else f"{k}={v}" for k, v in extras.items())
+        head, sep, tail = line.partition("\n")  # keep tracebacks below the fields
+        return f"{head} | {details}{sep}{tail}"
+
+
 def setup_logging(level: str = "INFO", fmt: str = "text") -> None:
     handler = logging.StreamHandler()
-    if fmt == "json":
-        handler.setFormatter(JsonFormatter())
-    else:
-        handler.setFormatter(logging.Formatter("%(asctime)s %(levelname)-7s %(name)s %(message)s"))
+    handler.setFormatter(JsonFormatter() if fmt == "json" else TextFormatter())
 
     root = logging.getLogger()
     root.handlers[:] = [handler]

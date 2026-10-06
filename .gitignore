@@ -17,6 +17,7 @@ htmlcov/
 data/*
 !data/.gitkeep
 !data/sample/
+!data/golden/
 
 # Terraform
 terraform/.terraform/
@@ -34,3 +35,9 @@ Thumbs.db
 
 # Claude Code local settings
 .claude/settings.local.json
+
+# MLflow (local tracking store and artifacts)
+mlflow.db
+mlruns/
+mlartifacts/
+.venv-eval/

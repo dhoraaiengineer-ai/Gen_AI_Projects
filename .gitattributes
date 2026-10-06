@@ -2,3 +2,12 @@
 * text=auto
 *.sh text eol=lf
 Dockerfile text eol=lf
+
+# Documents are binary: never convert line endings (a converted PDF breaks its byte offsets)
+*.pdf  binary
+*.xlsx binary
+*.xlsm binary
+*.docx binary
+*.pptx binary
+*.png  binary
+*.jpg  binary

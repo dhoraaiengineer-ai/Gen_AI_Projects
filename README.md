@@ -1,67 +1,335 @@
 # GenAI RAG Platform
 
-A production-oriented RAG API: FastAPI + LangChain + LangGraph, with Supabase Postgres/pgvector for
-retrieval and the EURI OpenAI-compatible gateway for chat and embeddings.
+A production-oriented Retrieval-Augmented Generation (RAG) platform: upload documents (PDF, Excel, Word,
+PowerPoint, CSV, text), ask questions in a chat UI, and get answers with citations down to the page,
+sheet or slide. Built with FastAPI, LangChain and LangGraph on Supabase Postgres + pgvector, with EURI,
+Google Gemini and Groq as interchangeable OpenAI-compatible model providers.
 
-## Status
+It goes beyond a basic RAG demo:
+- hybrid retrieval with re-ranking
+- conversation memory and caching
+- a hallucination guard on every answer
+- evaluation with an LLM judge, RAGAS metrics and MLflow
+- resilience: fallback chains, circuit breakers and rate limits
+- full observability, and a containerised path to AWS EKS
 
-| Stage | Status |
+## Contents
+
+- [Features](#features)
+- [Architecture](#architecture)
+- [How a question is answered](#how-a-question-is-answered)
+- [Documents: uploads, chunking, incremental load](#documents-uploads-chunking-incremental-load)
+- [Retrieval: hybrid search, fusion, re-ranking](#retrieval-hybrid-search-fusion-re-ranking)
+- [Answer quality and hallucination control](#answer-quality-and-hallucination-control)
+- [Memory and caching](#memory-and-caching)
+- [Models, fallbacks and resilience](#models-fallbacks-and-resilience)
+- [Research agent and web search](#research-agent-and-web-search)
+- [Evaluation: golden dataset, LLM as judge, RAGAS, MLflow](#evaluation-golden-dataset-llm-as-judge-ragas-mlflow)
+- [Observability](#observability)
+- [Authentication and authorization](#authentication-and-authorization)
+- [API](#api)
+- [Run locally](#run-locally)
+- [Sample dataset](#sample-dataset)
+- [Docker, Kubernetes and AWS](#docker-kubernetes-and-aws)
+- [Configuration](#configuration)
+- [Tests and lint](#tests-and-lint)
+- [Project status and limitations](#project-status-and-limitations)
+
+## Features
+
+| Area | What's implemented |
 |---|---|
-| 1. Build and test locally | Done |
-| 2. Dockerize | Done |
-| 3. Push to GitHub | Committed locally; needs a remote |
-| 4. GitHub Actions CI (`.github/workflows/ci.yml`) | Written; validated with actionlint |
-| 5–6. Build image, push to ECR (`cd.yml`) | Written; validated with actionlint |
-| 7. Terraform (`terraform/`) | Written; `terraform validate` passes; **not applied** |
-| 8. Deploy to EKS (`k8s/`) | Manifests tested on a local kind cluster |
-| 9–11. Prometheus, Grafana, alerts (`monitoring/`) | Tested locally with docker compose; on EKS via Terraform |
-
-## Deployment target
-
-| | |
-|---|---|
-| AWS region | `ap-northeast-1` (Tokyo): ECR, EKS and Terraform resources |
-| Database | Supabase Postgres + pgvector, `ap-northeast-1`, via the transaction pooler (port 6543) |
-
-The app and database share a region so each query avoids a cross-region round trip.
+| **Ingestion** | PDF, XLSX, DOCX, PPTX, CSV/TSV, TXT/MD/JSON; per-page/sheet/slide citations; 4 chunking strategies; % overlap |
+| **Incremental load** | Upsert per document: unchanged files are skipped, edits re-embed only changed chunks, stale chunks are deleted |
+| **Retrieval** | Hybrid search (pgvector cosine + BM25-style keyword), reciprocal rank fusion, LLM re-ranking, multi-query, top-k |
+| **Answers** | Grounded prompt, inline `[n]` citations, temperature 0.2–0.5, hallucination guard (flag or block) |
+| **Memory** | Short-term (Redis, recent turns for follow-ups) + long-term (Postgres, full history); follow-up rewriting |
+| **Caching** | Repeated-question answer cache (cleared when documents change) + LLM prompt cache (Redis or in-process) |
+| **Resilience** | Ordered fallback chains (EURI → Gemini → Groq), circuit breaker per model, retries with backoff, per-user rate limits |
+| **Agent** | LangGraph tool-calling research agent: knowledge-base search + Tavily web search |
+| **Evaluation** | Golden dataset (auto-generated + hand-written), LLM-as-judge correctness, RAGAS metrics, MLflow tracking |
+| **Observability** | Prometheus metrics with p50/p95/p99 latency, Grafana dashboard, alerts, audit log of every action |
+| **Security** | Supabase JWT (ES256 via JWKS), admin/user roles, secrets only via env vars, non-root read-only containers |
+| **Delivery** | Docker, docker compose (app + Redis + Prometheus + Grafana), Kubernetes manifests, Terraform for EKS, GitHub Actions CI/CD |
 
 ## Architecture
 
 ```
 app/
-├── main.py            FastAPI app factory, lifespan, error handlers, /metrics mount
-├── config.py          Settings from env vars (secrets are SecretStr)
-├── container.py       Composition root: wires providers -> retriever -> graphs -> service
-├── api/               HTTP layer only: routes, health probes, dependencies
-├── agents/            LangGraph graphs: rag_graph (retrieve -> generate), research_agent (tool loop)
+├── main.py              FastAPI app factory, error mapping (429/502/503), metrics mount
+├── config.py            All settings from env vars (secrets are SecretStr)
+├── container.py         Composition root: providers -> retriever -> graphs -> service
+├── api/                 HTTP only: routes, auth + rate-limit dependencies, health probes, UI
+├── agents/
+│   ├── rag_graph.py     LangGraph: retrieve -> generate (or no_documents)
+│   └── research_agent.py  LangGraph tool loop: search_knowledge_base + search_web
 ├── rag/
-│   ├── providers.py   ChatOpenAI / OpenAIEmbeddings (EURI) and PGVector factories
-│   ├── retriever.py   Splitting, ingestion, similarity search
-│   ├── service.py     Use cases the API calls: ingest, query, run_agent
-│   └── prompts.py
-├── core/              Logging (text/JSON) and Prometheus metrics
-├── models/            Pydantic request/response schemas
-└── static/            Chat UI (plain HTML/CSS/JS, no build step), served at /
+│   ├── providers.py     Everything provider-specific: EURI/Gemini/Groq clients, PGVector, Postgres stores,
+│   │                    Redis, Tavily, keyword search, circuit-breaker-guarded chat model
+│   ├── service.py       Use cases: ingest, query, agent, documents, golden set, evaluation, conversations
+│   ├── loaders.py       File parsing (PDF, XLSX, DOCX, PPTX, CSV, text) into located sections
+│   ├── chunking.py      recursive / semantic / parent_child / table chunkers
+│   ├── retriever.py     Incremental upsert, hybrid retrieval, reciprocal rank fusion
+│   ├── rerank.py        LLM re-ranker (stage 2 of retrieval)
+│   ├── grounding.py     Hallucination guard
+│   ├── cache.py         Answer cache + LLM prompt cache over a key-value store
+│   ├── memory.py        Short-term + long-term conversation memory
+│   ├── golden.py        Golden dataset generation and storage
+│   ├── evaluation.py    Retrieval metrics + LLM-as-judge
+│   ├── ragas_metrics.py RAGAS metrics computed with an LLM judge
+│   └── websearch.py     Web search interface for the agent
+├── core/                Logging (text/JSON + audit), Prometheus metrics, rate limiter, circuit breaker, auth
+├── models/              Pydantic request/response schemas
+└── static/              Chat UI (plain HTML/CSS/JS, no build step)
+evals/run_eval.py        Evaluation job that logs to MLflow
+scripts/make_sample_data.py  Generates the synthetic sample dataset
+k8s/  terraform/  monitoring/  .github/workflows/   Deployment, infrastructure, dashboards, CI/CD
 ```
 
-Dependencies point inward: `api` → `rag/service` → `agents` + `retriever` → LangChain interfaces.
-Only `rag/providers.py` and `container.py` know about EURI and Postgres, so tests swap in fakes.
+Dependencies point inward: `api` → `rag/service` → `agents` + `retriever` → LangChain interfaces. Only
+`rag/providers.py` and `container.py` know about concrete providers (EURI, Gemini, Groq, Postgres, Redis,
+Tavily), so the whole test suite runs offline with fakes.
+
+Data lives in Postgres (Supabase): `langchain_pg_embedding` holds the chunks and vectors, plus four app tables:
+- `rag_documents`: the ingest registry, for upserts
+- `rag_golden_qa`: the evaluation set
+- `rag_conversation_messages`: long-term memory
+- a GIN full-text index for keyword search
+
+## How a question is answered
+
+```
+question ──► memory: recent turns (Redis, else Postgres)
+         ──► follow-up? rewrite into a standalone question (LLM)
+         ──► answer cache hit? ──► return cached answer
+         ──► retrieval
+               stage 1: for the standalone question AND the user's own words
+                        vector search (cosine) + keyword search (BM25-style)  ─► reciprocal rank fusion
+               stage 2: LLM re-ranker picks the best TOP_K of ~12 candidates
+         ──► generate with a grounded prompt (temperature 0.2), citations [n]
+         ──► hallucination guard: citations valid? numbers/identifiers present in the passages?
+         ──► save turn to memory, cache if grounded, audit-log the action
+```
+
+## Documents: uploads, chunking, incremental load
+
+**File types.**
+
+| Type | How it's read |
+|---|---|
+| PDF | One section per page |
+| Excel `.xlsx` | One markdown table per sheet |
+| Word `.docx` | Headings, paragraphs and tables, in order |
+| PowerPoint `.pptx` | One section per slide, including tables and speaker notes |
+| CSV/TSV, TXT, MD, JSON | As text (CSV/TSV become tables) |
+
+Old `.xls`, `.doc` and `.ppt` files, and scanned PDFs without a text layer, are rejected with a clear message.
+
+**Citations** carry the location: `report.pdf, p. 3`, `figures.xlsx, sheet Sales`, `deck.pptx, slide 4`.
+
+**Chunking strategies.** Choose one per upload in the UI or the API. `CHUNKING_STRATEGY` sets the default.
+
+| Strategy | How it splits | Best for |
+|---|---|---|
+| `recursive` (default) | Fixed size on paragraph → sentence → word boundaries | General text |
+| `semantic` | Starts a new chunk where neighbouring sentences' embeddings drift apart | Long prose that changes topic |
+| `parent_child` | Embeds small children, retrieves their larger parent | Precise matching with enough context |
+| `table` | Splits only between rows, repeats the header on every chunk | Spreadsheets, CSVs (default for them) |
+
+**Overlap** is a percentage of the chunk size: 15% for regular chunks and 10% for parent-child children.
+You can override it per upload.
+
+**Upsert and incremental load.** Chunk ids are derived from the source, the strategy and the content. The
+`rag_documents` registry stores a content hash per source.
+
+| Upload | What happens |
+|---|---|
+| New source | `added`: chunks are embedded and stored |
+| Same content and settings | `unchanged`: skipped, with no embedding calls |
+| Edited content or new settings | `updated`: only new chunks are embedded, and removed ones are deleted |
+| Text repeated inside a document | Stored once |
+
+Line endings are normalised, so a Windows (CRLF) and a Unix copy of the same file count as the same document.
+`DELETE /api/v1/documents?source=...` removes a document with its chunks and golden Q&A.
+
+## Retrieval: hybrid search, fusion, re-ranking
+
+1. **Hybrid search.** Each query runs two searches:
+   - **pgvector cosine similarity**, for meaning
+   - **Postgres full-text keyword search with BM25-style IDF ranking**, so rare, exact terms ("DOI",
+     "ISSN", "S4", part numbers) outweigh common ones
+2. **Multi-query.** A rewritten follow-up is searched together with the user's original wording, so the
+   rewrite can never lose the passage the user's own words would find.
+3. **Reciprocal rank fusion (RRF).** All ranked lists are merged: score = Σ 1/(60 + rank), rescaled to 0–1.
+4. **Re-ranking.** An LLM reads the question and about 12 fused candidates, and returns the best `TOP_K` by
+   meaning. If it fails, the fused order is kept. The research agent skips this step to save quota.
+5. **Top-k and dedup.** Duplicate chunks are dropped. A parent-child match returns its parent once.
+
+On the sample golden set, hybrid search plus re-ranking raised MRR from 0.74 to 0.93, and evidence recall@4
+from 93% to 100%.
+
+Settings: `HYBRID_SEARCH`, `RERANK_ENABLED`, `RERANK_CANDIDATES` and `TOP_K`.
+
+## Answer quality and hallucination control
+
+- **Grounded prompt.** The model may use only facts in the passages, must cite every factual sentence,
+  must copy numbers and identifiers exactly, and has a fixed reply for "the documents don't contain this".
+- **Temperature.** Answers use 0.2 by default. `LLM_TEMPERATURE` is validated to stay between 0.2 and 0.5.
+  The evaluation judge always runs at 0, so grades are repeatable.
+- **Hallucination guard** (`HALLUCINATION_GUARD=off|flag|block`). It runs on every answer, with no extra
+  LLM call. It checks three things:
+  1. A factual answer has citations.
+  2. Every `[n]` points to a passage that was actually provided.
+  3. Every number and identifier in the answer appears in the passages.
+
+  In `flag` mode the UI shows **⚠** with the reason. In `block` mode the answer is replaced with a refusal,
+  and the sources stay visible. Flagged answers are never cached. Each flag is counted in
+  `rag_hallucination_flags_total`.
+
+## Memory and caching
+
+- **Short-term memory (Redis).** The last `MEMORY_WINDOW_MESSAGES` messages of each conversation, with a TTL.
+  When an entry is missing, it's reloaded from Postgres.
+- **Long-term memory (Postgres).** Every message of every conversation is kept permanently, scoped to the user.
+  - `GET /api/v1/conversations` lists your conversations.
+  - `GET /api/v1/conversations/{id}` returns the messages of one.
+- **Follow-ups.** With a `session_id`, a follow-up like "and its DOI?" is rewritten into a standalone
+  question before retrieval. The response shows the rewrite as `standalone_question`.
+- **Answer cache.** A repeated question (normalised: case, spaces, punctuation) returns the stored answer
+  with no retrieval or LLM call. Any upload, edit or delete bumps a knowledge-base version that is part of
+  the cache key, so answers never outlive their documents. Only grounded, cited answers are cached.
+- **Prompt cache.** This is LangChain's response cache, keyed on prompt, model and parameters. It covers
+  every LLM call: answers, rewrites, re-ranking, golden Q&A and judging.
+
+Without `REDIS_URL`, the cache and short-term memory are kept in-process, which is fine for one local
+server. Docker compose and Kubernetes run Redis. A Redis outage only disables caching; it never fails a request.
+
+## Models, fallbacks and resilience
+
+All providers are called through the OpenAI-compatible API:
+
+| Provider | Used for |
+|---|---|
+| EURI (gateway) | Primary chat model and default embeddings |
+| Google Gemini | Embeddings (`gemini-embedding-001` at 1536 dims) and answer fallback |
+| Groq | Answer and agent fallback (`openai/gpt-oss-120b`, `qwen/qwen3.8-27b`) |
+
+**Fallback chains** are tried in order:
+- `LLM_FALLBACK_*` and `LLM_EXTRA_FALLBACKS` for answers, re-ranking, golden Q&A and judging
+- `AGENT_FALLBACK_MODEL` and `AGENT_EXTRA_FALLBACKS` for the research agent
+
+Agent fallbacks must pass a real tool-call round trip. Gemini fails it, because LangChain's OpenAI client
+drops its thought signature. Groq's gpt-oss and Qwen pass. Responses report the model that actually answered.
+
+**Circuit breaker.** One breaker per provider:model. After `CIRCUIT_BREAKER_FAILURE_THRESHOLD` consecutive
+outage errors (quota, rate limit, 5xx, timeout), that model is skipped instantly for
+`CIRCUIT_BREAKER_RESET_SECONDS`, then one trial call is let through. The chain moves straight to the next
+model instead of waiting on a dead one. State is exported as `rag_circuit_state`.
+
+**Retries.** Chat models retry once, because the fallback is the better retry. Embeddings retry up to 4
+times with exponential backoff, because there's no embedding fallback: query and stored vectors must come
+from the same model.
+
+**Rate limits.** Each user gets a per-minute budget: query 10, agent 3, ingest 5, eval 1 (`RATE_LIMIT_*`).
+Going over returns 429 with `Retry-After`. Every response carries `X-RateLimit-Limit` and `X-RateLimit-Remaining`.
+
+**Error mapping.**
+
+| Situation | Status |
+|---|---|
+| Provider quota or rate limit (including EURI's 403 "allowance used up") | 429 |
+| Provider error | 502 |
+| Provider unreachable, or every circuit open | 503 |
+
+## Research agent and web search
+
+A LangGraph tool-calling agent for multi-part questions. It has two tools:
+- `search_knowledge_base`, which searches your documents
+- `search_web` (Tavily, when `TAVILY_API_KEY` is set)
+
+It searches the documents first and uses the web only when they don't cover the question. It cites web facts
+by URL and treats page content as untrusted data. The response lists the URLs it read in `web_sources`.
+
+## Evaluation: golden dataset, LLM as judge, RAGAS, MLflow
+
+**Golden dataset.** For every added or updated document, the LLM writes `GOLDEN_QUESTIONS_PER_DOCUMENT` Q&A
+pairs, each with a verbatim evidence quote. Pairs whose quote isn't in the passage are dropped.
+Hand-written sets can be imported in the UI or via `POST /api/v1/golden`. See
+[data/golden/iot-delay-spread.json](data/golden/iot-delay-spread.json), which has 28 items, each with its
+evidence verified against the files.
+
+**Metrics** (`POST /api/v1/eval`, the **Run evaluation** panel, or the MLflow job):
+
+| Group | Metric | Meaning |
+|---|---|---|
+| Retrieval | Evidence hit rate | A retrieved chunk contains the evidence quote (recall@k) |
+| | Source hit rate | A retrieved chunk is from the right document |
+| | MRR | Mean of 1 / rank of the first chunk with the evidence |
+| LLM as judge | Answer accuracy | The judge (temperature 0) says the answer matches the reference |
+| | Citation accuracy | The answer cites `[n]` from the right document |
+| | Grounded rate | Answers passing the hallucination guard |
+| RAGAS | Faithfulness | Share of the answer's claims supported by the retrieved contexts |
+| | Answer relevancy | Embedding similarity between the question and questions generated from the answer |
+| | Context precision | Average precision of the contexts that are useful for the reference answer |
+| | Context recall | Share of reference-answer statements found in the contexts |
+
+The RAGAS metrics follow the RAGAS library's definitions, computed in-app with the judge model, so they work
+through the same fallback chain and show in the UI. `judge: false` runs retrieval metrics only. Graded runs
+cost about 6 LLM calls per question.
+
+**MLflow.** `evals/run_eval.py` runs the evaluation and logs each run to MLflow (experiment `rag-evaluation`):
+- the settings, as params
+- every metric
+- each question's answer, verdict and scores, as an artifact
+
+```bash
+.venv/Scripts/python -m evals.run_eval --limit 10            # judged run with all RAGAS metrics
+.venv/Scripts/python -m evals.run_eval --no-judge --limit 50 # retrieval only
+.venv/Scripts/mlflow ui --backend-store-uri sqlite:///mlflow.db   # http://localhost:5000
+```
+
+MLflow writes to disk, so the job runs outside the read-only API container. Set `MLFLOW_TRACKING_URI` to log
+to a shared MLflow server instead of the local `mlflow.db`.
+
+## Observability
+
+- **Prometheus metrics** at `/metrics` (in Kubernetes, on a separate in-cluster port):
+
+  | Metric | What it measures |
+  |---|---|
+  | `http_request_duration_seconds{route}` | Request latency per route |
+  | `rag_llm_latency_seconds{model,outcome}` | Latency of each LLM call, by model |
+  | `rag_retrieval_seconds` | Retrieval latency |
+  | `rag_llm_fallbacks_total` | Calls served by a fallback model |
+  | `rag_circuit_state` | Circuit breaker state per model |
+  | `rag_cache_requests_total{cache,outcome}` | Cache hits and misses |
+  | `rag_hallucination_flags_total` | Answers flagged by the guard |
+  | `rag_rerank_total` | Re-ranking calls |
+  | `rag_web_searches_total` | Agent web searches |
+  | `rate_limited_total` | Rate-limited requests |
+  | `auth_failures_total` | Rejected requests, by reason |
+
+  Percentiles come from the histograms, for example:
+  `histogram_quantile(0.99, sum by (le, model) (rate(rag_llm_latency_seconds_bucket[5m])))`.
+- **Grafana dashboard and alerts** in `monitoring/`, used both by local compose and by EKS.
+- **Audit log.** Every API request logs one line (user, route, status, duration). Every action logs what
+  happened: question and answer, model, cached, sources, documents ingested or deleted. The JSON format is
+  used in containers. Set `AUDIT_LOG_CONTENT=false` to drop question and answer text where it may be personal.
 
 ## Authentication and authorization
 
-Users sign in on the UI with Supabase Auth (email + password). Every API call carries the Supabase
-access token, and the API verifies it against the project's public JWKS (ES256). No secret key is involved.
+Users sign in on the UI with Supabase Auth (email and password). The API verifies the Supabase access token
+against the project's public JWKS (ES256). No secret key is involved.
 
 | Endpoint | Access |
 |---|---|
 | `/`, `/static/*`, `/health/*`, `/api/v1/auth/config` | Public |
-| `POST /api/v1/query`, `POST /api/v1/agent`, `GET /api/v1/me` | Any signed-in user |
-| `POST /api/v1/ingest` | `admin` only (ingested documents become answers for everyone) |
-| `/metrics` | Public locally; restricted to in-cluster Prometheus in Stage 9 |
+| `query`, `agent`, `me`, `conversations` | Any signed-in user |
+| `ingest`, `ingest/files`, `documents`, `golden`, `eval` | `admin` only |
 
-**Status codes:** a missing or invalid token gets 401. A signed-in user without the needed role gets 403.
-
-**Making someone an admin:** run this in the Supabase SQL editor. The user then signs out and back in.
+A missing or invalid token gets 401. A signed-in user without the needed role gets 403. Roles come only from
+`app_metadata.app_role`, which users can't change themselves. To make someone an admin, run this in the
+Supabase SQL editor; the user then signs out and back in:
 
 ```sql
 update auth.users
@@ -69,146 +337,157 @@ set raw_app_meta_data = coalesce(raw_app_meta_data, '{}'::jsonb) || '{"app_role"
 where email = 'someone@example.com';
 ```
 
-`app_metadata` can only be changed server-side, so users can't promote themselves.
+`AUTH_ENABLED=false` treats every caller as admin, for local development only. The app refuses to start
+with it in `staging` or `prod`.
 
-**Local development:** `AUTH_ENABLED=false` treats every caller as admin. The app refuses to start with
-that setting when `ENVIRONMENT` is `staging` or `prod`.
-
-## LLM fallbacks
-
-| Mode | Primary | Fallback (on rate limit / quota / outage / provider error) |
-|---|---|---|
-| Quick answer (`/query`) | `LLM_MODEL` (gpt-4.1-nano) | `LLM_FALLBACK_MODEL` (gemini-2.0-flash) |
-| Research (`/agent`) | `LLM_MODEL` | `AGENT_FALLBACK_MODEL` (gpt-4o-mini) |
-
-The agent needs a separate fallback because Gemini via EURI fails on the turn after a tool call (HTTP 400):
-Gemini expects its thought signature back, and LangChain's OpenAI client drops it. Every fallback is logged
-as a warning and counted in `rag_llm_fallbacks_total{model=...}`. Responses report the model that actually
-answered.
-
-## Endpoints
+## API
 
 | Method | Path | Purpose |
 |---|---|---|
-| GET | `/` | Chat UI: ask questions, see cited sources, add documents |
-| GET | `/health/live` | Liveness: process is up (never checks dependencies) |
-| GET | `/health/ready` | Readiness: database reachable; 503 otherwise |
-| POST | `/api/v1/ingest` | Split, embed and store documents |
-| POST | `/api/v1/query` | Single-pass RAG answer with cited sources |
-| POST | `/api/v1/agent` | Multi-search research agent for multi-part questions |
-| GET | `/metrics` | Prometheus metrics |
-| GET | `/docs` | OpenAPI UI |
-
-LLM failures map to clear statuses: provider rate limit or daily quota → 429, provider error → 502,
-provider unreachable → 503.
+| GET | `/` | Chat UI |
+| GET | `/health/live`, `/health/ready` | Liveness; readiness (database reachable) |
+| POST | `/api/v1/query` | Quick answer: hybrid retrieval + re-ranking + grounded answer with citations (`session_id` for memory) |
+| POST | `/api/v1/agent` | Research agent: several searches plus web search (`session_id` for memory) |
+| GET | `/api/v1/conversations`, `/api/v1/conversations/{id}` | Your conversation history |
+| POST | `/api/v1/ingest` | Ingest text documents (JSON) |
+| POST | `/api/v1/ingest/files` | Upload files (multipart); per-file status: added / updated / unchanged / failed |
+| GET, DELETE | `/api/v1/documents` | List documents / delete one (`?source=`) |
+| GET, POST | `/api/v1/golden` | List / import golden Q&A |
+| POST | `/api/v1/eval` | Evaluation: retrieval, LLM-as-judge and RAGAS metrics |
+| GET | `/api/v1/me`, `/api/v1/auth/config` | Current user; UI auth config |
+| GET | `/metrics`, `/docs` | Prometheus metrics; OpenAPI UI |
 
 ## Run locally
 
-Requires Python 3.11+ and Docker (for a local pgvector database).
+Requires Python 3.11+.
 
 ```bash
 python -m venv .venv
-.venv/Scripts/activate            # Windows; use .venv/bin/activate on macOS/Linux
+.venv/Scripts/activate                 # Windows; source .venv/bin/activate on macOS/Linux
 pip install -r requirements-dev.txt
-
-cp .env.example .env              # then set EURI_API_KEY and DATABASE_URL
-
-# Local pgvector (or point DATABASE_URL at Supabase instead)
-docker run -d --name rag-pgvector -e POSTGRES_USER=rag -e POSTGRES_PASSWORD=rag \
-  -e POSTGRES_DB=rag -p 5432:5432 pgvector/pgvector:pg16
-
-uvicorn app.main:app --reload
+cp .env.example .env                   # fill in the keys you have (see Configuration)
+uvicorn app.main:app --reload          # http://localhost:8000
 ```
 
-Try it:
+For the minimum setup, set `EURI_API_KEY`, `DATABASE_URL` (Supabase or a local pgvector), `SUPABASE_URL` and
+`SUPABASE_PUBLISHABLE_KEY`, or set `AUTH_ENABLED=false` to run without login. Then add any of the optional
+keys:
+
+| Key | Enables |
+|---|---|
+| `GEMINI_API_KEY` | Gemini embeddings and the Gemini answer fallback |
+| `GROQ_API_KEY` | The Groq fallbacks |
+| `TAVILY_API_KEY` | Web search in Research mode |
+| `REDIS_URL` | A shared cache and short-term memory |
+
+For a local pgvector instead of Supabase:
+`docker compose --profile local-db up -d pgvector`, then use
+`DATABASE_URL=postgresql+psycopg://rag:rag@localhost:5433/rag`.
+
+## Sample dataset
+
+`data/sample/iot-delay-spread/` holds a synthetic research project ("A Neural Network Model of RMS Delay
+Spread for Indoor IoT Deployments"). Everything in it is fictional: author, institute, journal, ISSN, DOI
+and measurements. It covers every supported format:
+
+| File | Format | Contents |
+|---|---|---|
+| `project-summary.txt` | Text | Abstract, model, results |
+| `publication-certificate.pdf` | PDF, 2 pages | Journal, ISSN, volume; DOI and dates |
+| `measurement-campaign.xlsx` | Excel | Measurements and Sites sheets |
+| `model-design.docx` | Word | Architecture, training settings and results tables |
+| `project-presentation.pptx` | PowerPoint | 5 slides with notes and a results table |
+| `faq.md` | Markdown | FAQ |
+
+Regenerate the set with `python scripts/make_sample_data.py`. To try it:
+1. Upload the six files in the UI.
+2. Import [data/golden/iot-delay-spread.json](data/golden/iot-delay-spread.json) under **Evaluation**.
+3. Ask, for example, *"What is the DOI of the article?"*, *"What delay spread was measured at the warehouse
+   in NLOS conditions?"* or *"What R squared did the proposed model reach?"*.
+
+## Docker, Kubernetes and AWS
+
+**Docker.**
 
 ```bash
-curl -X POST localhost:8000/api/v1/ingest -H "Content-Type: application/json" \
-  -d '{"documents":[{"text":"Paris is the capital of France.","source":"geo.md"}]}'
-curl -X POST localhost:8000/api/v1/query -H "Content-Type: application/json" \
-  -d '{"question":"What is the capital of France?"}'
+docker compose up --build                       # app :8000 + Redis, against DATABASE_URL from .env
+docker compose --profile local-db up --build    # also app-local :8001 against a local pgvector
+docker compose --profile monitoring up -d       # Prometheus :9090, Grafana :3000
 ```
 
-### Using Supabase
+The image is a multi-stage `python:3.11-slim` build:
+- it runs as non-root uid 10001, with no pip and a `HEALTHCHECK`
+- it contains no secrets; `.env` is passed in at runtime
+- it runs with a read-only filesystem and all Linux capabilities dropped
 
-Set `DATABASE_URL` to the URI from Supabase → Project Settings → Database → Connection string.
-`postgresql://` URLs are accepted as-is. On first start the app enables the `vector` extension and
-creates the LangChain tables (`langchain_pg_collection`, `langchain_pg_embedding`).
+Run one uvicorn worker per container and scale with replicas, because Prometheus metrics are per-process.
 
-## Run in Docker
+**Kubernetes** (`k8s/`): Deployment, Service, Ingress (ALB), HPA, PDB, NetworkPolicies, ServiceMonitor and an
+in-cluster Redis. Secrets (`rag-secrets`) are created by CD from GitHub secrets and are never stored in git.
 
-```bash
-docker compose up --build                     # app on :8000 against DATABASE_URL from .env (Supabase)
-docker compose --profile local-db up --build  # also app-local on :8001 against a local pgvector
-```
+**AWS.** The target region is `ap-northeast-1` (Tokyo), the same region as the Supabase database. The pipeline:
+- GitHub Actions CI runs lint and tests
+- CD builds the image, pushes it to ECR and deploys to EKS
+- Terraform (`terraform/`) creates the VPC, EKS, ECR, GitHub OIDC and add-ons
 
-The image is multi-stage `python:3.11-slim` (about 550 MB unpacked). It runs as non-root uid 10001,
-has no pip, and includes a Docker `HEALTHCHECK` on `/health/live`. It contains no secrets; compose
-passes `.env` in at runtime. Compose also runs it with a read-only filesystem, all Linux capabilities
-dropped, and `no-new-privileges`. Uvicorn is PID 1, so `SIGTERM` gives a graceful shutdown. Keep
-`WEB_CONCURRENCY=1` and scale with replicas, because Prometheus metrics are per-process.
+First-time deploy:
+1. Copy `terraform/terraform.tfvars.example` to `terraform.tfvars` and set `github_repo`.
+2. Run `terraform init`, `terraform plan`, then `terraform apply`. This costs about $190–230 a month; run
+   `terraform destroy` when you're done.
+3. In the GitHub repo settings, add these Actions variables: `AWS_REGION`, `AWS_ROLE_ARN`, `ECR_REPOSITORY`,
+   `EKS_CLUSTER_NAME` and `SUPABASE_URL`.
+4. In the `production` environment, add these secrets: `EURI_API_KEY`, `DATABASE_URL` and
+   `SUPABASE_PUBLISHABLE_KEY`, plus optionally `GEMINI_API_KEY`, `GROQ_API_KEY` and `TAVILY_API_KEY`.
+5. Push to `main`. CI, then CD, builds and rolls out the image.
 
-## Monitoring locally
+Before real users: add HTTPS through ACM, restrict `cluster_endpoint_public_access_cidrs`, and enable the S3
+backend for Terraform state.
 
-```bash
-docker compose --profile monitoring up -d   # Prometheus :9090, Grafana :3000 (admin / GRAFANA_ADMIN_PASSWORD from .env)
-```
+## Configuration
 
-`monitoring/prometheus/alerts.yml` and `monitoring/grafana/dashboards/*.json` are the single source of
-truth: the local stack mounts them, and Terraform loads the same files into kube-prometheus-stack on EKS.
+Every setting comes from environment variables; [.env.example](.env.example) documents each one. The main groups:
 
-## Deploying to AWS (first time)
+| Group | Settings |
+|---|---|
+| Models | `LLM_MODEL`, `LLM_TEMPERATURE` (0.2–0.5), `LLM_FALLBACK_*`, `*_EXTRA_FALLBACKS`, `EVAL_JUDGE_MODEL` |
+| Providers | `EURI_API_KEY`, `GEMINI_API_KEY`, `GROQ_API_KEY`, `TAVILY_API_KEY`, `EMBEDDING_PROVIDER`, `EMBEDDING_MODEL` |
+| Data | `DATABASE_URL`, `COLLECTION_NAME`, `REDIS_URL` |
+| Chunking | `CHUNKING_STRATEGY`, `CHUNK_SIZE`, `CHUNK_OVERLAP_PCT`, `PARENT_CHUNK_SIZE`, `CHILD_CHUNK_SIZE` |
+| Retrieval | `TOP_K`, `HYBRID_SEARCH`, `RERANK_ENABLED`, `RERANK_CANDIDATES` |
+| Quality | `HALLUCINATION_GUARD`, `GOLDEN_QUESTIONS_PER_DOCUMENT` |
+| Memory and cache | `MEMORY_WINDOW_MESSAGES`, `SHORT_TERM_MEMORY_TTL_SECONDS`, `CACHE_ENABLED`, `*_CACHE_TTL_SECONDS` |
+| Resilience | `CIRCUIT_BREAKER_*`, `EMBEDDING_MAX_RETRIES`, `RATE_LIMIT_*` |
+| Security and logging | `AUTH_ENABLED`, `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`, `AUDIT_LOG_CONTENT`, `LOG_FORMAT` |
 
-**Cost:** roughly **$190–230/month** in ap-northeast-1. EKS control plane is about $73, two t3.large nodes
-about $110, NAT gateway about $45 plus data, the ALB about $20, plus EBS. Run `terraform destroy` when you're done testing.
-
-Prerequisites: an AWS account, the AWS CLI logged in (`aws sts get-caller-identity`), Terraform ≥ 1.6, and the repo on GitHub.
-
-1. **Infrastructure**
-   ```bash
-   cd terraform
-   cp terraform.tfvars.example terraform.tfvars   # set github_repo = "owner/name"
-   terraform init
-   terraform plan -out tf.plan                    # review: about 60-70 resources
-   terraform apply tf.plan                        # about 20 minutes
-   ```
-2. **GitHub settings** (repo → Settings → Secrets and variables → Actions):
-   - Variables: `AWS_REGION`, `AWS_ROLE_ARN`, `ECR_REPOSITORY`, `EKS_CLUSTER_NAME` (all from `terraform output`), and `SUPABASE_URL`.
-   - Environment `production` → secrets: `EURI_API_KEY`, `DATABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`.
-     Add required reviewers on the environment if you want a manual approval before each deploy.
-3. **Deploy:** push to `main`. CI runs, then CD builds the image, pushes it to ECR and rolls it out.
-   ```bash
-   aws eks update-kubeconfig --name genai-rag-prod --region ap-northeast-1
-   kubectl -n rag get ingress rag-api   # ADDRESS = public URL (HTTP until you add an ACM certificate)
-   ```
-4. **Grafana:** `kubectl -n monitoring port-forward svc/kube-prometheus-stack-grafana 3000:80`, then
-   log in as `admin` with the password from `terraform output -raw grafana_admin_password`.
-   Alertmanager has no receivers yet. Add Slack or email in the kube-prometheus-stack values to get notified.
-
-**Before real users:** add HTTPS (see `k8s/ingress.yaml`), restrict `cluster_endpoint_public_access_cidrs`,
-and enable the S3 backend in `terraform/providers.tf`.
-
-## Kubernetes locally (kind)
-
-```bash
-kind create cluster --name rag-local
-kind load docker-image genai-rag-platform:local --name rag-local
-kubectl create namespace rag
-kubectl -n rag create secret generic rag-secrets --from-literal=EURI_API_KEY=... --from-literal=DATABASE_URL=...
-kubectl kustomize docker/k8s-local | kubectl apply -f -   # replace the SUPABASE_* placeholders first
-```
+Changing the embedding provider or model needs a new `COLLECTION_NAME` and a re-upload, because vectors from
+different models can't be compared.
 
 ## Tests and lint
 
 ```bash
-pytest          # offline: fake LLM, fake embeddings, in-memory vector store
-ruff check . && ruff format --check .
+.venv/Scripts/python -m pytest -q        # 206 tests, fully offline (fake LLMs, fake embeddings, in-memory stores)
+.venv/Scripts/python -m ruff check app tests evals && .venv/Scripts/python -m ruff format --check app tests evals
 ```
 
-## Configuration
+## Project status and limitations
 
-All settings come from environment variables; see [.env.example](.env.example). Notes:
+| Stage | Status |
+|---|---|
+| Build and test locally | Done |
+| Dockerize | Done (compose adds Redis) |
+| GitHub | Published |
+| CI (`ci.yml`) and CD to ECR/EKS (`cd.yml`) | Written; validated with actionlint |
+| Terraform | Written; `terraform validate` passes; **not applied** |
+| Kubernetes | Manifests tested on a local kind cluster |
+| Monitoring | Prometheus, Grafana and alerts tested locally |
 
-- `EMBEDDING_DIM` must match `EMBEDDING_MODEL`. Changing models needs a new `COLLECTION_NAME`.
-- On EURI's free tier each model gets about 10,000 tokens per day. Expect 429s under real load.
-- `LLM_MODEL` takes any chat model your EURI key can access (`GET {LLM_BASE_URL}/models`).
+Known limitations:
+- **Free-tier quotas.** On free tiers (EURI, Gemini at 20 answers a day, Groq at 8k tokens a minute),
+  evaluation runs and heavy use hit limits. The fallback chain, circuit breakers and caching soften this, but
+  can't remove it.
+- **Per-process state.** Rate limits and circuit breakers are kept per process, so with N replicas the limits
+  are N times looser. A shared Redis-based limiter would make them exact.
+- **Images and OCR.** Images and scanned PDFs (OCR) aren't indexed yet.
+- **Keyword search at scale.** Keyword search scans the collection per query. That's fine for thousands of
+  chunks; for much larger collections, store the tsvector in a column.
+- **MLflow scope.** MLflow tracks evaluation runs. Per-request tracing goes to the audit log, not MLflow.

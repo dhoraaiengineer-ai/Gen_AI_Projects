@@ -26,4 +26,5 @@ resources:
   - hpa.yaml
   - pdb.yaml
   - networkpolicy.yaml
+  - redis.yaml
   - servicemonitor.yaml
