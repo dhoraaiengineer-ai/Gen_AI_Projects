@@ -91,7 +91,7 @@ jobs:
         run: docker logs rag || true
 
       - name: Vulnerability scan
-        uses: aquasecurity/trivy-action@0.28.0
+        uses: aquasecurity/trivy-action@v0.36.0 # un-prefixed tags (0.28.0) were removed upstream
         with:
           image-ref: genai-rag-platform:ci
           severity: CRITICAL,HIGH
