@@ -1,0 +1,103 @@
+name: CD
+
+# Runs after CI succeeds on main (or manually). Builds the image, pushes it to ECR,
+# and rolls it out to EKS. AWS access uses GitHub OIDC: no long-lived AWS keys are stored.
+#
+# Repository variables (Settings -> Secrets and variables -> Actions -> Variables):
+#   AWS_REGION        ap-northeast-1
+#   AWS_ROLE_ARN      output `github_actions_role_arn` from Terraform
+#   ECR_REPOSITORY    output `ecr_repository_name` from Terraform
+#   EKS_CLUSTER_NAME  output `eks_cluster_name` from Terraform
+#   SUPABASE_URL      https://<ref>.supabase.co
+# Environment secrets (environment "production"):
+#   EURI_API_KEY, DATABASE_URL, SUPABASE_PUBLISHABLE_KEY
+
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write # for AWS OIDC
+
+concurrency:
+  group: cd-production
+  cancel-in-progress: false # never interrupt a rollout halfway
+
+jobs:
+  deploy:
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment: production # add required reviewers on this environment for a manual approval gate
+    env:
+      AWS_REGION: ${{ vars.AWS_REGION }}
+      IMAGE_TAG: ${{ github.event.workflow_run.head_sha || github.sha }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.IMAGE_TAG }}
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - name: Log in to ECR
+        id: ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Build and push image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.ecr.outputs.registry }}/${{ vars.ECR_REPOSITORY }}:${{ env.IMAGE_TAG }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          provenance: false
+
+      - uses: azure/setup-kubectl@v4
+
+      - name: Connect to EKS
+        run: aws eks update-kubeconfig --name "${{ vars.EKS_CLUSTER_NAME }}" --region "$AWS_REGION"
+
+      - name: Sync application secret
+        # Rendered client-side and applied, so values never land in the repo or the logs.
+        env:
+          EURI_API_KEY: ${{ secrets.EURI_API_KEY }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        # The `rag` namespace is created by Terraform; the CD role only has rights inside it.
+        run: |
+          kubectl -n rag create secret generic rag-secrets \
+            --from-literal=EURI_API_KEY="$EURI_API_KEY" \
+            --from-literal=DATABASE_URL="$DATABASE_URL" \
+            --dry-run=client -o yaml | kubectl apply -f -
+
+      - name: Deploy
+        env:
+          SUPABASE_URL: ${{ vars.SUPABASE_URL }}
+          SUPABASE_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_PUBLISHABLE_KEY }}
+          IMAGE: ${{ steps.ecr.outputs.registry }}/${{ vars.ECR_REPOSITORY }}:${{ env.IMAGE_TAG }}
+        run: |
+          cd k8s
+          kubectl kustomize . \
+            | sed -e "s|genai-rag-platform:local|${IMAGE}|" \
+                  -e "s|https://YOUR-PROJECT.supabase.co|${SUPABASE_URL}|" \
+                  -e "s|YOUR_PUBLISHABLE_KEY|${SUPABASE_PUBLISHABLE_KEY}|" \
+            | kubectl apply -f -
+
+      - name: Wait for rollout
+        run: kubectl -n rag rollout status deployment/rag-api --timeout=5m
+
+      - name: Roll back on failure
+        if: failure()
+        run: |
+          kubectl -n rag rollout undo deployment/rag-api || true
+          kubectl -n rag get pods -o wide || true

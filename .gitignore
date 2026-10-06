@@ -24,7 +24,7 @@ terraform/.terraform/
 *.tfstate.*
 *.tfvars
 !*.tfvars.example
-.terraform.lock.hcl
+tf.plan
 
 # Editors / OS
 .vscode/

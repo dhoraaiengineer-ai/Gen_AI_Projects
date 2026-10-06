@@ -17,6 +17,9 @@ class Settings(BaseSettings):
     environment: Literal["local", "dev", "staging", "prod"] = "local"
     log_level: str = "INFO"
     log_format: Literal["text", "json"] = "text"
+    # Unset: metrics at /metrics on the app port (local dev). Set (e.g. 9090 in k8s): metrics move to
+    # their own port, reachable only in-cluster, and /metrics disappears from the public app port.
+    metrics_port: int | None = Field(None, ge=1024, le=65535)
 
     # LLM + embeddings via the EURI OpenAI-compatible gateway
     euri_api_key: SecretStr | None = None

@@ -9,9 +9,12 @@ retrieval and the EURI OpenAI-compatible gateway for chat and embeddings.
 |---|---|
 | 1. Build and test locally | Done |
 | 2. Dockerize | Done |
-| 3–4. GitHub + Actions CI | Next |
-| 5–8. Image → ECR, Terraform, EKS | Not started |
-| 9–11. Prometheus, Grafana, production monitoring | `/metrics` endpoint exists; dashboards not started |
+| 3. Push to GitHub | Committed locally; needs a remote |
+| 4. GitHub Actions CI (`.github/workflows/ci.yml`) | Written; validated with actionlint |
+| 5–6. Build image, push to ECR (`cd.yml`) | Written; validated with actionlint |
+| 7. Terraform (`terraform/`) | Written; `terraform validate` passes; **not applied** |
+| 8. Deploy to EKS (`k8s/`) | Manifests tested on a local kind cluster |
+| 9–11. Prometheus, Grafana, alerts (`monitoring/`) | Tested locally with docker compose; on EKS via Terraform |
 
 ## Deployment target
 
@@ -144,6 +147,56 @@ has no pip, and includes a Docker `HEALTHCHECK` on `/health/live`. It contains n
 passes `.env` in at runtime. Compose also runs it with a read-only filesystem, all Linux capabilities
 dropped, and `no-new-privileges`. Uvicorn is PID 1, so `SIGTERM` gives a graceful shutdown. Keep
 `WEB_CONCURRENCY=1` and scale with replicas, because Prometheus metrics are per-process.
+
+## Monitoring locally
+
+```bash
+docker compose --profile monitoring up -d   # Prometheus :9090, Grafana :3000 (admin / GRAFANA_ADMIN_PASSWORD from .env)
+```
+
+`monitoring/prometheus/alerts.yml` and `monitoring/grafana/dashboards/*.json` are the single source of
+truth: the local stack mounts them, and Terraform loads the same files into kube-prometheus-stack on EKS.
+
+## Deploying to AWS (first time)
+
+**Cost:** roughly **$190–230/month** in ap-northeast-1. EKS control plane is about $73, two t3.large nodes
+about $110, NAT gateway about $45 plus data, the ALB about $20, plus EBS. Run `terraform destroy` when you're done testing.
+
+Prerequisites: an AWS account, the AWS CLI logged in (`aws sts get-caller-identity`), Terraform ≥ 1.6, and the repo on GitHub.
+
+1. **Infrastructure**
+   ```bash
+   cd terraform
+   cp terraform.tfvars.example terraform.tfvars   # set github_repo = "owner/name"
+   terraform init
+   terraform plan -out tf.plan                    # review: about 60-70 resources
+   terraform apply tf.plan                        # about 20 minutes
+   ```
+2. **GitHub settings** (repo → Settings → Secrets and variables → Actions):
+   - Variables: `AWS_REGION`, `AWS_ROLE_ARN`, `ECR_REPOSITORY`, `EKS_CLUSTER_NAME` (all from `terraform output`), and `SUPABASE_URL`.
+   - Environment `production` → secrets: `EURI_API_KEY`, `DATABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`.
+     Add required reviewers on the environment if you want a manual approval before each deploy.
+3. **Deploy:** push to `main`. CI runs, then CD builds the image, pushes it to ECR and rolls it out.
+   ```bash
+   aws eks update-kubeconfig --name genai-rag-prod --region ap-northeast-1
+   kubectl -n rag get ingress rag-api   # ADDRESS = public URL (HTTP until you add an ACM certificate)
+   ```
+4. **Grafana:** `kubectl -n monitoring port-forward svc/kube-prometheus-stack-grafana 3000:80`, then
+   log in as `admin` with the password from `terraform output -raw grafana_admin_password`.
+   Alertmanager has no receivers yet. Add Slack or email in the kube-prometheus-stack values to get notified.
+
+**Before real users:** add HTTPS (see `k8s/ingress.yaml`), restrict `cluster_endpoint_public_access_cidrs`,
+and enable the S3 backend in `terraform/providers.tf`.
+
+## Kubernetes locally (kind)
+
+```bash
+kind create cluster --name rag-local
+kind load docker-image genai-rag-platform:local --name rag-local
+kubectl create namespace rag
+kubectl -n rag create secret generic rag-secrets --from-literal=EURI_API_KEY=... --from-literal=DATABASE_URL=...
+kubectl kustomize docker/k8s-local | kubectl apply -f -   # replace the SUPABASE_* placeholders first
+```
 
 ## Tests and lint
 

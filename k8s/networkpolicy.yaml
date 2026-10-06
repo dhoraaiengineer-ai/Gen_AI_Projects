@@ -1,0 +1,43 @@
+# Enforced by the VPC CNI network policy agent (enabled in Terraform).
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: rag-api
+  labels:
+    app.kubernetes.io/name: rag-api
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: rag-api
+  policyTypes: [Ingress, Egress]
+  ingress:
+    # App port: ALB (target-type ip) and kubelet probes, both from inside the VPC.
+    # Keep in sync with var.vpc_cidr in terraform/variables.tf.
+    - from:
+        - ipBlock:
+            cidr: 10.0.0.0/16
+      ports:
+        - port: 8000
+    # Metrics port: Prometheus in the monitoring namespace only.
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: monitoring
+      ports:
+        - port: 9090
+  egress:
+    # DNS
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+      ports:
+        - port: 53
+          protocol: UDP
+        - port: 53
+          protocol: TCP
+    # EURI API and Supabase Auth JWKS (HTTPS); Supabase Postgres pooler (5432 session, 6543 transaction).
+    - ports:
+        - port: 443
+        - port: 5432
+        - port: 6543

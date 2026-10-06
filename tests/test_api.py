@@ -94,3 +94,17 @@ def test_metrics_exposed(harness: AppHarness) -> None:
     assert 'http_requests_total{method="GET",route="/health/live",status="200"}' in text
     assert 'http_requests_total{method="POST",route="/api/v1/query",status="200"}' in text
     assert "rag_chunks_ingested_total" in text
+
+
+def test_metrics_moved_off_app_port_when_metrics_port_set(harness: AppHarness, monkeypatch) -> None:
+    started: list[int] = []
+
+    class FakeServer:
+        def shutdown(self) -> None:
+            started.append(-1)
+
+    monkeypatch.setattr("app.main.start_http_server", lambda port: (started.append(port) or FakeServer(), None))
+    harness.settings = harness.settings.model_copy(update={"metrics_port": 9090})
+    with harness.client() as c:
+        assert c.get("/metrics/").status_code == 404  # not exposed on the public app port
+    assert started == [9090, -1]  # started on startup, shut down on exit

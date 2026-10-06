@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: rag-api
+  labels:
+    app.kubernetes.io/name: rag-api
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: rag-api
+  ports:
+    - name: http
+      port: 80
+      targetPort: http
+    # In-cluster only: the Ingress routes just the `http` port, and the NetworkPolicy
+    # admits this port only from the monitoring namespace.
+    - name: metrics
+      port: 9090
+      targetPort: metrics

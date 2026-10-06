@@ -1,0 +1,12 @@
+# Keeps at least one pod serving during node drains and cluster upgrades.
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: rag-api
+  labels:
+    app.kubernetes.io/name: rag-api
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: rag-api

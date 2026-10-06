@@ -1,0 +1,8 @@
+# Copy to terraform.tfvars (gitignored) and edit.
+github_repo = "your-github-user/genai-rag-platform"
+
+# Optional overrides
+# region                               = "ap-northeast-1"
+# node_instance_types                  = ["t3.large"]
+# cluster_endpoint_public_access_cidrs = ["203.0.113.10/32"]
+# create_github_oidc_provider          = false  # if the account already has GitHub's OIDC provider

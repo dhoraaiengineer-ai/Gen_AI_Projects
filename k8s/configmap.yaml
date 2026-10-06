@@ -1,0 +1,32 @@
+# Non-secret settings. Secrets (EURI_API_KEY, DATABASE_URL) live in the `rag-secrets` Secret.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: rag-config
+  labels:
+    app.kubernetes.io/name: rag-api
+data:
+  ENVIRONMENT: prod
+  LOG_LEVEL: INFO
+  LOG_FORMAT: json
+  METRICS_PORT: "9090"
+
+  LLM_BASE_URL: https://api.euron.one/api/v1/euri
+  LLM_MODEL: gpt-4.1-nano
+  LLM_FALLBACK_MODEL: gemini-2.0-flash
+  AGENT_FALLBACK_MODEL: gpt-4o-mini
+  LLM_TEMPERATURE: "0.0"
+  LLM_MAX_TOKENS: "1024"
+  LLM_MAX_RETRIES: "1"
+  EMBEDDING_MODEL: text-embedding-3-small
+  EMBEDDING_DIM: "1536"
+
+  COLLECTION_NAME: documents
+  CHUNK_SIZE: "1000"
+  CHUNK_OVERLAP: "150"
+  TOP_K: "4"
+  AGENT_MAX_ITERATIONS: "6"
+
+  AUTH_ENABLED: "true"
+  SUPABASE_URL: https://YOUR-PROJECT.supabase.co
+  SUPABASE_PUBLISHABLE_KEY: YOUR_PUBLISHABLE_KEY # public by design

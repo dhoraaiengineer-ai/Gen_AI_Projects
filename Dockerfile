@@ -40,7 +40,7 @@ COPY --chown=app:app app ./app
 COPY --chown=app:app --chmod=0755 docker/entrypoint.sh /entrypoint.sh
 
 USER 10001
-EXPOSE 8000
+EXPOSE 8000 9090
 
 # python:slim has no curl; use the interpreter that's already there.
 HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 \

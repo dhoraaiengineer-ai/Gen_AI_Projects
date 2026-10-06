@@ -1,0 +1,43 @@
+# Local test overlay for kind / Docker Desktop Kubernetes: the production manifests minus the
+# AWS- and add-on-specific objects (ALB Ingress, ServiceMonitor CRD, VPC-CIDR NetworkPolicy, HPA).
+#   kubectl create namespace rag
+#   kubectl -n rag create secret generic rag-secrets --from-literal=EURI_API_KEY=... --from-literal=DATABASE_URL=...
+#   kubectl kustomize docker/k8s-local | kubectl apply -f -
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - ../../k8s
+
+patches:
+  - patch: |-
+      $patch: delete
+      apiVersion: networking.k8s.io/v1
+      kind: Ingress
+      metadata:
+        name: rag-api
+  - patch: |-
+      $patch: delete
+      apiVersion: monitoring.coreos.com/v1
+      kind: ServiceMonitor
+      metadata:
+        name: rag-api
+  - patch: |-
+      $patch: delete
+      apiVersion: networking.k8s.io/v1
+      kind: NetworkPolicy
+      metadata:
+        name: rag-api
+  - patch: |-
+      $patch: delete
+      apiVersion: autoscaling/v2
+      kind: HorizontalPodAutoscaler
+      metadata:
+        name: rag-api
+  - patch: |-
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: rag-api
+      spec:
+        replicas: 1

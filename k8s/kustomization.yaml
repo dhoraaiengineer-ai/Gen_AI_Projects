@@ -1,0 +1,29 @@
+# Production manifests for EKS. The `rag` namespace is created by Terraform (with Pod Security
+# "restricted" labels), so CD only needs namespace-scoped permissions.
+#
+# Placeholders replaced at deploy time by .github/workflows/cd.yml:
+#   genai-rag-platform:local             -> <ecr-registry>/<repo>:<git-sha>
+#   https://YOUR-PROJECT.supabase.co     -> vars.SUPABASE_URL
+#   YOUR_PUBLISHABLE_KEY                 -> secrets.SUPABASE_PUBLISHABLE_KEY
+# The `rag-secrets` Secret (EURI_API_KEY, DATABASE_URL) is created by CD from GitHub secrets
+# and is never stored in git.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: rag
+
+labels:
+  - pairs:
+      app.kubernetes.io/part-of: genai-rag-platform
+    includeSelectors: false
+
+resources:
+  - serviceaccount.yaml
+  - configmap.yaml
+  - deployment.yaml
+  - service.yaml
+  - ingress.yaml
+  - hpa.yaml
+  - pdb.yaml
+  - networkpolicy.yaml
+  - servicemonitor.yaml

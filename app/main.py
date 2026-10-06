@@ -8,7 +8,7 @@ import openai
 from fastapi import FastAPI, Request, status
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
-from prometheus_client import make_asgi_app
+from prometheus_client import make_asgi_app, start_http_server
 
 from app.api import health, routes, ui
 from app.config import Settings, get_settings
@@ -55,8 +55,15 @@ def create_app(
     @asynccontextmanager
     async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         app.state.container = container_factory(settings)
+        metrics_server = None
+        if settings.metrics_port:
+            # Separate port so the public ingress (which only routes the app port) never exposes metrics.
+            metrics_server, _ = start_http_server(settings.metrics_port)
+            logger.info("metrics server started", extra={"port": settings.metrics_port})
         logger.info("startup complete", extra={"environment": settings.environment, "model": settings.llm_model})
         yield
+        if metrics_server is not None:
+            metrics_server.shutdown()
         app.state.container.close()
         logger.info("shutdown complete")
 
@@ -68,7 +75,8 @@ def create_app(
     app.include_router(routes.router)
     app.include_router(ui.router)
     app.mount("/static", StaticFiles(directory=ui.STATIC_DIR), name="static")
-    app.mount("/metrics", make_asgi_app())
+    if not settings.metrics_port:
+        app.mount("/metrics", make_asgi_app())
     return app
 
 

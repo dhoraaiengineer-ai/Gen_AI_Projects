@@ -1,0 +1,71 @@
+# Alert rules for the RAG API. Single source of truth: loaded by the local Prometheus
+# (docker compose --profile monitoring) and by kube-prometheus-stack on EKS (via Terraform).
+groups:
+  - name: rag-api
+    rules:
+      - alert: RagApiDown
+        expr: absent(up{job="rag-api"} == 1)
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: No healthy RAG API instance is being scraped
+          description: Prometheus has not scraped a healthy rag-api target for 2 minutes.
+
+      - alert: RagApiHighErrorRate
+        expr: |
+          sum(rate(http_requests_total{status=~"5.."}[5m]))
+            / clamp_min(sum(rate(http_requests_total[5m])), 1e-9) > 0.05
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: More than 5% of RAG API requests are failing with 5xx
+          description: "5xx ratio over 5m is {{ $value | humanizePercentage }}."
+
+      - alert: RagApiHighLatency
+        expr: |
+          histogram_quantile(0.95,
+            sum by (le, route) (rate(http_request_duration_seconds_bucket{route=~"/api/v1/(query|agent)"}[5m]))
+          ) > 20
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "p95 latency above 20s on {{ $labels.route }}"
+          description: "p95 is {{ $value | humanizeDuration }}. Check the LLM provider and fallback activity."
+
+      - alert: RagLlmUsingFallback
+        expr: sum by (model) (increase(rag_llm_fallbacks_total[15m])) > 5
+        labels:
+          severity: warning
+        annotations:
+          summary: "Primary LLM failing; {{ $labels.model }} is serving traffic"
+          description: More than 5 calls in 15m were served by a fallback model. Usually the primary model's daily quota is exhausted or the provider is degraded.
+
+      - alert: RagLlmErrors
+        expr: sum by (kind) (increase(rag_llm_errors_total[10m])) > 3
+        labels:
+          severity: warning
+        annotations:
+          summary: "LLM requests failing after fallbacks ({{ $labels.kind }})"
+          description: Users are getting errors because both the primary and the fallback model failed.
+
+      - alert: RagAuthFailureSpike
+        expr: sum(rate(auth_failures_total{reason="invalid_token"}[5m])) > 1
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: Sustained invalid-token requests
+          description: More than 1 invalid token per second for 10 minutes. Either a misconfigured client or someone probing the API.
+
+      - alert: RagNoReadyReplicas
+        # kube-state-metrics only exists in Kubernetes; locally this rule simply has no data.
+        expr: kube_deployment_status_replicas_available{deployment="rag-api"} < 1
+        for: 3m
+        labels:
+          severity: critical
+        annotations:
+          summary: rag-api has no ready replicas
+          description: Every pod is failing readiness, usually because the database is unreachable.
