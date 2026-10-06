@@ -54,6 +54,133 @@ It goes beyond a basic RAG demo:
 
 ## Architecture
 
+### System overview
+
+```mermaid
+flowchart LR
+    user([User / browser])
+
+    subgraph app["FastAPI app (one uvicorn worker per pod)"]
+        ui["Chat UI<br/>static HTML/JS"]
+        api["API routes<br/>auth · rate limits · audit log"]
+        svc["RAGService"]
+        subgraph graphs["LangGraph"]
+            rag["RAG graph<br/>retrieve → generate"]
+            agent["Research agent<br/>tool loop"]
+        end
+        subgraph rag_core["Retrieval & quality"]
+            ret["Hybrid retriever<br/>vector + keyword · RRF"]
+            rr["LLM re-ranker"]
+            guard["Hallucination guard"]
+        end
+        mem["Memory<br/>short + long term"]
+        cache["Answer + prompt cache"]
+        ev["Evaluator<br/>LLM judge · RAGAS"]
+        breaker["Fallback chain<br/>+ circuit breakers"]
+    end
+
+    subgraph data["Data"]
+        pg[("Supabase Postgres<br/>pgvector chunks · registry<br/>golden set · conversations")]
+        redis[("Redis<br/>cache · short-term memory")]
+    end
+
+    subgraph llm["Model providers (OpenAI-compatible)"]
+        euri["EURI<br/>gpt-4.1-nano · gpt-4o-mini"]
+        gemini["Google Gemini<br/>embeddings · fallback"]
+        groq["Groq<br/>gpt-oss · Qwen fallback"]
+    end
+
+    tavily["Tavily<br/>web search"]
+    supa["Supabase Auth<br/>JWKS"]
+    obs["Prometheus + Grafana"]
+    mlflow["MLflow<br/>evaluation runs"]
+
+    user --> ui --> api
+    user -. sign in .-> supa
+    api -. verify JWT .-> supa
+    api --> svc
+    svc --> rag & agent & ev & mem & cache
+    rag --> ret --> rr
+    rag --> guard
+    agent --> ret
+    agent --> tavily
+    ret --> pg
+    mem --> redis & pg
+    cache --> redis
+    rag & agent & rr & ev --> breaker
+    breaker --> euri & gemini & groq
+    ret -. embeddings .-> gemini
+    app -. metrics .-> obs
+    ev -. run_eval job .-> mlflow
+```
+
+### How a question flows through the system
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor U as User
+    participant API as API (auth + rate limit)
+    participant M as Memory (Redis → Postgres)
+    participant C as Answer cache
+    participant R as Hybrid retriever
+    participant RR as LLM re-ranker
+    participant L as LLM (fallback chain)
+    participant G as Hallucination guard
+
+    U->>API: question + session_id
+    API->>M: recent turns
+    alt follow-up question
+        API->>L: rewrite into a standalone question
+    end
+    API->>C: lookup (question, KB version)
+    alt cache hit
+        C-->>U: cached answer
+    else cache miss
+        API->>R: standalone + original wording
+        R->>R: vector (cosine) + keyword (BM25-style) → reciprocal rank fusion
+        R->>RR: ~12 candidates
+        RR-->>API: best top_k passages
+        API->>L: grounded prompt (temperature 0.2)
+        L-->>API: answer with [n] citations
+        API->>G: citations valid? numbers present in passages?
+        G-->>API: grounded / issues
+        API->>C: store (only if grounded)
+        API->>M: save turn
+        API-->>U: answer · sources (page / sheet / slide) · ⚠ if ungrounded
+    end
+```
+
+### Deployment on AWS
+
+```mermaid
+flowchart LR
+    dev([Developer]) -->|git push| gh["GitHub"]
+    gh --> ci["GitHub Actions CI<br/>lint · 206 tests · image build<br/>smoke test · Trivy scan"]
+    ci --> cd["GitHub Actions CD<br/>OIDC → AWS"]
+    cd -->|push image| ecr[("Amazon ECR")]
+    cd -->|kubectl apply| eks
+
+    subgraph aws["AWS ap-northeast-1 (Tokyo)"]
+        alb["Application Load Balancer"]
+        subgraph eks["Amazon EKS · namespace rag"]
+            pods["rag-api pods<br/>HPA · PDB · NetworkPolicy"]
+            redisk[("Redis")]
+            prom["kube-prometheus-stack<br/>Prometheus · Grafana · alerts"]
+        end
+        ecr
+    end
+
+    users([Users]) --> alb --> pods
+    pods --> redisk
+    pods --> supabase[("Supabase Postgres + pgvector<br/>ap-northeast-1")]
+    pods --> providers["EURI · Gemini · Groq · Tavily"]
+    prom -. scrapes .-> pods
+    tf["Terraform"] -. provisions .-> aws
+```
+
+### Code layout
+
 ```
 app/
 ├── main.py              FastAPI app factory, error mapping (429/502/503), metrics mount

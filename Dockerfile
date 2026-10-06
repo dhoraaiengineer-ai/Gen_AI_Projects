@@ -21,7 +21,7 @@ FROM python:3.11-slim AS runtime
 
 LABEL org.opencontainers.image.title="genai-rag-platform" \
       org.opencontainers.image.description="FastAPI + LangGraph RAG API" \
-      org.opencontainers.image.source="https://github.com/OWNER/genai-rag-platform"
+      org.opencontainers.image.source="https://github.com/dhoraaiengineer-ai/Gen_AI_Projects"
 
 ENV PATH="/opt/venv/bin:$PATH" \
     PYTHONDONTWRITEBYTECODE=1 \
@@ -29,6 +29,14 @@ ENV PATH="/opt/venv/bin:$PATH" \
     LOG_FORMAT=json \
     PORT=8000 \
     WEB_CONCURRENCY=1
+
+# Security patches: pick up fixed Debian packages released after the base image was built (the CI Trivy
+# scan fails on fixable HIGH/CRITICAL CVEs). Then remove the base image's own pip/setuptools/wheel: the app
+# runs from /opt/venv and never installs anything, and old copies of these tools carry known CVEs.
+RUN apt-get update \
+ && apt-get upgrade -y --no-install-recommends \
+ && rm -rf /var/lib/apt/lists/* \
+ && (python -m pip uninstall -y pip setuptools wheel || true)
 
 # Fixed, non-root UID/GID so Kubernetes `runAsNonRoot` / `runAsUser` can match it.
 RUN groupadd --system --gid 10001 app \
