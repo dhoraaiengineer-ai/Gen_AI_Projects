@@ -1,0 +1,20 @@
+[project]
+name = "genai-rag-platform"
+version = "0.1.0"
+requires-python = ">=3.11"
+
+[tool.ruff]
+line-length = 120
+target-version = "py311"
+extend-exclude = [".venv"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "SIM", "RUF"]
+ignore = ["B008"]  # FastAPI's Depends() in argument defaults is idiomatic
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["RUF012"]  # pydantic fields on fake models, not shared class state
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra"

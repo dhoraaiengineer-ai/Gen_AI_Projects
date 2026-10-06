@@ -1,0 +1,11 @@
+# Allow-list style: ignore everything, then add back what the image needs.
+*
+!app/
+!docker/entrypoint.sh
+!requirements.txt
+
+# Never ship caches or secrets, even if they end up under app/
+**/__pycache__
+**/*.pyc
+**/.env
+**/.env.*

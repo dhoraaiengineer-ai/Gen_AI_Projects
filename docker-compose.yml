@@ -1,0 +1,63 @@
+# Local container runs.
+#
+#   docker compose up --build                     # app against Supabase (DATABASE_URL from .env)
+#   docker compose --profile local-db up --build  # also app-local on :8001 against a local pgvector
+#
+# Secrets come from .env at runtime; they are never baked into the image.
+
+x-app: &app
+  build: .
+  image: genai-rag-platform:local
+  env_file: .env
+  environment:
+    LOG_FORMAT: json
+  read_only: true  # the app writes nothing to disk; catches accidental writes early
+  tmpfs:
+    - /tmp
+  security_opt:
+    - no-new-privileges:true
+  cap_drop:
+    - ALL
+  stop_grace_period: 30s
+  restart: unless-stopped
+
+services:
+  app:
+    <<: *app
+    container_name: rag-app
+    ports:
+      - "8000:8000"
+
+  app-local:
+    <<: *app
+    container_name: rag-app-local
+    profiles: ["local-db"]
+    environment:
+      LOG_FORMAT: json
+      DATABASE_URL: postgresql+psycopg://rag:rag@pgvector:5432/rag
+    ports:
+      - "8001:8000"
+    depends_on:
+      pgvector:
+        condition: service_healthy
+
+  pgvector:
+    image: pgvector/pgvector:pg16
+    container_name: rag-pgvector-compose
+    profiles: ["local-db"]
+    environment:
+      POSTGRES_USER: rag
+      POSTGRES_PASSWORD: rag
+      POSTGRES_DB: rag
+    ports:
+      - "5433:5432"  # 5433 on the host so it doesn't clash with a standalone pgvector on 5432
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U rag -d rag"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  pgdata:

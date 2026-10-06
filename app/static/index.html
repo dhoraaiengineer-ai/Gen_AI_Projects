@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>RAG Assistant</title>
+  <link rel="stylesheet" href="/static/styles.css">
+  <script src="/static/app.js" defer></script>
+</head>
+<body>
+  <header class="topbar">
+    <h1>RAG Assistant</h1>
+    <div class="topbar-right">
+      <span id="status" class="status" data-state="checking" title="Backend status">Checking…</span>
+      <span id="user" class="user" hidden>
+        <span id="user-email"></span>
+        <span id="user-role" class="role"></span>
+        <button type="button" id="signout-btn" class="link">Sign out</button>
+      </span>
+    </div>
+  </header>
+
+  <section id="login" class="login" hidden aria-labelledby="login-title">
+    <form id="login-form" class="panel login-card">
+      <h2 id="login-title">Sign in</h2>
+      <p class="hint">Use the account your administrator created in Supabase.</p>
+      <label for="email">Email</label>
+      <input id="email" type="email" autocomplete="username" required>
+      <label for="password">Password</label>
+      <input id="password" type="password" autocomplete="current-password" required>
+      <button type="submit" id="login-btn">Sign in</button>
+      <p id="login-error" class="result err" role="alert"></p>
+    </form>
+  </section>
+
+  <main id="app" class="layout" hidden>
+    <section id="knowledge" class="panel knowledge" aria-labelledby="kb-title">
+      <h2 id="kb-title">Add knowledge</h2>
+      <p class="hint">Paste text or upload .txt / .md files. They're split, embedded and stored in pgvector.</p>
+
+      <form id="ingest-form">
+        <label for="source">Source name</label>
+        <input id="source" name="source" type="text" placeholder="e.g. company-handbook.md" maxlength="500">
+
+        <label for="doc-text">Text</label>
+        <textarea id="doc-text" name="text" rows="8" placeholder="Paste document text…"></textarea>
+
+        <label for="files">Or upload files</label>
+        <input id="files" name="files" type="file" accept=".txt,.md,.markdown,.csv,.json" multiple>
+
+        <button type="submit" id="ingest-btn">Add to knowledge base</button>
+        <p id="ingest-result" class="result" role="status" aria-live="polite"></p>
+      </form>
+    </section>
+
+    <section class="panel chat" aria-labelledby="chat-title">
+      <h2 id="chat-title" class="visually-hidden">Chat</h2>
+      <div id="messages" class="messages" aria-live="polite">
+        <div class="empty" id="empty-state">
+          <p><strong>Ask a question about your documents.</strong></p>
+          <p><em>Quick answer</em> does one search. <em>Research</em> lets the agent search several times, which suits multi-part questions.</p>
+        </div>
+      </div>
+
+      <form id="ask-form" class="composer">
+        <div class="modes" role="radiogroup" aria-label="Answer mode">
+          <label><input type="radio" name="mode" value="query" checked> Quick answer</label>
+          <label><input type="radio" name="mode" value="agent"> Research</label>
+        </div>
+        <div class="composer-row">
+          <textarea id="question" rows="2" placeholder="Ask a question… (Enter to send, Shift+Enter for a new line)" maxlength="4000" required></textarea>
+          <button type="submit" id="ask-btn">Send</button>
+        </div>
+      </form>
+    </section>
+  </main>
+</body>
+</html>
