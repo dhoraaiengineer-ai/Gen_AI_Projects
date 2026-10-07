@@ -319,6 +319,7 @@ class TesseractOcr:
     def __init__(self, languages: str = "eng") -> None:
         import pytesseract  # imported lazily: the binary only exists in the container image
 
+        pytesseract.get_tesseract_version()  # fail fast at startup if the binary is missing
         self._tess = pytesseract
         self._lang = languages
 

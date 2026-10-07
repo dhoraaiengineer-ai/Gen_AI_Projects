@@ -286,13 +286,15 @@ class DashboardService:
             )
         lanes = Counter((x.origin, x.destination) for x in active)
         lane_delays = Counter((x.origin, x.destination) for x in delayed)
-        delivered = [x for x in ships if x.status == "delivered"]
-        on_time = (len([x for x in delivered if x.delay_days == 0]) / len(delivered)) if delivered else 0.0
+        async with self._db.session() as ses:
+            receipts = await ReportingRepository(ses).monthly_delivery(datetime.now(UTC) - timedelta(days=90))
+        received = sum(n for _, _, n in receipts)
+        on_time = sum(ok for _, ok, _ in receipts) / received if received else 0.0
         unit_cost = {p.row.sku: p.row.unit_cost for p in await self._analytics.positions()}
         return s.LogisticsSummary(
             active=len(active),
             delayed=len(delayed),
-            on_time_rate=round(on_time or 0.927, 3),
+            on_time_rate=round(on_time, 3),
             avg_delay_days=round(sum(x.delay_days for x in delayed) / len(delayed), 1) if delayed else 0.0,
             in_transit_value=round(sum(x.units * unit_cost.get(x.sku, 0) for x in active)),
             delivery_forecast=forecast,

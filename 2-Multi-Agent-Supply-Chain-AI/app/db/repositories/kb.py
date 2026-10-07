@@ -6,7 +6,7 @@ from dataclasses import dataclass, field
 from datetime import date
 from typing import Any
 
-from sqlalchemy import ColumnElement, and_, delete, func, literal_column, or_, select, text, update
+from sqlalchemy import ColumnElement, Text, and_, cast, delete, func, or_, select, text, update
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -139,7 +139,7 @@ class KbRepository:
             return []
         query = func.to_tsquery("simple", " | ".join(_quote(lx) for lx in lexemes))
         stmt = (
-            select(KbChunk, KbSource.name, func.cast(KbChunk.tsv, literal_column("text")))
+            select(KbChunk, KbSource.name, cast(KbChunk.tsv, Text).label("tsv_text"))
             .join(KbSource, KbSource.id == KbChunk.source_id)
             .where(and_(*_conditions(f)), KbChunk.tsv.op("@@")(query))
             .limit(limit)

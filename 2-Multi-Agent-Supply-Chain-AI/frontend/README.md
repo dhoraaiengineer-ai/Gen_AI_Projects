@@ -16,8 +16,6 @@ npm run dev            # http://localhost:3000
 - `lib/api.ts` defines the `SupplyApi` interface with an HTTP implementation (SSE streaming for the Copilot) and a mock implementation in `lib/mock/`.
 - `app/api/[...path]/route.ts` proxies `/api/*` to the backend without buffering, so LangGraph token streams reach the browser in real time.
 
-Quality checks:
-
 ```bash
 npx tsc --noEmit && npx eslint .
 npx playwright test    # smoke + responsive tests against a running app (uses local Chrome)

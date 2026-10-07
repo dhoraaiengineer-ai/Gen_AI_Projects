@@ -71,7 +71,9 @@ def _md_table(rows: list[list[str]]) -> str:
 
 def _ocr(engine: OcrEngine | None, image: bytes, location: str) -> Section:
     if engine is None:
-        raise UnsupportedDocument("This file is a scanned image and OCR is disabled. Set OCR_ENGINE=tesseract or vision_llm.")
+        raise UnsupportedDocument(
+            "This file is a scanned image and OCR is unavailable on this server (install Tesseract or set OCR_ENGINE=vision_llm)."
+        )
     result = engine.image_to_text(image)
     return Section(normalise(result.text), location, ocr=True, confidence=result.confidence)
 
