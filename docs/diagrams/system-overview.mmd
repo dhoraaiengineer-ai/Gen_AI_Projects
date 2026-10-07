@@ -1,0 +1,18 @@
+flowchart TB
+    user(["User · browser"]) --> ui["Chat UI"]
+    ui --> api["API<br/>auth · rate limits · audit log"]
+    api --> gin["Input guardrails<br/>injection · jailbreak · PII · secrets"]
+    gin --> svc["RAG service"]
+    svc <--> mem[("Memory<br/>Redis + Postgres")]
+    svc <--> cache[("Answer cache<br/>Redis")]
+    svc --> rag["Quick answer<br/>LangGraph RAG graph"]
+    svc --> agent["Research<br/>LangGraph agent"]
+    rag --> ret["Hybrid retrieval<br/>vector + keyword · RRF · filters"]
+    agent --> ret
+    agent --> web["Tavily<br/>web search"]
+    ret --> db[("Supabase Postgres<br/>pgvector")]
+    ret --> rr["LLM re-ranker"]
+    rr --> llm["LLM fallback chain<br/>EURI → Gemini → Groq<br/>circuit breakers"]
+    agent --> llm
+    llm --> out["Hallucination guard<br/>+ output guardrails"]
+    out --> answer(["Cited answer"])

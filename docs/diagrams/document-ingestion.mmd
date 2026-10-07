@@ -1,0 +1,9 @@
+flowchart LR
+    up(["Upload<br/>PDF · Office · CSV · images"]) --> load["Loaders<br/>+ OCR for scans"]
+    load --> gd["Document guardrails<br/>injection · secrets"]
+    gd --> reg{"Changed since<br/>last upload?"}
+    reg -- no --> skip(["Skipped"])
+    reg -- yes --> chunk["Chunking<br/>recursive · semantic<br/>parent-child · table"]
+    chunk --> emb["Embeddings<br/>new chunks only"]
+    emb --> db[("pgvector<br/>+ metadata")]
+    chunk --> golden["Golden Q&A<br/>for evaluation"]

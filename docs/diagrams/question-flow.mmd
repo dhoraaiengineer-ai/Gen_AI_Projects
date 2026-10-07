@@ -1,0 +1,34 @@
+sequenceDiagram
+    autonumber
+    actor U as User
+    participant API as API (auth + rate limit)
+    participant M as Memory (Redis → Postgres)
+    participant C as Answer cache
+    participant R as Hybrid retriever
+    participant RR as LLM re-ranker
+    participant L as LLM (fallback chain)
+    participant G as Hallucination guard
+
+    U->>API: question + session_id + filters
+    API->>API: input guardrails (block injection / jailbreak / secrets, redact PII)
+    API->>M: recent turns
+    alt follow-up question
+        API->>L: rewrite into a standalone question
+    end
+    API->>C: lookup (question, KB version)
+    alt cache hit
+        C-->>U: cached answer
+    else cache miss
+        API->>R: standalone + original wording (within the metadata filter)
+        R->>R: vector (cosine) + keyword (BM25-style) → reciprocal rank fusion
+        R->>RR: ~12 candidates
+        RR-->>API: best top_k passages
+        API->>L: grounded prompt (temperature 0.2)
+        L-->>API: answer with [n] citations
+        API->>G: citations valid? numbers present in passages?
+        G-->>API: grounded / issues
+        API->>API: output guardrails (redact PII / secrets, block prompt leaks)
+        API->>C: store (only if grounded)
+        API->>M: save turn
+        API-->>U: answer · sources (page / sheet / slide) · ⚠ if ungrounded
+    end

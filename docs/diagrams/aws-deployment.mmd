@@ -1,0 +1,23 @@
+flowchart LR
+    dev([Developer]) -->|git push| gh["GitHub"]
+    gh --> ci["GitHub Actions CI<br/>lint · 243 tests · image build<br/>smoke test · Trivy scan"]
+    ci --> cd["GitHub Actions CD<br/>OIDC → AWS"]
+    cd -->|push image| ecr[("Amazon ECR")]
+    cd -->|kubectl apply| eks
+
+    subgraph aws["AWS ap-northeast-1 (Tokyo)"]
+        alb["Application Load Balancer"]
+        subgraph eks["Amazon EKS · namespace rag"]
+            pods["rag-api pods<br/>HPA · PDB · NetworkPolicy"]
+            redisk[("Redis")]
+            prom["kube-prometheus-stack<br/>Prometheus · Grafana · alerts"]
+        end
+        ecr
+    end
+
+    users([Users]) --> alb --> pods
+    pods --> redisk
+    pods --> supabase[("Supabase Postgres + pgvector<br/>ap-northeast-1")]
+    pods --> providers["EURI · Gemini · Groq · Tavily"]
+    prom -. scrapes .-> pods
+    tf["Terraform"] -. provisions .-> aws

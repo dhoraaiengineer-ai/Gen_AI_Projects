@@ -87,111 +87,25 @@ Content-Security-Policy:
 
 ## Architecture
 
+Diagram sources (Mermaid) are in [docs/diagrams/](docs/diagrams/); the PNGs are rendered from them.
+
 ### System overview
 
-```mermaid
-flowchart TB
-    user(["User · browser"]) --> ui["Chat UI"]
-    ui --> api["API<br/>auth · rate limits · audit log"]
-    api --> gin["Input guardrails<br/>injection · jailbreak · PII · secrets"]
-    gin --> svc["RAG service"]
-    svc <--> mem[("Memory<br/>Redis + Postgres")]
-    svc <--> cache[("Answer cache<br/>Redis")]
-    svc --> rag["Quick answer<br/>LangGraph RAG graph"]
-    svc --> agent["Research<br/>LangGraph agent"]
-    rag --> ret["Hybrid retrieval<br/>vector + keyword · RRF · filters"]
-    agent --> ret
-    agent --> web["Tavily<br/>web search"]
-    ret --> db[("Supabase Postgres<br/>pgvector")]
-    ret --> rr["LLM re-ranker"]
-    rr --> llm["LLM fallback chain<br/>EURI → Gemini → Groq<br/>circuit breakers"]
-    agent --> llm
-    llm --> out["Hallucination guard<br/>+ output guardrails"]
-    out --> answer(["Cited answer"])
-```
+![System overview: a question flows through guardrails, retrieval, the LLM chain and checks](docs/diagrams/system-overview.png)
 
 Around this core: Supabase Auth (JWT sign-in), Prometheus + Grafana (metrics, alerts) and MLflow (evaluation runs). Every LLM call goes through the same fallback chain, circuit breakers and prompt cache.
 
 ### How documents are ingested
 
-```mermaid
-flowchart LR
-    up(["Upload<br/>PDF · Office · CSV · images"]) --> load["Loaders<br/>+ OCR for scans"]
-    load --> gd["Document guardrails<br/>injection · secrets"]
-    gd --> reg{"Changed since<br/>last upload?"}
-    reg -- no --> skip(["Skipped"])
-    reg -- yes --> chunk["Chunking<br/>recursive · semantic<br/>parent-child · table"]
-    chunk --> emb["Embeddings<br/>new chunks only"]
-    emb --> db[("pgvector<br/>+ metadata")]
-    chunk --> golden["Golden Q&A<br/>for evaluation"]
-```
+![Document ingestion: loaders, OCR, guardrails, incremental chunking and embedding](docs/diagrams/document-ingestion.png)
 
 ### How a question flows through the system
 
-```mermaid
-sequenceDiagram
-    autonumber
-    actor U as User
-    participant API as API (auth + rate limit)
-    participant M as Memory (Redis → Postgres)
-    participant C as Answer cache
-    participant R as Hybrid retriever
-    participant RR as LLM re-ranker
-    participant L as LLM (fallback chain)
-    participant G as Hallucination guard
-
-    U->>API: question + session_id + filters
-    API->>API: input guardrails (block injection / jailbreak / secrets, redact PII)
-    API->>M: recent turns
-    alt follow-up question
-        API->>L: rewrite into a standalone question
-    end
-    API->>C: lookup (question, KB version)
-    alt cache hit
-        C-->>U: cached answer
-    else cache miss
-        API->>R: standalone + original wording (within the metadata filter)
-        R->>R: vector (cosine) + keyword (BM25-style) → reciprocal rank fusion
-        R->>RR: ~12 candidates
-        RR-->>API: best top_k passages
-        API->>L: grounded prompt (temperature 0.2)
-        L-->>API: answer with [n] citations
-        API->>G: citations valid? numbers present in passages?
-        G-->>API: grounded / issues
-        API->>API: output guardrails (redact PII / secrets, block prompt leaks)
-        API->>C: store (only if grounded)
-        API->>M: save turn
-        API-->>U: answer · sources (page / sheet / slide) · ⚠ if ungrounded
-    end
-```
+![Sequence of one question: memory, cache, hybrid retrieval, re-ranking, answer, guardrails](docs/diagrams/question-flow.png)
 
 ### Deployment on AWS
 
-```mermaid
-flowchart LR
-    dev([Developer]) -->|git push| gh["GitHub"]
-    gh --> ci["GitHub Actions CI<br/>lint · 206 tests · image build<br/>smoke test · Trivy scan"]
-    ci --> cd["GitHub Actions CD<br/>OIDC → AWS"]
-    cd -->|push image| ecr[("Amazon ECR")]
-    cd -->|kubectl apply| eks
-
-    subgraph aws["AWS ap-northeast-1 (Tokyo)"]
-        alb["Application Load Balancer"]
-        subgraph eks["Amazon EKS · namespace rag"]
-            pods["rag-api pods<br/>HPA · PDB · NetworkPolicy"]
-            redisk[("Redis")]
-            prom["kube-prometheus-stack<br/>Prometheus · Grafana · alerts"]
-        end
-        ecr
-    end
-
-    users([Users]) --> alb --> pods
-    pods --> redisk
-    pods --> supabase[("Supabase Postgres + pgvector<br/>ap-northeast-1")]
-    pods --> providers["EURI · Gemini · Groq · Tavily"]
-    prom -. scrapes .-> pods
-    tf["Terraform"] -. provisions .-> aws
-```
+![Deployment: GitHub Actions to ECR and EKS in ap-northeast-1](docs/diagrams/aws-deployment.png)
 
 ### Code layout
 
