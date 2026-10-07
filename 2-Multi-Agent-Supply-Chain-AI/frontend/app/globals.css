@@ -1,0 +1,218 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+/*
+ * SupplyAI design tokens.
+ * Navy is the brand; slate/cool gray carry structure. Semantic colours always mean something:
+ *   success = healthy · warning = needs attention · critical = act now · info/ai = information and AI output.
+ */
+:root {
+  --radius: 0.5rem;
+
+  --background: #f5f7fa;
+  --foreground: #0b1526;
+  --card: #ffffff;
+  --card-foreground: #0b1526;
+  --popover: #ffffff;
+  --popover-foreground: #0b1526;
+
+  --primary: #0f2a4d;
+  --primary-foreground: #ffffff;
+  --secondary: #eef2f7;
+  --secondary-foreground: #0f2a4d;
+  --muted: #f1f4f8;
+  --muted-foreground: #5b6b82;
+  --accent: #edf2fa;
+  --accent-foreground: #0f2a4d;
+
+  --border: #e2e8f0;
+  --input: #d9e1eb;
+  --ring: #2f62d6;
+
+  --success: #11845b;
+  --success-foreground: #ffffff;
+  --warning: #e08a0b;
+  --warning-foreground: #a85c05;
+  --critical: #d4351c;
+  --critical-foreground: #ffffff;
+  --info: #2f62d6;
+  --ai: #2f62d6;
+  --ai-soft: #eaf0fd;
+  --destructive: #d4351c;
+
+  --chart-1: #1f4fa3;
+  --chart-2: #5f86c8;
+  --chart-3: #a8bde0;
+  --chart-4: #11845b;
+  --chart-5: #e08a0b;
+  --chart-grid: #e8edf3;
+
+  --sidebar: #0a1930;
+  --sidebar-foreground: #c4cfe0;
+  --sidebar-muted: #7d8ea8;
+  --sidebar-accent: #13294a;
+  --sidebar-accent-foreground: #ffffff;
+  --sidebar-border: #182c4a;
+  --sidebar-ring: #4b7be5;
+
+  --shadow-card: 0 1px 2px rgb(15 42 77 / 0.04), 0 1px 3px rgb(15 42 77 / 0.06);
+  --shadow-raised: 0 4px 16px -4px rgb(15 42 77 / 0.12), 0 2px 4px -2px rgb(15 42 77 / 0.06);
+}
+
+.dark {
+  --background: #070e1a;
+  --foreground: #e6ecf5;
+  --card: #0c1626;
+  --card-foreground: #e6ecf5;
+  --popover: #0e1a2d;
+  --popover-foreground: #e6ecf5;
+
+  --primary: #dbe6f7;
+  --primary-foreground: #0a1930;
+  --secondary: #13213a;
+  --secondary-foreground: #e6ecf5;
+  --muted: #111d31;
+  --muted-foreground: #8a9bb5;
+  --accent: #14233d;
+  --accent-foreground: #e6ecf5;
+
+  --border: #1b2a42;
+  --input: #22334f;
+  --ring: #5b8cf0;
+
+  --success: #2fb67f;
+  --warning: #f2a33a;
+  --warning-foreground: #f2a33a;
+  --critical: #f2644d;
+  --info: #6f9cf5;
+  --ai: #6f9cf5;
+  --ai-soft: #13254a;
+  --destructive: #f2644d;
+
+  --chart-1: #6f9cf5;
+  --chart-2: #3f6dc4;
+  --chart-3: #2a4a82;
+  --chart-4: #2fb67f;
+  --chart-5: #f2a33a;
+  --chart-grid: #17253b;
+
+  --sidebar: #060d18;
+  --sidebar-foreground: #b8c5d9;
+  --sidebar-muted: #6e7f99;
+  --sidebar-accent: #0f1f38;
+  --sidebar-border: #13223a;
+
+  --shadow-card: 0 1px 2px rgb(0 0 0 / 0.3);
+  --shadow-raised: 0 8px 24px -8px rgb(0 0 0 / 0.5);
+}
+
+@theme inline {
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-destructive: var(--destructive);
+
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-critical: var(--critical);
+  --color-critical-foreground: var(--critical-foreground);
+  --color-info: var(--info);
+  --color-ai: var(--ai);
+  --color-ai-soft: var(--ai-soft);
+
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-muted: var(--sidebar-muted);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+
+  --radius-sm: calc(var(--radius) - 2px);
+  --radius-md: var(--radius);
+  --radius-lg: calc(var(--radius) + 2px);
+  --radius-xl: calc(var(--radius) + 4px);
+
+  --shadow-card: var(--shadow-card);
+  --shadow-raised: var(--shadow-raised);
+
+  --animate-pulse-soft: pulse-soft 1.8s ease-in-out infinite;
+  @keyframes pulse-soft {
+    0%,
+    100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.45;
+    }
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  body {
+    @apply bg-background text-foreground font-sans;
+    font-feature-settings: "cv11", "ss01";
+  }
+  /* Metrics read better with tabular figures. */
+  .tabular {
+    font-variant-numeric: tabular-nums;
+  }
+  :focus-visible {
+    @apply outline-2 outline-offset-2 outline-ring;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}
+
+/* Recharts: inherit theme colours for axes and tooltips. */
+.recharts-cartesian-axis-tick-value {
+  fill: var(--muted-foreground);
+  font-size: 11px;
+}
+.recharts-cartesian-grid line {
+  stroke: var(--chart-grid);
+}
+.recharts-default-tooltip {
+  border-radius: var(--radius) !important;
+}

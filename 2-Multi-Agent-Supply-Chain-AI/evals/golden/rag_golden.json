@@ -1,0 +1,106 @@
+[
+  {
+    "question": "What approval is needed for a purchase order above USD 50,000?",
+    "answer_contains": [
+      "Procurement Manager"
+    ],
+    "evidence": "Purchase orders above USD 50,000 require approval from a Procurement Manager or above before release to the supplier.",
+    "source": "Global Procurement Policy v4.2.pdf"
+  },
+  {
+    "question": "When are expedited orders permitted?",
+    "answer_contains": [
+      "lead time"
+    ],
+    "evidence": "Expedited orders are permitted when projected days of cover fall below the supplier lead time.",
+    "source": "Global Procurement Policy v4.2.pdf"
+  },
+  {
+    "question": "What is the maximum expedite premium?",
+    "answer_contains": [
+      "12%"
+    ],
+    "evidence": "The expedite premium must not exceed 12% of the standard unit price.",
+    "source": "Global Procurement Policy v4.2.pdf"
+  },
+  {
+    "question": "What share of annual volume may a single supplier have for a critical SKU?",
+    "answer_contains": [
+      "70%"
+    ],
+    "evidence": "No critical SKU may rely on a single supplier for more than 70% of annual volume.",
+    "source": "Global Procurement Policy v4.2.pdf"
+  },
+  {
+    "question": "What lead time does Nordvolt guarantee for battery packs?",
+    "answer_contains": [
+      "three",
+      "3"
+    ],
+    "evidence": "Supplier guarantees a maximum lead time of three (3) business days for standard battery pack SKUs.",
+    "source": "Nordvolt Energy - Master Supply Agreement.docx"
+  },
+  {
+    "question": "What late-delivery credit does Nordvolt give?",
+    "answer_contains": [
+      "2%"
+    ],
+    "evidence": "Supplier grants a late-delivery credit of 2% of order value per day of delay, capped at 10%.",
+    "source": "Nordvolt Energy - Master Supply Agreement.docx"
+  },
+  {
+    "question": "What are Kaito's payment terms?",
+    "answer_contains": [
+      "45"
+    ],
+    "evidence": "Net 45 days from invoice date.",
+    "source": "Kaito Precision - Supply Agreement 2025.docx"
+  },
+  {
+    "question": "What service level do A-class items target?",
+    "answer_contains": [
+      "95%"
+    ],
+    "evidence": "A-class items target a 95% cycle service level.",
+    "source": "Safety Stock and Service Level Standard.md"
+  },
+  {
+    "question": "How must lithium batteries be declared when shipped by air?",
+    "answer_contains": [
+      "UN3480"
+    ],
+    "evidence": "Lithium battery shipments by air must be declared as UN3480 dangerous goods.",
+    "source": "International Shipping Policy.pptx"
+  },
+  {
+    "question": "When must a delayed shipment be escalated?",
+    "answer_contains": [
+      "3 days"
+    ],
+    "evidence": "Shipments delayed more than 3 days must be escalated to the Logistics Manager.",
+    "source": "International Shipping Policy.pptx"
+  },
+  {
+    "question": "What is the air freight rate from Shenzhen to Tokyo?",
+    "answer_contains": [
+      "4.6"
+    ],
+    "evidence": "| Shenzhen to Tokyo | Air | 4.6 |",
+    "source": "Carrier Rate Card Q4.xlsx"
+  },
+  {
+    "question": "What is Nordvolt's on-time rate in the supplier scorecard?",
+    "answer_contains": [
+      "98%"
+    ],
+    "evidence": "| SUP-003 | Nordvolt Energy | 98% |",
+    "source": "Supplier Scorecard.csv"
+  },
+  {
+    "question": "What does our policy say about the CEO's favourite colour?",
+    "answer_contains": [],
+    "evidence": null,
+    "source": null,
+    "expect_refusal": true
+  }
+]

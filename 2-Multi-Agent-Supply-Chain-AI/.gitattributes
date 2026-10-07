@@ -1,0 +1,15 @@
+# Normalise text to LF in the repo (Windows CRLF would change content hashes)
+* text=auto eol=lf
+
+# Windows-only scripts keep CRLF
+*.ps1 text eol=crlf
+*.bat text eol=crlf
+
+# Binary document and image formats — never diff or convert
+*.pdf  binary
+*.xlsx binary
+*.docx binary
+*.pptx binary
+*.png  binary
+*.jpg  binary
+*.ico  binary

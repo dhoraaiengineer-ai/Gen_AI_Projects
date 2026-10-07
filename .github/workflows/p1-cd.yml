@@ -1,4 +1,4 @@
-name: CD
+name: "Project 1 · CD"
 
 # Runs after CI succeeds on main (or manually). Builds the image, pushes it to ECR,
 # and rolls it out to EKS. AWS access uses GitHub OIDC: no long-lived AWS keys are stored.
@@ -14,7 +14,7 @@ name: CD
 
 on:
   workflow_run:
-    workflows: [CI]
+    workflows: ["Project 1 · CI"]
     types: [completed]
     branches: [main]
   workflow_dispatch:
@@ -26,6 +26,10 @@ permissions:
 concurrency:
   group: cd-production
   cancel-in-progress: false # never interrupt a rollout halfway
+
+defaults:
+  run:
+    working-directory: 1-GenAI-RAG-Platform
 
 jobs:
   deploy:
@@ -56,7 +60,7 @@ jobs:
       - name: Build and push image
         uses: docker/build-push-action@v6
         with:
-          context: .
+          context: 1-GenAI-RAG-Platform
           push: true
           tags: ${{ steps.ecr.outputs.registry }}/${{ vars.ECR_REPOSITORY }}:${{ env.IMAGE_TAG }}
           cache-from: type=gha

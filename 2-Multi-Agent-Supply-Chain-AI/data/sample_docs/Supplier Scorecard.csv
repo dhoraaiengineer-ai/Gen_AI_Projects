@@ -1,0 +1,6 @@
+supplier_id,supplier,on_time_rate,defect_rate,fill_rate,risk
+SUP-001,Kaito Precision Industries,94%,0.6%,97%,low
+SUP-002,Meridian Power Systems,91%,1.1%,95%,low
+SUP-003,Nordvolt Energy,98%,0.3%,99%,low
+SUP-004,Pacific Rim Components,86%,1.9%,90%,high
+SUP-005,Atlas Industrial Supply,95%,0.5%,96%,low

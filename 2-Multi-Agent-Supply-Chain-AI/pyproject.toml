@@ -1,0 +1,121 @@
+[project]
+name = "supply-chain-ai"
+version = "0.1.0"
+description = "Production-style multi-agent supply chain AI system (LangGraph + RAG knowledge base)."
+readme = "README.md"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    # API
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.32",
+    "sse-starlette>=2.1",
+    "python-multipart>=0.0.12",
+    # Config / schemas
+    "pydantic>=2.9",
+    "pydantic-settings>=2.6",
+    # Database
+    "sqlalchemy[asyncio]>=2.0.36",
+    "psycopg[binary,pool]>=3.2",
+    "alembic>=1.14",
+    "pgvector>=0.3.6",
+    # LLM / agents / RAG
+    "langchain-core>=0.3.30",
+    "langchain-openai>=0.3",
+    "langchain-text-splitters>=0.3",
+    "langchain-postgres>=0.0.13",
+    "langgraph>=0.3",
+    "langgraph-checkpoint-postgres>=2.0",
+    # Infra clients
+    "redis>=5.2",
+    "httpx>=0.28",
+    "tenacity>=9.0",
+    # Security
+    "pyjwt[crypto]>=2.10",
+    # Observability
+    "prometheus-client>=0.21",
+    # Document loaders
+    "pypdf>=5.1",
+    "openpyxl>=3.1.5",
+    "python-docx>=1.1.2",
+    "python-pptx>=1.0.2",
+    # OCR (scanned PDFs / images); needs the tesseract-ocr system binary at runtime
+    "pypdfium2>=4.30",
+    "pytesseract>=0.3.13",
+    "pillow>=11.0",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.3",
+    "pytest-asyncio>=0.24",
+    "pytest-cov>=6.0",
+    "ruff>=0.8",
+    "mypy>=1.13",
+    "fakeredis>=2.26",
+    "respx>=0.22",
+    "fpdf2>=2.8.9",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["app"]
+
+# ---------------------------------------------------------------- ruff
+[tool.ruff]
+line-length = 140
+target-version = "py312"
+extend-exclude = ["migrations/versions"]
+
+[tool.ruff.lint]
+select = [
+    "E", "W", "F", "I", "B", "UP", "N", "S", "SIM", "RUF", "ASYNC", "PT", "C4", "PL", "TRY", "LOG", "G",
+]
+ignore = [
+    "PLR0913",  # too many arguments: DI constructors legitimately take many deps
+    "PLR0917",  # keyword-heavy factories
+    "PLR0911",  # early-return style in report/route mapping
+    "PLR2004",  # domain constants (thresholds) are named where they matter
+    "TRY003",   # long messages in exceptions are fine
+    "TRY300", "TRY301",  # explicit try/return flow is clearer in handlers
+    "N818",     # domain error names (NotFound, Forbidden) read better without an Error suffix
+    "RUF001", "RUF002", "RUF003",  # intentional typographic characters (→, –, ×) in user-facing text
+    "PLC0415",  # deliberate lazy imports for optional/heavy dependencies
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S101", "S105", "S106", "PLR2004", "PLR0913", "PT018"]
+"app/api/**" = ["B008"]
+# Prompt text, SQL and seed data rows are long string literals.
+"app/agents/prompts.py" = ["E501"]
+"app/rag/knowledge.py" = ["E501"]
+"scripts/**" = ["S311", "PLR2004", "E501"]  # FastAPI dependency injection uses Depends()/Query() defaults by design
+"evals/**" = ["S101", "PLR2004"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["app"]
+
+# ---------------------------------------------------------------- pytest
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+addopts = "-ra --strict-markers"
+markers = [
+    "integration: needs real services (Postgres/Redis); skipped unless RUN_INTEGRATION=1",
+    "live: makes real paid LLM/API calls; skipped unless RUN_LIVE=1",
+]
+filterwarnings = ["error::DeprecationWarning:app.*"]
+
+# ---------------------------------------------------------------- mypy
+[tool.mypy]
+python_version = "3.12"
+strict = true
+plugins = ["pydantic.mypy"]
+ignore_missing_imports = true
+
+[tool.coverage.run]
+source = ["app"]
+branch = true

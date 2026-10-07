@@ -1,0 +1,13 @@
+# Allow-list style: ignore everything, then include only what the build needs.
+*
+!app/
+!components/
+!hooks/
+!lib/
+!types/
+!public/
+!package.json
+!package-lock.json
+!next.config.ts
+!tsconfig.json
+!next-env.d.ts

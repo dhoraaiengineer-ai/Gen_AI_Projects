@@ -1,0 +1,46 @@
+# Secrets — never commit
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+secrets/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+build/
+dist/
+
+# Tooling caches
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+coverage.xml
+htmlcov/
+
+# Evaluation / MLflow (runs outside the container)
+mlruns/
+mlflow.db
+evals/results/
+
+# Terraform
+infra/terraform/**/.terraform/
+*.tfstate
+*.tfstate.*
+*.tfplan
+crash.log
+.terraform.lock.hcl.bak
+
+# Local data
+data/uploads/
+*.log
+
+# Editors / OS
+.idea/
+.DS_Store
+Thumbs.db

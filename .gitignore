@@ -1,46 +1,14 @@
-# Python
-__pycache__/
-*.py[cod]
+# Repository-wide safety net. Each project also has its own .gitignore.
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+node_modules/
 .venv/
 venv/
-.pytest_cache/
-.ruff_cache/
-.coverage
-htmlcov/
-*.egg-info/
-
-# Env / secrets
-.env
-*.pem
-
-# Data
-data/*
-!data/.gitkeep
-!data/sample/
-!data/golden/
-
-# Terraform
-terraform/.terraform/
+__pycache__/
+.next/
 *.tfstate
 *.tfstate.*
-*.tfvars
-!*.tfvars.example
-tf.plan
-
-# Editors / OS
-.vscode/
-.idea/
-.DS_Store
-Thumbs.db
-
-# Claude Code local settings
-.claude/settings.local.json
-
-# MLflow (local tracking store and artifacts)
-mlflow.db
-mlruns/
-mlartifacts/
-.venv-eval/
-
-# Local scratch files
-.tmp/
+.terraform/
