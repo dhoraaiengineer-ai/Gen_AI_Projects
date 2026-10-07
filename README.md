@@ -90,63 +90,40 @@ Content-Security-Policy:
 ### System overview
 
 ```mermaid
-flowchart LR
-    user([User / browser])
-
-    subgraph app["FastAPI app (one uvicorn worker per pod)"]
-        ui["Chat UI<br/>static HTML/JS"]
-        api["API routes<br/>auth · rate limits · audit log"]
-        gr["Guardrails<br/>policy.yaml · input / docs / output"]
-        svc["RAGService"]
-        subgraph graphs["LangGraph"]
-            rag["RAG graph<br/>retrieve → generate"]
-            agent["Research agent<br/>tool loop"]
-        end
-        subgraph rag_core["Retrieval & quality"]
-            ret["Hybrid retriever<br/>vector + keyword · RRF"]
-            rr["LLM re-ranker"]
-            guard["Hallucination guard"]
-        end
-        mem["Memory<br/>short + long term"]
-        cache["Answer + prompt cache"]
-        ev["Evaluator<br/>LLM judge · RAGAS"]
-        ocr["Loaders + OCR<br/>PDF · Office · images"]
-        breaker["Fallback chain<br/>+ circuit breakers"]
-    end
-
-    subgraph data["Data"]
-        pg[("Supabase Postgres<br/>pgvector chunks · registry<br/>golden set · conversations")]
-        redis[("Redis<br/>cache · short-term memory")]
-    end
-
-    subgraph llm["Model providers (OpenAI-compatible)"]
-        euri["EURI<br/>gpt-4.1-nano · gpt-4o-mini"]
-        gemini["Google Gemini<br/>embeddings · fallback"]
-        groq["Groq<br/>gpt-oss · Qwen fallback"]
-    end
-
-    tavily["Tavily<br/>web search"]
-    supa["Supabase Auth<br/>JWKS"]
-    obs["Prometheus + Grafana"]
-    mlflow["MLflow<br/>evaluation runs"]
-
-    user --> ui --> api
-    user -. sign in .-> supa
-    api -. verify JWT .-> supa
-    api --> gr --> svc
-    svc --> rag & agent & ev & mem & cache & ocr
-    rag --> ret --> rr
-    rag --> guard
+flowchart TB
+    user(["User · browser"]) --> ui["Chat UI"]
+    ui --> api["API<br/>auth · rate limits · audit log"]
+    api --> gin["Input guardrails<br/>injection · jailbreak · PII · secrets"]
+    gin --> svc["RAG service"]
+    svc <--> mem[("Memory<br/>Redis + Postgres")]
+    svc <--> cache[("Answer cache<br/>Redis")]
+    svc --> rag["Quick answer<br/>LangGraph RAG graph"]
+    svc --> agent["Research<br/>LangGraph agent"]
+    rag --> ret["Hybrid retrieval<br/>vector + keyword · RRF · filters"]
     agent --> ret
-    agent --> tavily
-    ret --> pg
-    mem --> redis & pg
-    cache --> redis
-    rag & agent & rr & ev --> breaker
-    breaker --> euri & gemini & groq
-    ret -. embeddings .-> gemini
-    app -. metrics .-> obs
-    ev -. run_eval job .-> mlflow
+    agent --> web["Tavily<br/>web search"]
+    ret --> db[("Supabase Postgres<br/>pgvector")]
+    ret --> rr["LLM re-ranker"]
+    rr --> llm["LLM fallback chain<br/>EURI → Gemini → Groq<br/>circuit breakers"]
+    agent --> llm
+    llm --> out["Hallucination guard<br/>+ output guardrails"]
+    out --> answer(["Cited answer"])
+```
+
+Around this core: Supabase Auth (JWT sign-in), Prometheus + Grafana (metrics, alerts) and MLflow (evaluation runs). Every LLM call goes through the same fallback chain, circuit breakers and prompt cache.
+
+### How documents are ingested
+
+```mermaid
+flowchart LR
+    up(["Upload<br/>PDF · Office · CSV · images"]) --> load["Loaders<br/>+ OCR for scans"]
+    load --> gd["Document guardrails<br/>injection · secrets"]
+    gd --> reg{"Changed since<br/>last upload?"}
+    reg -- no --> skip(["Skipped"])
+    reg -- yes --> chunk["Chunking<br/>recursive · semantic<br/>parent-child · table"]
+    chunk --> emb["Embeddings<br/>new chunks only"]
+    emb --> db[("pgvector<br/>+ metadata")]
+    chunk --> golden["Golden Q&A<br/>for evaluation"]
 ```
 
 ### How a question flows through the system
