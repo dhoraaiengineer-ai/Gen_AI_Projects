@@ -15,8 +15,35 @@ It goes beyond a basic RAG demo:
 - resilience: fallback chains, circuit breakers and rate limits
 - full observability, and a containerised path to AWS EKS
 
+## User interface
+
+![Cited answer with source cards](docs/screenshots/cited-answer.png)
+
+| Sign in | Knowledge base |
+|---|---|
+| ![Sign in](docs/screenshots/sign-in.png) | ![Knowledge base](docs/screenshots/knowledge-base.png) |
+| **Evaluation** | **Dark mode** |
+| ![Evaluation dashboard](docs/screenshots/evaluation.png) | ![Dark mode](docs/screenshots/dark-mode.png) |
+
+The chat UI is plain HTML/CSS/JS served by FastAPI (no build step, no external fonts or CDNs), under a strict
+Content-Security-Policy:
+- **Chat:** answers rendered as formatted text, with clickable citation chips; **source cards** with
+  file-type badges, page, sheet or slide locations and relevance bars; badges for model, cached, grounded
+  and response time; a copy button; and progress phases while it works ("Searching your documents" →
+  "Ranking the best passages" → "Writing a cited answer").
+- **Sidebar:** **conversation history** from long-term memory (click to continue a conversation), *New chat*,
+  and navigation.
+- **Search in:** a filter popover for documents, file types and tags, shown as removable chips.
+- **Knowledge base** (admin): statistics, drag-and-drop upload with per-file status, and a documents table
+  with delete.
+- **Evaluation** (admin): score rings for retrieval, the LLM judge and RAGAS, plus the questions that need attention.
+- **Guardrail and grounding notices**, light and dark themes, a mobile layout, keyboard and screen-reader
+  support, and reduced motion.
+- **Safe rendering:** model output is only ever inserted as text nodes, never as HTML.
+
 ## Contents
 
+- [User interface](#user-interface)
 - [Features](#features)
 - [Architecture](#architecture)
 - [How a question is answered](#how-a-question-is-answered)
@@ -217,7 +244,7 @@ app/
 │   └── websearch.py     Web search interface for the agent
 ├── core/                Logging (text/JSON + audit), Prometheus metrics, rate limiter, circuit breaker, auth
 ├── models/              Pydantic request/response schemas
-└── static/              Chat UI (plain HTML/CSS/JS, no build step)
+└── static/              Chat UI: index.html, app.js, styles.css (no build step, strict CSP)
 evals/run_eval.py        Evaluation job that logs to MLflow
 scripts/make_sample_data.py  Generates the synthetic sample dataset
 k8s/  terraform/  monitoring/  .github/workflows/   Deployment, infrastructure, dashboards, CI/CD

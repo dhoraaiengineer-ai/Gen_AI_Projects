@@ -3,115 +3,304 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>RAG Assistant</title>
+  <meta name="description" content="Ask questions about your documents and get cited, grounded answers.">
+  <title>RAG Assistant · Knowledge Copilot</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Cdefs%3E%3ClinearGradient id=%27g%27 x1=%270%27 y1=%270%27 x2=%271%27 y2=%271%27%3E%3Cstop offset=%270%27 stop-color=%27%235b4cf0%27/%3E%3Cstop offset=%271%27 stop-color=%27%230ea5e9%27/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width=%2732%27 height=%2732%27 rx=%278%27 fill=%27url(%23g)%27/%3E%3Cpath d=%27M16 7l2.9 6.1 6.6 1-4.8 4.6 1.1 6.6L16 22.2l-5.8 3.1 1.1-6.6-4.8-4.6 6.6-1z%27 fill=%27none%27 stroke=%27white%27 stroke-width=%272%27 stroke-linejoin=%27round%27/%3E%3C/svg%3E">
   <link rel="stylesheet" href="/static/styles.css">
   <script src="/static/app.js" defer></script>
 </head>
 <body>
-  <header class="topbar">
-    <h1>RAG Assistant</h1>
-    <div class="topbar-right">
-      <span id="status" class="status" data-state="checking" title="Backend status">Checking…</span>
-      <span id="user" class="user" hidden>
-        <span id="user-email"></span>
-        <span id="user-role" class="role"></span>
-        <button type="button" id="signout-btn" class="link">Sign out</button>
-      </span>
-    </div>
-  </header>
+  <!-- Icon set (inline so the strict CSP needs no external assets) -->
+  <svg xmlns="http://www.w3.org/2000/svg" hidden>
+    <symbol id="i-logo" viewBox="0 0 24 24"><path d="M12 3l2.4 5.1L20 9l-4 3.9.9 5.6L12 15.9 7.1 18.5 8 12.9 4 9l5.6-.9z"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+    <symbol id="i-chat" viewBox="0 0 24 24"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l.9-5.4A8 8 0 1 1 21 12z"/></symbol>
+    <symbol id="i-db" viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v6c0 1.7 3.6 3 8 3s8-1.3 8-3V5M4 11v6c0 1.7 3.6 3 8 3s8-1.3 8-3v-6"/></symbol>
+    <symbol id="i-chart" viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></symbol>
+    <symbol id="i-send" viewBox="0 0 24 24"><path d="M5 12h13M12 5l7 7-7 7"/></symbol>
+    <symbol id="i-filter" viewBox="0 0 24 24"><path d="M3 5h18l-7 8v6l-4-2v-4z"/></symbol>
+    <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></symbol>
+    <symbol id="i-moon" viewBox="0 0 24 24"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/></symbol>
+    <symbol id="i-logout" viewBox="0 0 24 24"><path d="M15 4h4v16h-4M10 8l-4 4 4 4M6 12h11"/></symbol>
+    <symbol id="i-upload" viewBox="0 0 24 24"><path d="M12 16V4M7 9l5-5 5 5M4 16v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3"/></symbol>
+    <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></symbol>
+    <symbol id="i-copy" viewBox="0 0 24 24"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a1 1 0 0 1 1-1h10"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></symbol>
+    <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
+    <symbol id="i-menu" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></symbol>
+    <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 3l8 3v6c0 4.5-3.4 8-8 9-4.6-1-8-4.5-8-9V6z"/><path d="M9 12l2 2 4-4"/></symbol>
+    <symbol id="i-alert" viewBox="0 0 24 24"><path d="M12 4l9 16H3z"/><path d="M12 10v4M12 17v.5"/></symbol>
+    <symbol id="i-globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3.5 3 14.5 0 18M12 3c-3 3.5-3 14.5 0 18"/></symbol>
+    <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></symbol>
+    <symbol id="i-bolt" viewBox="0 0 24 24"><path d="M13 3L5 14h6l-1 7 8-11h-6z"/></symbol>
+    <symbol id="i-doc" viewBox="0 0 24 24"><path d="M14 3H7a1 1 0 0 0-1 1v16a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1V7z"/><path d="M14 3v4h4M9 13h6M9 17h6"/></symbol>
+    <symbol id="i-scan" viewBox="0 0 24 24"><path d="M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3M7 12h10"/></symbol>
+    <symbol id="i-layers" viewBox="0 0 24 24"><path d="M12 3l9 5-9 5-9-5z"/><path d="M3 13l9 5 9-5"/></symbol>
+    <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M20 12a8 8 0 1 1-2.3-5.7M20 4v5h-5"/></symbol>
+    <symbol id="i-play" viewBox="0 0 24 24"><path d="M7 4l13 8-13 8z"/></symbol>
+    <symbol id="i-cite" viewBox="0 0 24 24"><path d="M7 7h4v4c0 3-1.5 5-4 6M14 7h4v4c0 3-1.5 5-4 6"/></symbol>
+    <symbol id="i-chevron" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></symbol>
+  </svg>
 
+  <!-- ===================== Sign in ===================== -->
   <section id="login" class="login" hidden aria-labelledby="login-title">
-    <form id="login-form" class="panel login-card">
-      <h2 id="login-title">Sign in</h2>
-      <p class="hint">Use the account your administrator created in Supabase.</p>
-      <label for="email">Email</label>
-      <input id="email" type="email" autocomplete="username" required>
-      <label for="password">Password</label>
-      <input id="password" type="password" autocomplete="current-password" required>
-      <button type="submit" id="login-btn">Sign in</button>
-      <p id="login-error" class="result err" role="alert"></p>
-    </form>
+    <div class="login-hero">
+      <div class="brand">
+        <span class="brand-mark"><svg class="icon"><use href="#i-logo"/></svg></span>
+        <span>Knowledge Copilot<small>Enterprise RAG assistant</small></span>
+      </div>
+      <div>
+        <h1>Answers from your documents, with the source on every line.</h1>
+        <p>Ask in plain language. Every answer is grounded in your files, cited to the page, sheet or slide, and checked before you see it.</p>
+        <ul class="feature-list">
+          <li><svg class="icon"><use href="#i-cite"/></svg><span><strong>Cited answers</strong>: click any citation to see the exact passage.</span></li>
+          <li><svg class="icon"><use href="#i-scan"/></svg><span><strong>Any format</strong>: PDF, Word, Excel, PowerPoint, CSV, and scans or images through OCR.</span></li>
+          <li><svg class="icon"><use href="#i-shield"/></svg><span><strong>Guardrails</strong>: personal data redacted, injection attempts blocked, every answer fact-checked.</span></li>
+          <li><svg class="icon"><use href="#i-chart"/></svg><span><strong>Measured quality</strong>: built-in evaluation with RAGAS and an LLM judge.</span></li>
+        </ul>
+      </div>
+      <p class="login-foot">Secured with Supabase Auth · Your data stays in your workspace</p>
+    </div>
+    <div class="login-panel">
+      <form id="login-form" class="login-card" novalidate>
+        <div>
+          <h2 id="login-title">Welcome back</h2>
+          <p class="hint">Sign in with the account your administrator created.</p>
+        </div>
+        <div class="field">
+          <label for="email">Email</label>
+          <input id="email" class="input" type="email" autocomplete="username" required>
+        </div>
+        <div class="field">
+          <label for="password">Password</label>
+          <input id="password" class="input" type="password" autocomplete="current-password" required>
+        </div>
+        <button type="submit" id="login-btn" class="btn btn-primary btn-block">Sign in</button>
+        <p id="login-error" class="form-error" role="alert"></p>
+      </form>
+    </div>
   </section>
 
-  <main id="app" class="layout" hidden>
-    <section id="knowledge" class="panel knowledge" aria-labelledby="kb-title">
-      <h2 id="kb-title">Add knowledge</h2>
-      <p class="hint">Paste text or upload PDF, Excel, Word, PowerPoint, CSV or text files. Re-uploading a file only re-embeds what changed.</p>
-
-      <form id="ingest-form">
-        <label for="source">Source name</label>
-        <input id="source" name="source" type="text" placeholder="e.g. company-handbook.md" maxlength="500">
-
-        <label for="doc-text">Text</label>
-        <textarea id="doc-text" name="text" rows="8" placeholder="Paste document text…"></textarea>
-
-        <label for="files">Or upload files</label>
-        <input id="files" name="files" type="file" accept=".pdf,.xlsx,.xlsm,.docx,.pptx,.csv,.tsv,.txt,.md,.markdown,.json,.png,.jpg,.jpeg,.tif,.tiff,.bmp,.webp" multiple>
-
-        <label for="chunking">Chunking strategy</label>
-        <select id="chunking" name="chunking">
-          <option value="">Default (table for spreadsheets/CSV)</option>
-          <option value="recursive">Recursive: fixed-size chunks</option>
-          <option value="semantic">Semantic: split where the topic changes</option>
-          <option value="parent_child">Parent-child: match small, answer with large</option>
-          <option value="table">Table-aware: keep table rows and headers together</option>
-        </select>
-
-        <label for="overlap">Overlap % (optional)</label>
-        <input id="overlap" name="overlap" type="number" min="0" max="50" step="1"
-               placeholder="Default: 15% for chunks, 10% for parent-child children">
-
-        <label for="tags">Tags (optional, comma-separated)</label>
-        <input id="tags" name="tags" type="text" maxlength="500" placeholder="e.g. finance, 2024">
-
-        <button type="submit" id="ingest-btn">Add to knowledge base</button>
-        <p id="ingest-result" class="result" role="status" aria-live="polite"></p>
-      </form>
-
-      <div class="evaluation" aria-labelledby="eval-title">
-        <h2 id="eval-title">Evaluation</h2>
-        <p class="hint">Each new or changed document gets golden Q&amp;A automatically. Run them to measure retrieval and answer quality.</p>
-        <label class="check"><input id="eval-judge" type="checkbox" checked> Grade answers (LLM judge + RAGAS metrics)</label>
-        <label for="eval-limit">Questions to run</label>
-        <input id="eval-limit" type="number" min="1" max="200" value="10">
-        <button type="button" id="eval-btn">Run evaluation</button>
-        <label for="golden-file">Import golden set (.json)</label>
-        <input id="golden-file" type="file" accept=".json">
-        <p id="eval-result" class="result" role="status" aria-live="polite"></p>
-      </div>
-    </section>
-
-    <section class="panel chat" aria-labelledby="chat-title">
-      <h2 id="chat-title" class="visually-hidden">Chat</h2>
-      <div id="messages" class="messages" aria-live="polite">
-        <div class="empty" id="empty-state">
-          <p><strong>Ask a question about your documents.</strong></p>
-          <p><em>Quick answer</em> does one search. <em>Research</em> lets the agent search several times, which suits multi-part questions.</p>
-        </div>
+  <!-- ===================== App ===================== -->
+  <div id="app" class="shell" hidden>
+    <aside class="sidebar" id="sidebar" aria-label="Navigation">
+      <div class="brand">
+        <span class="brand-mark"><svg class="icon"><use href="#i-logo"/></svg></span>
+        <span>Knowledge Copilot<small id="brand-sub">Ask your documents</small></span>
       </div>
 
-      <form id="ask-form" class="composer">
-        <div class="modes" role="radiogroup" aria-label="Answer mode">
-          <label><input type="radio" name="mode" value="query" checked> Quick answer</label>
-          <label><input type="radio" name="mode" value="agent"> Research</label>
-          <button type="button" id="new-chat-btn" class="link" title="Start a conversation with no memory of this one">New chat</button>
+      <button type="button" id="new-chat-btn" class="btn btn-primary btn-block">
+        <svg class="icon"><use href="#i-plus"/></svg>New chat
+      </button>
+
+      <nav class="nav" aria-label="Sections">
+        <button type="button" class="nav-item" data-view="chat" aria-current="page"><svg class="icon"><use href="#i-chat"/></svg>Chat</button>
+        <button type="button" class="nav-item admin-only" data-view="knowledge"><svg class="icon"><use href="#i-db"/></svg>Knowledge base</button>
+        <button type="button" class="nav-item admin-only" data-view="eval"><svg class="icon"><use href="#i-chart"/></svg>Evaluation</button>
+      </nav>
+
+      <div class="history">
+        <p class="section-title">Recent conversations</p>
+        <ul id="history" aria-label="Recent conversations"></ul>
+      </div>
+
+      <div class="user-card">
+        <span class="avatar" id="user-avatar" aria-hidden="true">?</span>
+        <div class="user-meta">
+          <div class="email" id="user-email">Signed in</div>
+          <span class="badge badge-brand" id="user-role">user</span>
         </div>
-        <details class="filters" id="filters">
-          <summary>Search in: <span id="filter-summary">all documents</span></summary>
-          <label for="filter-sources">Documents</label>
-          <select id="filter-sources" multiple size="4" aria-describedby="filter-hint"></select>
-          <label for="filter-types">File types</label>
-          <select id="filter-types" multiple size="3"></select>
-          <label for="filter-tags">Tags</label>
-          <input id="filter-tags" type="text" placeholder="e.g. finance">
-          <p class="hint" id="filter-hint">Ctrl/Cmd-click to pick several. Leave empty to search everything.</p>
-        </details>
-        <div class="composer-row">
-          <textarea id="question" rows="2" placeholder="Ask a question… (Enter to send, Shift+Enter for a new line)" maxlength="4000" required></textarea>
-          <button type="submit" id="ask-btn">Send</button>
+        <button type="button" class="btn btn-ghost btn-icon" id="theme-btn" title="Toggle light / dark theme" aria-label="Toggle theme">
+          <svg class="icon"><use href="#i-moon"/></svg>
+        </button>
+        <button type="button" class="btn btn-ghost btn-icon" id="signout-btn" title="Sign out" aria-label="Sign out">
+          <svg class="icon"><use href="#i-logout"/></svg>
+        </button>
+      </div>
+    </aside>
+    <div class="scrim" id="scrim" hidden></div>
+
+    <main class="main">
+      <header class="topbar">
+        <button type="button" class="btn btn-ghost btn-icon menu-btn" id="menu-btn" aria-label="Open navigation">
+          <svg class="icon"><use href="#i-menu"/></svg>
+        </button>
+        <h1 id="view-title">Chat</h1>
+        <div class="segmented" id="mode-switch" role="radiogroup" aria-label="Answer mode">
+          <label title="One search, fastest. Answers only from your documents.">
+            <input type="radio" name="mode" value="query" checked><span><svg class="icon"><use href="#i-bolt"/></svg>Quick answer</span>
+          </label>
+          <label title="Several searches plus the web, for multi-part questions.">
+            <input type="radio" name="mode" value="agent"><span><svg class="icon"><use href="#i-globe"/></svg>Research</span>
+          </label>
         </div>
-      </form>
-    </section>
-  </main>
+        <span id="status" class="status-pill" data-state="checking" title="Backend status"><span class="dot"></span><span id="status-text">Checking</span></span>
+      </header>
+
+      <!-- ===== Chat ===== -->
+      <section class="view" id="view-chat" aria-label="Chat">
+        <div class="chat-scroll" id="chat-scroll">
+          <div class="chat-inner" id="messages" aria-live="polite"></div>
+        </div>
+        <div class="composer-wrap">
+          <form id="ask-form" class="composer">
+            <label for="question" class="visually-hidden">Your question</label>
+            <textarea id="question" rows="1" maxlength="4000" required
+                      placeholder="Ask anything about your documents…"></textarea>
+            <div class="composer-bar">
+              <div class="popover">
+                <button type="button" class="btn btn-ghost btn-sm" id="filter-btn" aria-expanded="false" aria-controls="filter-panel">
+                  <svg class="icon"><use href="#i-filter"/></svg>Search in
+                </button>
+                <div class="popover-panel" id="filter-panel" hidden>
+                  <div class="field">
+                    <span class="label">Documents</span>
+                    <div class="check-list" id="filter-sources"><span class="hint">No documents yet</span></div>
+                  </div>
+                  <div class="field">
+                    <span class="label">File types</span>
+                    <div class="type-toggles" id="filter-types"></div>
+                  </div>
+                  <div class="field">
+                    <label for="filter-tags">Tags</label>
+                    <input id="filter-tags" class="input" type="text" placeholder="e.g. finance, scanned">
+                  </div>
+                  <div class="row">
+                    <button type="button" class="btn btn-sm" id="filter-clear">Clear</button>
+                    <span class="spacer"></span>
+                    <button type="button" class="btn btn-primary btn-sm" id="filter-done">Done</button>
+                  </div>
+                </div>
+              </div>
+              <div class="chips" id="filter-chips"></div>
+              <span class="spacer"></span>
+              <button type="submit" id="ask-btn" class="btn btn-primary send-btn" aria-label="Send">
+                <svg class="icon"><use href="#i-send"/></svg>
+              </button>
+            </div>
+          </form>
+          <p class="composer-foot">Answers come only from your documents and cite their sources. Enter to send · Shift+Enter for a new line.</p>
+        </div>
+      </section>
+
+      <!-- ===== Knowledge base (admin) ===== -->
+      <section class="view" id="view-knowledge" hidden aria-label="Knowledge base">
+        <div class="page"><div class="page-inner">
+          <div class="stats">
+            <div class="card stat"><div class="num" id="stat-docs">0</div><div class="lbl">Documents</div></div>
+            <div class="card stat"><div class="num" id="stat-chunks">0</div><div class="lbl">Searchable chunks</div></div>
+            <div class="card stat"><div class="num" id="stat-types">0</div><div class="lbl">File types</div></div>
+          </div>
+          <div class="kb-layout">
+            <div class="card card-pad">
+              <div class="card-head"><div><h2>Add documents</h2><p class="hint">Re-uploading a file only re-embeds what changed.</p></div></div>
+              <form id="ingest-form" class="field">
+                <div class="dropzone" id="dropzone" role="button" tabindex="0" aria-describedby="drop-hint">
+                  <svg class="icon"><use href="#i-upload"/></svg>
+                  <strong>Drop files here or click to browse</strong>
+                  <span class="hint" id="drop-hint">PDF · Word · Excel · PowerPoint · CSV · text · scans and images (OCR)</span>
+                </div>
+                <input id="files" type="file" multiple hidden
+                       accept=".pdf,.xlsx,.xlsm,.docx,.pptx,.csv,.tsv,.txt,.md,.markdown,.json,.png,.jpg,.jpeg,.tif,.tiff,.bmp,.webp">
+                <div class="file-list" id="file-list"></div>
+
+                <div class="field">
+                  <label for="tags">Tags <span class="hint">(optional, for filtering)</span></label>
+                  <input id="tags" class="input" type="text" maxlength="500" placeholder="e.g. finance, 2024">
+                </div>
+
+                <details class="advanced">
+                  <summary>Paste text instead</summary>
+                  <div class="field">
+                    <label for="source">Source name</label>
+                    <input id="source" class="input" type="text" maxlength="500" placeholder="e.g. company-handbook.md">
+                    <label for="doc-text">Text</label>
+                    <textarea id="doc-text" class="textarea" rows="5" placeholder="Paste document text…"></textarea>
+                  </div>
+                </details>
+
+                <details class="advanced">
+                  <summary>Advanced: chunking</summary>
+                  <div class="grid-2">
+                    <div class="field">
+                      <label for="chunking">Strategy</label>
+                      <select id="chunking" class="select">
+                        <option value="">Automatic</option>
+                        <option value="recursive">Recursive</option>
+                        <option value="semantic">Semantic</option>
+                        <option value="parent_child">Parent-child</option>
+                        <option value="table">Table-aware</option>
+                      </select>
+                    </div>
+                    <div class="field">
+                      <label for="overlap">Overlap %</label>
+                      <input id="overlap" class="input" type="number" min="0" max="50" step="1" placeholder="15">
+                    </div>
+                  </div>
+                </details>
+
+                <button type="submit" id="ingest-btn" class="btn btn-primary btn-block">
+                  <svg class="icon"><use href="#i-upload"/></svg>Add to knowledge base
+                </button>
+                <div class="progress" id="ingest-progress" hidden><i></i></div>
+                <ul class="results" id="ingest-results" aria-live="polite"></ul>
+              </form>
+            </div>
+
+            <div class="card card-pad">
+              <div class="card-head">
+                <div><h2>Documents</h2><p class="hint">Everything the assistant can answer from.</p></div>
+                <button type="button" class="btn btn-sm" id="docs-refresh"><svg class="icon"><use href="#i-refresh"/></svg>Refresh</button>
+              </div>
+              <table class="table" aria-label="Documents">
+                <thead><tr><th>Name</th><th>Chunks</th><th>Strategy</th><th><span class="visually-hidden">Actions</span></th></tr></thead>
+                <tbody id="doc-rows"></tbody>
+              </table>
+              <div class="empty-state" id="docs-empty" hidden>No documents yet. Add some on the left.</div>
+            </div>
+          </div>
+        </div></div>
+      </section>
+
+      <!-- ===== Evaluation (admin) ===== -->
+      <section class="view" id="view-eval" hidden aria-label="Evaluation">
+        <div class="page"><div class="page-inner">
+          <div class="card card-pad">
+            <div class="card-head">
+              <div>
+                <h2>Quality evaluation</h2>
+                <p class="hint">Runs the golden question set: retrieval metrics, an LLM judge, and the RAGAS metrics.</p>
+              </div>
+            </div>
+            <div class="row" id="eval-controls">
+              <div class="field">
+                <label for="eval-limit">Questions</label>
+                <input id="eval-limit" class="input" type="number" min="1" max="200" value="10">
+              </div>
+              <label class="row" for="eval-judge">
+                <input id="eval-judge" type="checkbox" checked>
+                <span>Grade answers (LLM judge + RAGAS · about 6 LLM calls per question)</span>
+              </label>
+              <span class="spacer"></span>
+              <label class="btn" for="golden-file" title="Import a golden set (.json)">
+                <svg class="icon"><use href="#i-upload"/></svg>Import golden set
+              </label>
+              <input id="golden-file" type="file" accept=".json" hidden>
+              <button type="button" class="btn btn-primary" id="eval-btn"><svg class="icon"><use href="#i-play"/></svg>Run evaluation</button>
+            </div>
+            <div class="progress" id="eval-progress" hidden><i></i></div>
+            <p class="hint" id="eval-status" aria-live="polite"></p>
+          </div>
+          <div class="metric-groups" id="eval-metrics" hidden></div>
+          <div class="card card-pad" id="eval-attention-card" hidden>
+            <h2>Needs attention</h2>
+            <ul class="attention" id="eval-attention"></ul>
+          </div>
+        </div></div>
+      </section>
+    </main>
+  </div>
+
+  <div class="toasts" id="toasts" aria-live="polite"></div>
 </body>
 </html>
