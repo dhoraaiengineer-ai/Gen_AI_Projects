@@ -41,3 +41,6 @@ mlflow.db
 mlruns/
 mlartifacts/
 .venv-eval/
+
+# Local scratch files
+.tmp/

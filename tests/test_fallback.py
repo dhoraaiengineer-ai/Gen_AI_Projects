@@ -55,7 +55,14 @@ def test_agent_uses_its_own_tool_capable_fallback(harness: AppHarness) -> None:
         c.post("/api/v1/ingest", json=INGEST)
         r = c.post("/api/v1/agent", json={"task": "Capital of France?"})
 
-    assert r.json() == {"answer": "Paris (geo.md).", "tool_calls": 1, "model": "gpt-4o-mini", "web_sources": []}
+    assert r.json() == {
+        "answer": "Paris (geo.md).",
+        "tool_calls": 1,
+        "model": "gpt-4o-mini",
+        "web_sources": [],
+        "blocked": False,
+        "guardrails": [],
+    }
     assert harness.fallback_llm.seen == []
 
 

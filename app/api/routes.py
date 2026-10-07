@@ -29,12 +29,16 @@ from app.models.schemas import (
     IngestRequest,
     IngestResponse,
     MeResponse,
+    QueryFilters,
     QueryRequest,
     QueryResponse,
     SessionListResponse,
     SessionOut,
+    SourceInfo,
+    SourceListResponse,
 )
 from app.rag.chunking import ChunkingStrategy
+from app.rag.filters import MetadataFilter
 from app.rag.loaders import SUPPORTED_EXTENSIONS
 from app.rag.service import RAGService, UploadedFile
 
@@ -67,7 +71,7 @@ def ingest(
     _: Principal = Depends(require_admin),
     __: None = Depends(rate_limit("ingest")),
 ) -> IngestResponse:
-    return service.ingest(body.documents, body.chunking, body.chunk_overlap_pct)
+    return service.ingest(body.documents, body.chunking, body.chunk_overlap_pct, body.tags)
 
 
 @router.post("/query", response_model=QueryResponse, responses={**AUTH_ERRORS, **LLM_ERRORS})
@@ -77,7 +81,7 @@ def query(
     principal: Principal = Depends(require_user),
     __: None = Depends(rate_limit("query")),
 ) -> QueryResponse:
-    return service.query(body.question, body.top_k, principal.user_id, body.session_id)
+    return service.query(body.question, body.top_k, principal.user_id, body.session_id, _filters(body.filters))
 
 
 @router.post("/agent", response_model=AgentResponse, responses={**AUTH_ERRORS, **LLM_ERRORS})
@@ -87,7 +91,7 @@ def agent(
     principal: Principal = Depends(require_user),
     __: None = Depends(rate_limit("agent")),
 ) -> AgentResponse:
-    return service.run_agent(body.task, principal.user_id, body.session_id)
+    return service.run_agent(body.task, principal.user_id, body.session_id, _filters(body.filters))
 
 
 @router.post(
@@ -101,6 +105,7 @@ def ingest_files(
     files: Annotated[list[UploadFile], File(description="One or more documents")],
     chunking: Annotated[ChunkingStrategy | None, Form()] = None,
     chunk_overlap_pct: Annotated[float | None, Form(ge=0, le=50)] = None,
+    tags: Annotated[str | None, Form(max_length=500, description="Comma-separated, e.g. finance,2024")] = None,
     service: RAGService = Depends(get_service),
     _: Principal = Depends(require_admin),
     __: None = Depends(rate_limit("ingest")),
@@ -115,7 +120,7 @@ def ingest_files(
                 detail=f"{upload.filename} is larger than {max_bytes // (1024 * 1024)} MB",
             )
         uploads.append(UploadedFile(upload.filename or "upload", data))
-    return service.ingest_files(uploads, chunking, chunk_overlap_pct)
+    return service.ingest_files(uploads, chunking, chunk_overlap_pct, tags.split(",") if tags else None)
 
 
 @router.get("/golden", response_model=GoldenListResponse, responses=AUTH_ERRORS, tags=["evaluation"])
@@ -202,3 +207,16 @@ def get_conversation(
     """Messages of one of the caller's conversations. Another user's session id simply returns nothing."""
     turns = service.conversation(principal.user_id, session_id)
     return ConversationOut(session_id=session_id, messages=[ChatMessage(role=t.role, content=t.content) for t in turns])
+
+
+@router.get("/sources", response_model=SourceListResponse, responses=AUTH_ERRORS, tags=["documents"])
+def list_sources(
+    service: RAGService = Depends(get_service),
+    _: Principal = Depends(require_user),
+) -> SourceListResponse:
+    """Document names and types, for the "search in" filter. Any signed-in user; no content is returned."""
+    return SourceListResponse(sources=[SourceInfo(source=s.source, file_type=s.file_type) for s in service.sources()])
+
+
+def _filters(body: QueryFilters | None) -> MetadataFilter | None:
+    return MetadataFilter.build(body.sources, body.file_types, body.tags) if body else None

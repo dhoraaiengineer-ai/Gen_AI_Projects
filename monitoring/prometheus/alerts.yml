@@ -69,3 +69,51 @@ groups:
         annotations:
           summary: rag-api has no ready replicas
           description: Every pod is failing readiness, usually because the database is unreachable.
+
+  - name: rag-guardrails
+    rules:
+      - alert: RagGuardrailAttackSpike
+        expr: |
+          sum(increase(rag_guardrail_events_total{stage="input", action="block", check=~"prompt_injection|jailbreak"}[10m])) > 20
+        labels:
+          severity: warning
+        annotations:
+          summary: Spike in blocked prompt-injection / jailbreak attempts
+          description: "{{ $value }} attempts blocked in 10 minutes. Check the audit log (\"guardrail triggered\") for the users involved."
+
+      - alert: RagSecretsInQuestions
+        expr: sum(increase(rag_guardrail_events_total{stage="input", check="secrets"}[1h])) > 0
+        labels:
+          severity: info
+        annotations:
+          summary: A user pasted an API key or credential into a question
+          description: The question was blocked; consider asking the user to rotate the credential.
+
+      - alert: RagHallucinationFlagsHigh
+        expr: |
+          sum(increase(rag_hallucination_flags_total[30m]))
+            / clamp_min(sum(increase(http_requests_total{route="/api/v1/query", status="200"}[30m])), 1) > 0.2
+        for: 15m
+        labels:
+          severity: warning
+        annotations:
+          summary: More than 20% of answers fail the grounding check
+          description: Retrieval or the model may be degraded (a fallback model in use?). Run an evaluation.
+
+      - alert: RagLlmCircuitOpen
+        expr: max by (breaker) (rag_circuit_state) == 2
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "LLM circuit {{ $labels.breaker }} has been open for 10 minutes"
+          description: The provider keeps failing (quota, outage or rate limit); traffic is on the fallback chain.
+
+      - alert: RagLlmLatencyP99High
+        expr: |
+          histogram_quantile(0.99, sum by (le, model) (rate(rag_llm_latency_seconds_bucket[10m]))) > 30
+        for: 15m
+        labels:
+          severity: warning
+        annotations:
+          summary: "p99 LLM latency above 30s for {{ $labels.model }}"

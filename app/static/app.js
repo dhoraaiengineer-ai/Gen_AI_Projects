@@ -257,6 +257,70 @@ function newChat() {
   $("question").focus();
 }
 
+// ---------- Metadata filters ----------
+
+const splitTags = (value) => value.split(",").map((t) => t.trim()).filter(Boolean);
+const selected = (id) => [...$(id).selectedOptions].map((o) => o.value);
+
+function currentFilters() {
+  const filters = { sources: selected("filter-sources"), file_types: selected("filter-types"), tags: splitTags($("filter-tags").value) };
+  return filters.sources.length || filters.file_types.length || filters.tags.length ? filters : undefined;
+}
+
+function updateFilterSummary() {
+  const f = currentFilters();
+  $("filter-summary").textContent = f
+    ? [f.sources.length && `${f.sources.length} document(s)`, f.file_types.join(", "), f.tags.length && `tags: ${f.tags.join(", ")}`]
+        .filter(Boolean).join(" · ")
+    : "all documents";
+}
+
+async function loadSources() {
+  try {
+    const res = await apiFetch("/api/v1/sources");
+    if (!res.ok) return;
+    const { sources } = await res.json();
+    const fill = (id, values) => {
+      const keep = new Set(selected(id));
+      $(id).replaceChildren(...values.map((v) => {
+        const option = new Option(v, v);
+        option.selected = keep.has(v);
+        return option;
+      }));
+    };
+    fill("filter-sources", sources.map((s) => s.source));
+    fill("filter-types", [...new Set(sources.map((s) => s.file_type))].sort());
+  } catch { /* the filter is optional; the chat still works without it */ }
+}
+
+// ---------- Guardrails ----------
+
+const GUARDRAIL_TEXT = {
+  prompt_injection: "an attempt to override the assistant's instructions",
+  jailbreak: "a jailbreak attempt",
+  secrets: "a credential or API key",
+  blocked_topics: "a topic this assistant doesn't cover",
+  length: "a question that is too long",
+  pii: "personal data",
+  system_prompt_leak: "internal instructions",
+  blocked_terms: "a restricted term",
+};
+
+function renderGuardrails(el, data) {
+  const events = data.guardrails || [];
+  if (!events.length) return;
+  const note = document.createElement("div");
+  note.className = "meta guard";
+  const describe = (e) => GUARDRAIL_TEXT[e.check] || e.check.replace("_", " ");
+  if (data.blocked) {
+    note.textContent = `🛡 Blocked by the usage policy: ${[...new Set(events.filter((e) => e.action === "block").map(describe))].join(", ")}`;
+  } else {
+    const redacted = events.filter((e) => e.action === "redact").map(describe);
+    note.textContent = `🛡 ${redacted.length ? `Removed ${[...new Set(redacted)].join(", ")} before processing` : "Checked by the usage policy"}`;
+  }
+  el.appendChild(note);
+}
+
 // ---------- Ask ----------
 
 async function ask(event) {
@@ -276,13 +340,14 @@ async function ask(event) {
 
   try {
     if (mode === "agent") {
-      const data = await postJson("/api/v1/agent", { task: question, session_id: sessionId });
+      const data = await postJson("/api/v1/agent", { task: question, session_id: sessionId, filters: currentFilters() });
       pending.className = "msg bot";
       pending.textContent = data.answer;
+      renderGuardrails(pending, data);
       renderWebSources(pending, data.web_sources || []);
       addMeta(pending, `${data.tool_calls} search${data.tool_calls === 1 ? "" : "es"} · ${data.model}`);
     } else {
-      const data = await postJson("/api/v1/query", { question, session_id: sessionId });
+      const data = await postJson("/api/v1/query", { question, session_id: sessionId, filters: currentFilters() });
       pending.className = "msg bot";
       renderAnswer(pending, data.answer, data.sources, msgId);
       renderSources(pending, data.sources, msgId);
@@ -297,6 +362,7 @@ async function ask(event) {
         warn.textContent = `⚠ Check this answer against the sources: ${data.grounding_issues.join("; ")}`;
         pending.appendChild(warn);
       }
+      renderGuardrails(pending, data);
     }
   } catch (err) {
     pending.className = "msg error";
@@ -342,6 +408,7 @@ async function ingest(event) {
     const chunking = $("chunking").value || undefined;
     const overlap = $("overlap").value.trim();
     const chunk_overlap_pct = overlap === "" ? undefined : Number(overlap);
+    const tags = splitTags($("tags").value);
 
     const results = [];
     if (files.length) {
@@ -349,17 +416,19 @@ async function ingest(event) {
       for (const file of files) form.append("files", file);
       if (chunking) form.append("chunking", chunking);
       if (chunk_overlap_pct !== undefined) form.append("chunk_overlap_pct", String(chunk_overlap_pct));
+      if (tags.length) form.append("tags", tags.join(","));
       results.push(...(await postForm("/api/v1/ingest/files", form)).results);
     }
     if (text) {
       const documents = [{ text, source: $("source").value.trim() || "pasted-text" }];
-      results.push(...(await postJson("/api/v1/ingest", { documents, chunking, chunk_overlap_pct })).results);
+      results.push(...(await postJson("/api/v1/ingest", { documents, chunking, chunk_overlap_pct, tags })).results);
     }
 
     const failed = results.some((r) => r.status === "failed");
     result.className = failed ? "result err" : "result ok";
     result.textContent = results.map(describeResult).join("\n");
     if (!failed) event.target.reset();
+    loadSources(); // new documents become available in the "Search in" filter
   } catch (err) {
     result.className = "result err";
     result.textContent = err.message;
@@ -462,6 +531,7 @@ function showApp(me) {
   const isAdmin = me.role === "admin";
   // The API enforces this too; hiding the panel just avoids offering what would be refused.
   $("knowledge").hidden = !isAdmin;
+  loadSources();
   $("app").classList.toggle("chat-only", !isAdmin);
   if (authConfig.enabled) {
     $("user").hidden = false;
@@ -531,6 +601,7 @@ document.addEventListener("DOMContentLoaded", () => {
   $("ingest-form").addEventListener("submit", ingest);
   $("eval-btn").addEventListener("click", runEvaluation);
   $("new-chat-btn").addEventListener("click", newChat);
+  for (const id of ["filter-sources", "filter-types", "filter-tags"]) $(id).addEventListener("change", updateFilterSummary);
   $("golden-file").addEventListener("change", importGolden);
   start();
   $("question").addEventListener("keydown", (e) => {

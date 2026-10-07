@@ -1,0 +1,46 @@
+# Guardrail policy: what is checked at each stage, and what happens when a check fires.
+#
+#   allow  - don't check
+#   flag   - let it through, record it (metric + audit log; documents get marked untrusted)
+#   redact - replace the matched text with [REDACTED:<type>] and continue
+#   block  - stop: a question gets the refusal message (no LLM call), a document upload is rejected,
+#            an answer is replaced with the refusal message
+#
+# Edit this file to change behaviour; no code change needed. GUARDRAILS_POLICY_PATH can point to another file.
+version: 1
+
+refusal_message: >-
+  I can't help with that request. It was stopped by this assistant's usage policy.
+  Please rephrase, or ask a question about your documents.
+
+input:                      # user questions and research tasks, before anything else runs
+  max_chars: 2000
+  prompt_injection: block  # "ignore previous instructions", fake <system> tags, "new instructions:"
+  jailbreak: block         # "developer mode", "DAN", "act as an unrestricted AI"
+  pii: redact              # personal data is masked before it reaches the LLM, the cache, memory or logs
+  secrets: block           # API keys, tokens and private keys pasted into a question
+  blocked_topics: block    # see blocked_topics below
+
+documents:                  # uploaded files, before chunking (indirect prompt injection)
+  prompt_injection: flag   # chunk stays searchable, but is marked untrusted in the LLM prompt
+  jailbreak: flag
+  pii: allow               # documents may legitimately contain contact details
+  secrets: redact          # never embed or show credentials found in a document
+
+output:                     # answers (Quick answer and Research), before they're returned
+  pii: redact
+  secrets: redact
+  system_prompt_leak: block
+  blocked_terms: redact
+
+pii_types: [email, phone, credit_card, aadhaar, pan, ssn, iban]
+
+# Topics the assistant refuses. Each entry is a list of phrases (case-insensitive, whole words).
+blocked_topics:
+  weapons: ["build a bomb", "make a bomb", "make explosives", "build a weapon", "untraceable gun"]
+  malware: ["write malware", "write ransomware", "create a virus", "build a keylogger", "steal passwords"]
+  self_harm: ["how to kill myself", "ways to commit suicide", "how to self-harm"]
+  hate: ["racial slur", "ethnic cleansing guide"]
+
+# Words or phrases that must never appear in an answer (e.g. internal code names). Redacted when found.
+blocked_terms: []

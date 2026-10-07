@@ -29,6 +29,7 @@ from app.config import Provider, Settings, parse_model_chain
 from app.core.circuit import BreakerRegistry, CircuitBreaker, CircuitOpenError
 from app.core.metrics import FallbackCounter, LLMLatencyCallback
 from app.rag.cache import InMemoryKeyValueStore, KeyValueStore
+from app.rag.filters import MetadataFilter
 from app.rag.golden import GoldenItem
 from app.rag.memory import ChatTurn, SessionSummary
 from app.rag.registry import DocumentRecord
@@ -529,13 +530,13 @@ class PostgresKeywordSearch:
     It scans the collection's chunks per query: fine for thousands of chunks; for much larger collections
     store the tsvector in a generated column and rank over a GIN-indexed pre-filter instead."""
 
-    _SQL = text(
+    _SQL = (  # {filters}: optional metadata conditions, see _metadata_sql
         "WITH terms AS ("
         "  SELECT DISTINCT word FROM unnest(tsvector_to_array(to_tsvector('english', :query))) AS word"
         "), docs AS ("
         "  SELECT e.id, e.document, e.cmetadata, to_tsvector('english', e.document) AS v"
         "  FROM langchain_pg_embedding e JOIN langchain_pg_collection c ON c.uuid = e.collection_id"
-        "  WHERE c.name = :collection"
+        "  WHERE c.name = :collection {filters}"
         "), idf AS ("
         "  SELECT t.word, ln(1 + ((SELECT count(*) FROM docs) - count(d.id) + 0.5) / (count(d.id) + 0.5)) AS idf"
         "  FROM terms t LEFT JOIN docs d ON d.v @@ CAST(quote_literal(t.word) AS tsquery)"
@@ -551,16 +552,35 @@ class PostgresKeywordSearch:
         self.engine = engine
         self.collection = collection
 
-    def search(self, query: str, k: int) -> list[tuple[Document, float]]:
+    def search(self, query: str, k: int, filters: MetadataFilter | None = None) -> list[tuple[Document, float]]:
+        clauses, params = _metadata_sql(filters)
+        sql = text(self._SQL.format(filters=clauses))
         try:
             with self.engine.connect() as conn:
-                rows = conn.execute(self._SQL, {"query": query, "collection": self.collection, "k": k}).all()
+                rows = conn.execute(sql, {"query": query, "collection": self.collection, "k": k, **params}).all()
         except Exception:  # keyword search only improves ranking; vector results still answer the question
             logger.warning("keyword search failed", exc_info=True)
             return []
         return [
             (Document(id=str(r.id), page_content=r.document, metadata=r.cmetadata or {}), float(r.rank)) for r in rows
         ]
+
+
+def _metadata_sql(filters: MetadataFilter | None) -> tuple[str, dict[str, object]]:
+    """SQL conditions (with bound parameters) equivalent to to_pgvector_filter()."""
+    if filters is None or filters.is_empty:
+        return "", {}
+    clauses, params = [], {}
+    if filters.sources:
+        clauses.append("e.cmetadata->>'source' = ANY(:f_sources)")
+        params["f_sources"] = list(filters.sources)
+    if filters.file_types:
+        clauses.append("lower(e.cmetadata->>'source') LIKE ANY(:f_types)")
+        params["f_types"] = [f"%.{t}" for t in filters.file_types]
+    if filters.tags:
+        clauses.append("coalesce(e.cmetadata->>'tags', '') ILIKE ANY(:f_tags)")
+        params["f_tags"] = [f"%,{t},%" for t in filters.tags]
+    return " AND " + " AND ".join(clauses), params
 
 
 def ensure_keyword_index(engine: Engine) -> None:

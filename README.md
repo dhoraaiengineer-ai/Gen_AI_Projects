@@ -1,11 +1,13 @@
 # GenAI RAG Platform
 
 A production-oriented Retrieval-Augmented Generation (RAG) platform: upload documents (PDF, Excel, Word,
-PowerPoint, CSV, text), ask questions in a chat UI, and get answers with citations down to the page,
-sheet or slide. Built with FastAPI, LangChain and LangGraph on Supabase Postgres + pgvector, with EURI,
+PowerPoint, CSV, text, and scanned PDFs or images through OCR), ask questions in a chat UI, and get answers
+with citations down to the page, sheet or slide. Built with FastAPI, LangChain and LangGraph on Supabase Postgres + pgvector, with EURI,
 Google Gemini and Groq as interchangeable OpenAI-compatible model providers.
 
 It goes beyond a basic RAG demo:
+- policy-driven guardrails on inputs, documents and outputs, with monitoring
+- OCR for scanned PDFs and images, and metadata filtering by document, file type and tag
 - hybrid retrieval with re-ranking
 - conversation memory and caching
 - a hallucination guard on every answer
@@ -20,6 +22,7 @@ It goes beyond a basic RAG demo:
 - [How a question is answered](#how-a-question-is-answered)
 - [Documents: uploads, chunking, incremental load](#documents-uploads-chunking-incremental-load)
 - [Retrieval: hybrid search, fusion, re-ranking](#retrieval-hybrid-search-fusion-re-ranking)
+- [Guardrails: policy, input, output, monitoring](#guardrails-policy-input-output-monitoring)
 - [Answer quality and hallucination control](#answer-quality-and-hallucination-control)
 - [Memory and caching](#memory-and-caching)
 - [Models, fallbacks and resilience](#models-fallbacks-and-resilience)
@@ -40,8 +43,11 @@ It goes beyond a basic RAG demo:
 | Area | What's implemented |
 |---|---|
 | **Ingestion** | PDF, XLSX, DOCX, PPTX, CSV/TSV, TXT/MD/JSON; per-page/sheet/slide citations; 4 chunking strategies; % overlap |
+| **OCR** | Scanned PDF pages and images (PNG, JPG, TIFF, BMP, WEBP) read offline with RapidOCR; cited like any other page |
 | **Incremental load** | Upsert per document: unchanged files are skipped, edits re-embed only changed chunks, stale chunks are deleted |
 | **Retrieval** | Hybrid search (pgvector cosine + BM25-style keyword), reciprocal rank fusion, LLM re-ranking, multi-query, top-k |
+| **Metadata filtering** | Restrict a question to some documents, file types or tags, inside both searches; tags set at upload |
+| **Guardrails** | Policy file (allow / flag / redact / block); input: prompt injection, jailbreaks, PII, secrets, blocked topics, length; documents: indirect injection, secrets; output: PII, secrets, prompt leaks, blocked terms |
 | **Answers** | Grounded prompt, inline `[n]` citations, temperature 0.2–0.5, hallucination guard (flag or block) |
 | **Memory** | Short-term (Redis, recent turns for follow-ups) + long-term (Postgres, full history); follow-up rewriting |
 | **Caching** | Repeated-question answer cache (cleared when documents change) + LLM prompt cache (Redis or in-process) |
@@ -63,6 +69,7 @@ flowchart LR
     subgraph app["FastAPI app (one uvicorn worker per pod)"]
         ui["Chat UI<br/>static HTML/JS"]
         api["API routes<br/>auth · rate limits · audit log"]
+        gr["Guardrails<br/>policy.yaml · input / docs / output"]
         svc["RAGService"]
         subgraph graphs["LangGraph"]
             rag["RAG graph<br/>retrieve → generate"]
@@ -76,6 +83,7 @@ flowchart LR
         mem["Memory<br/>short + long term"]
         cache["Answer + prompt cache"]
         ev["Evaluator<br/>LLM judge · RAGAS"]
+        ocr["Loaders + OCR<br/>PDF · Office · images"]
         breaker["Fallback chain<br/>+ circuit breakers"]
     end
 
@@ -98,8 +106,8 @@ flowchart LR
     user --> ui --> api
     user -. sign in .-> supa
     api -. verify JWT .-> supa
-    api --> svc
-    svc --> rag & agent & ev & mem & cache
+    api --> gr --> svc
+    svc --> rag & agent & ev & mem & cache & ocr
     rag --> ret --> rr
     rag --> guard
     agent --> ret
@@ -128,7 +136,8 @@ sequenceDiagram
     participant L as LLM (fallback chain)
     participant G as Hallucination guard
 
-    U->>API: question + session_id
+    U->>API: question + session_id + filters
+    API->>API: input guardrails (block injection / jailbreak / secrets, redact PII)
     API->>M: recent turns
     alt follow-up question
         API->>L: rewrite into a standalone question
@@ -137,7 +146,7 @@ sequenceDiagram
     alt cache hit
         C-->>U: cached answer
     else cache miss
-        API->>R: standalone + original wording
+        API->>R: standalone + original wording (within the metadata filter)
         R->>R: vector (cosine) + keyword (BM25-style) → reciprocal rank fusion
         R->>RR: ~12 candidates
         RR-->>API: best top_k passages
@@ -145,6 +154,7 @@ sequenceDiagram
         L-->>API: answer with [n] citations
         API->>G: citations valid? numbers present in passages?
         G-->>API: grounded / issues
+        API->>API: output guardrails (redact PII / secrets, block prompt leaks)
         API->>C: store (only if grounded)
         API->>M: save turn
         API-->>U: answer · sources (page / sheet / slide) · ⚠ if ungrounded
@@ -226,15 +236,17 @@ Data lives in Postgres (Supabase): `langchain_pg_embedding` holds the chunks and
 ## How a question is answered
 
 ```
-question ──► memory: recent turns (Redis, else Postgres)
+question ──► input guardrails (policy): block injection / jailbreak / secrets / topics, redact PII
+         ──► memory: recent turns (Redis, else Postgres)
          ──► follow-up? rewrite into a standalone question (LLM)
          ──► answer cache hit? ──► return cached answer
          ──► retrieval
-               stage 1: for the standalone question AND the user's own words
+               stage 1: for the standalone question AND the user's own words, within the metadata filter
                         vector search (cosine) + keyword search (BM25-style)  ─► reciprocal rank fusion
                stage 2: LLM re-ranker picks the best TOP_K of ~12 candidates
          ──► generate with a grounded prompt (temperature 0.2), citations [n]
          ──► hallucination guard: citations valid? numbers/identifiers present in the passages?
+         ──► output guardrails (policy): redact PII / secrets, block system-prompt leaks
          ──► save turn to memory, cache if grounded, audit-log the action
 ```
 
@@ -249,8 +261,19 @@ question ──► memory: recent turns (Redis, else Postgres)
 | Word `.docx` | Headings, paragraphs and tables, in order |
 | PowerPoint `.pptx` | One section per slide, including tables and speaker notes |
 | CSV/TSV, TXT, MD, JSON | As text (CSV/TSV become tables) |
+| Scanned PDF pages | Pages with no text layer (under 20 characters) are read with **OCR** from the page images |
+| Images: PNG, JPG, TIFF, BMP, WEBP | Read with **OCR** |
 
-Old `.xls`, `.doc` and `.ppt` files, and scanned PDFs without a text layer, are rejected with a clear message.
+Old `.xls`, `.doc` and `.ppt` files, and blank or unreadable scans, are rejected with a clear message.
+
+**OCR.** [RapidOCR](https://github.com/RapidAI/RapidOCR) with ONNX models bundled in the pip package:
+- runs fully offline, on Windows and in the slim Docker image, with no Tesseract install
+- loads its models once, on first use (a few seconds); after that a page takes well under a second
+- returns lines in reading order, puts back obvious missing spaces between words (`CertificateNo` →
+  `Certificate No`) while leaving units and codes (`dBm`, `VNA-7`, `2.4`) alone, and drops low-confidence
+  fragments
+- marks OCR'd chunks with `ocr: true` in their metadata
+- `OCR_ENABLED=false` turns it off
 
 **Citations** carry the location: `report.pdf, p. 3`, `figures.xlsx, sheet Sales`, `deck.pptx, slide 4`.
 
@@ -296,6 +319,56 @@ On the sample golden set, hybrid search plus re-ranking raised MRR from 0.74 to 
 from 93% to 100%.
 
 Settings: `HYBRID_SEARCH`, `RERANK_ENABLED`, `RERANK_CANDIDATES` and `TOP_K`.
+
+**Metadata filtering.** Every chunk carries metadata: `source`, `file_type`, `tags` and its location (page,
+sheet or slide), plus `ocr` and `guardrail` flags. A question can be restricted with
+`filters: {sources, file_types, tags}` on `/query` or `/agent`, or with **Search in** in the chat UI. The
+filter is applied **inside** both searches (pgvector JSONB filter and SQL conditions on the keyword search),
+so top_k is filled from matching chunks only. File types match on the file extension, so older documents
+filter correctly too. Tags are set per upload, as a comma-separated **Tags** field or `tags` in the API,
+and matched as whole words. A filtered question gets its own cache entry. `GET /api/v1/sources` lists the
+documents any signed-in user can filter by (names only).
+
+## Guardrails: policy, input, output, monitoring
+
+All behaviour is set in one policy file, [app/guardrails/policy.yaml](app/guardrails/policy.yaml). You change
+it without changing code; `GUARDRAILS_POLICY_PATH` can point to your own file. It's validated at startup, so a
+typo fails fast. Each check has one of four actions:
+
+| Action | Effect |
+|---|---|
+| `allow` | Not checked |
+| `flag` | Let through and recorded; documents are marked untrusted in the prompt |
+| `redact` | The matched text is replaced with `[REDACTED:<type>]`, and processing continues |
+| `block` | Stopped: the question gets the policy's refusal, the upload is rejected, or the answer is replaced |
+
+| Stage | When | Checks (default action) |
+|---|---|---|
+| **Input** | On a question or Research task, before memory, cache, retrieval or any LLM call | Prompt injection (block), jailbreak (block), secrets such as API keys and private keys (block), blocked topics (block), length over 2,000 characters (block), PII: email, phone, card, Aadhaar, PAN, SSN, IBAN (redact) |
+| **Documents** | On upload, before chunking and embedding; also on web search results | Indirect prompt injection hidden in a file (flag), jailbreak text (flag), secrets (redact), PII (allow) |
+| **Output** | On an answer, before it's returned, cached or stored in memory | System-prompt leak (block), secrets (redact), blocked terms (redact), PII (redact) |
+
+- **No LLM calls.** The detectors are deterministic patterns in
+  [app/guardrails/detectors.py](app/guardrails/detectors.py), so they're fast and free. They're tuned
+  against false positives on technical text: a phone number needs 10+ digits, so ISSNs and DOIs don't
+  match, and card numbers must pass the Luhn checksum. A test runs every sample document through the policy
+  and expects zero findings.
+- **Blocked questions cost nothing.** They never reach memory, the cache, retrieval or an LLM.
+- **Redacted personal data stays redacted.** It never reaches the LLM, the cache, conversation memory or the logs.
+- **Flagged documents stay searchable.** Their chunks are labelled `untrusted="prompt_injection"` in the
+  prompt, and the prompt tells the model never to follow instructions found inside documents.
+- **The UI shows what happened:** 🛡 *Blocked by the usage policy: …*, or *Removed personal data before
+  processing*. Responses include `blocked` and `guardrails: [{stage, check, action, detail}]`. Uploads
+  report `guardrail_flags`.
+- **Monitoring guardrails:**
+  - every event is counted in `rag_guardrail_events_total{stage,check,action}` and written to the audit log
+    as `guardrail triggered` (with the user, never the matched value)
+  - Grafana has **Guardrails** panels: events by check and action, blocked attacks, hallucination flags
+  - Prometheus alerts: `RagGuardrailAttackSpike` (over 20 injection or jailbreak blocks in 10 min),
+    `RagSecretsInQuestions` and `RagHallucinationFlagsHigh`
+
+Disable everything with `GUARDRAILS_ENABLED=false`. Guardrails complement authentication, rate limits and the
+hallucination guard; they don't replace them.
 
 ## Answer quality and hallucination control
 
@@ -473,11 +546,12 @@ with it in `staging` or `prod`.
 |---|---|---|
 | GET | `/` | Chat UI |
 | GET | `/health/live`, `/health/ready` | Liveness; readiness (database reachable) |
-| POST | `/api/v1/query` | Quick answer: hybrid retrieval + re-ranking + grounded answer with citations (`session_id` for memory) |
-| POST | `/api/v1/agent` | Research agent: several searches plus web search (`session_id` for memory) |
+| POST | `/api/v1/query` | Quick answer: guardrails + hybrid retrieval + re-ranking + grounded answer with citations (`session_id`, `filters`) |
+| POST | `/api/v1/agent` | Research agent: several searches plus web search (`session_id`, `filters`) |
+| GET | `/api/v1/sources` | Document names and types for the "Search in" filter (any signed-in user) |
 | GET | `/api/v1/conversations`, `/api/v1/conversations/{id}` | Your conversation history |
 | POST | `/api/v1/ingest` | Ingest text documents (JSON) |
-| POST | `/api/v1/ingest/files` | Upload files (multipart); per-file status: added / updated / unchanged / failed |
+| POST | `/api/v1/ingest/files` | Upload files (multipart, optional `tags`), including scans and images (OCR); per-file status and guardrail flags |
 | GET, DELETE | `/api/v1/documents` | List documents / delete one (`?source=`) |
 | GET, POST | `/api/v1/golden` | List / import golden Q&A |
 | POST | `/api/v1/eval` | Evaluation: retrieval, LLM-as-judge and RAGAS metrics |
@@ -525,12 +599,16 @@ and measurements. It covers every supported format:
 | `model-design.docx` | Word | Architecture, training settings and results tables |
 | `project-presentation.pptx` | PowerPoint | 5 slides with notes and a results table |
 | `faq.md` | Markdown | FAQ |
+| `scanned-lab-notebook.png` | Image (OCR) | Calibration log: cable loss, antenna gain, noise floor |
+| `scanned-calibration-certificate.pdf` | Scanned PDF, no text layer (OCR) | Certificate number, instrument, validity |
 
 Regenerate the set with `python scripts/make_sample_data.py`. To try it:
-1. Upload the six files in the UI.
-2. Import [data/golden/iot-delay-spread.json](data/golden/iot-delay-spread.json) under **Evaluation**.
+1. Upload the eight files in the UI. The two scans go through OCR.
+2. Import [data/golden/iot-delay-spread.json](data/golden/iot-delay-spread.json) under **Evaluation**. It has 36 Q&A,
+   each with its evidence verified against the files, including the OCR output.
 3. Ask, for example, *"What is the DOI of the article?"*, *"What delay spread was measured at the warehouse
-   in NLOS conditions?"* or *"What R squared did the proposed model reach?"*.
+   in NLOS conditions?"*, *"What is the number of the calibration certificate?"* (OCR) or *"What noise floor
+   was recorded?"* with **Search in → file type png**.
 
 ## Docker, Kubernetes and AWS
 
@@ -581,7 +659,7 @@ Every setting comes from environment variables; [.env.example](.env.example) doc
 | Data | `DATABASE_URL`, `COLLECTION_NAME`, `REDIS_URL` |
 | Chunking | `CHUNKING_STRATEGY`, `CHUNK_SIZE`, `CHUNK_OVERLAP_PCT`, `PARENT_CHUNK_SIZE`, `CHILD_CHUNK_SIZE` |
 | Retrieval | `TOP_K`, `HYBRID_SEARCH`, `RERANK_ENABLED`, `RERANK_CANDIDATES` |
-| Quality | `HALLUCINATION_GUARD`, `GOLDEN_QUESTIONS_PER_DOCUMENT` |
+| Quality and safety | `HALLUCINATION_GUARD`, `GUARDRAILS_ENABLED`, `GUARDRAILS_POLICY_PATH`, `OCR_ENABLED`, `GOLDEN_QUESTIONS_PER_DOCUMENT` |
 | Memory and cache | `MEMORY_WINDOW_MESSAGES`, `SHORT_TERM_MEMORY_TTL_SECONDS`, `CACHE_ENABLED`, `*_CACHE_TTL_SECONDS` |
 | Resilience | `CIRCUIT_BREAKER_*`, `EMBEDDING_MAX_RETRIES`, `RATE_LIMIT_*` |
 | Security and logging | `AUTH_ENABLED`, `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`, `AUDIT_LOG_CONTENT`, `LOG_FORMAT` |
@@ -592,7 +670,7 @@ different models can't be compared.
 ## Tests and lint
 
 ```bash
-.venv/Scripts/python -m pytest -q        # 206 tests, fully offline (fake LLMs, fake embeddings, in-memory stores)
+.venv/Scripts/python -m pytest -q        # 243 tests, fully offline (fake LLMs, fake embeddings, in-memory stores; one real OCR test)
 .venv/Scripts/python -m ruff check app tests evals && .venv/Scripts/python -m ruff format --check app tests evals
 ```
 
@@ -614,7 +692,10 @@ Known limitations:
   can't remove it.
 - **Per-process state.** Rate limits and circuit breakers are kept per process, so with N replicas the limits
   are N times looser. A shared Redis-based limiter would make them exact.
-- **Images and OCR.** Images and scanned PDFs (OCR) aren't indexed yet.
+- **Guardrail scope.** Guardrails are pattern-based. They catch common injection, jailbreak, PII and secret
+  patterns, not every paraphrase. Add an LLM-based classifier for higher-risk deployments.
+- **OCR quality.** OCR depends on scan quality; handwriting and complex layouts aren't supported. Words
+  that OCR runs together in all lowercase (`validuntil`) can't be split without a dictionary.
 - **Keyword search at scale.** Keyword search scans the collection per query. That's fine for thousands of
   chunks; for much larger collections, store the tsvector in a column.
 - **MLflow scope.** MLflow tracks evaluation runs. Per-request tracing goes to the audit log, not MLflow.

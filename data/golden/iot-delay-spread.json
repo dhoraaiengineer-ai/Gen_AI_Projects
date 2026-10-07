@@ -1,38 +1,238 @@
 {
   "description": "Golden Q&A for the synthetic IoT RMS delay spread dataset (data/sample/iot-delay-spread). All names are fictional.",
   "items": [
-    {"source": "project-summary.txt", "question": "What is the title of the delay spread research project?", "answer": "A Neural Network Model of RMS Delay Spread for Indoor Internet-of-Things Deployments", "evidence": "A Neural Network Model of RMS Delay Spread for Indoor Internet-of-Things Deployments"},
-    {"source": "project-summary.txt", "question": "Who is the author of the RMS delay spread project and which institute are they from?", "answer": "Alex Morgan, Department of Electronics and Communication, Northbridge Institute of Technology, Riverton.", "evidence": "Author: Alex Morgan, Department of Electronics and Communication, Northbridge Institute of Technology"},
-    {"source": "project-summary.txt", "question": "What does RMS delay spread describe?", "answer": "How much a transmitted signal is smeared in time by multipath reflections; it limits the symbol rate a link can support.", "evidence": "describes how much a transmitted signal is smeared in time by multipath reflections"},
-    {"source": "project-summary.txt", "question": "What are the five inputs of the delay spread neural network?", "answer": "Transmitter-receiver distance, carrier frequency, antenna height, environment type, and the LOS/NLOS condition.", "evidence": "the transmitter-receiver distance, the carrier frequency, the antenna height, the environment type, and the line-of-sight or non-line-of-sight (LOS/NLOS) condition"},
-    {"source": "project-summary.txt", "question": "Which probability distribution does the shadowing term follow?", "answer": "A log-normal distribution, found by maximum-likelihood estimation.", "evidence": "this shadowing term was found to follow a log-normal distribution"},
-    {"source": "project-summary.txt", "question": "How much did the neural model reduce the prediction RMSE compared with the log-distance model?", "answer": "From 9.8 ns to 4.1 ns on the held-out test sites.", "evidence": "reduced the prediction RMSE from 9.8 ns to 4.1 ns"},
-    {"source": "project-summary.txt", "question": "For which degree programme was the delay spread project done?", "answer": "A Master of Technology programme (final-year research project).", "evidence": "final-year research project of a Master of Technology programme"},
-
-    {"source": "publication-certificate.pdf", "question": "In which journal was the delay spread article published, and what is its ISSN?", "answer": "Journal of Applied Wireless Engineering, ISSN 2799-0417.", "evidence": "Journal of Applied Wireless Engineering, ISSN 2799-0417", "location": "p. 1"},
-    {"source": "publication-certificate.pdf", "question": "Which volume and issue of the journal contains the delay spread article?", "answer": "Volume 14, Issue 3, March 2024.", "evidence": "Volume 14, Issue 3, March 2024", "location": "p. 1"},
-    {"source": "publication-certificate.pdf", "question": "What is the impact factor of the Journal of Applied Wireless Engineering?", "answer": "4.21", "evidence": "Journal impact factor: 4.21", "location": "p. 1"},
-    {"source": "publication-certificate.pdf", "question": "Which society publishes the Journal of Applied Wireless Engineering?", "answer": "The Society for Wireless Systems Research.", "evidence": "of the Society for Wireless Systems Research", "location": "p. 1"},
-    {"source": "publication-certificate.pdf", "question": "What is the DOI of the delay spread article?", "answer": "10.5555/jawe.2024.0317", "evidence": "DOI: 10.5555/jawe.2024.0317", "location": "p. 2"},
-    {"source": "publication-certificate.pdf", "question": "When was the delay spread manuscript received and when was it accepted?", "answer": "Received 2 November 2023; accepted after revision on 9 February 2024.", "evidence": "Received: 2 November 2023", "location": "p. 2"},
-    {"source": "publication-certificate.pdf", "question": "What kind of peer review did the delay spread article go through?", "answer": "Double-blind review by two reviewers.", "evidence": "Review process: double-blind, two reviewers", "location": "p. 2"},
-
-    {"source": "measurement-campaign.xlsx", "question": "What mean RMS delay spread was measured at the warehouse site in NLOS conditions?", "answer": "58.4 ns (std dev 11.2 ns) at 45 m, 2.4 GHz.", "evidence": "| S4 | Warehouse | 2.4 | 45 | 3 | NLOS | 58.4 | 11.2 | 355 |", "location": "sheet Measurements"},
-    {"source": "measurement-campaign.xlsx", "question": "What was the mean RMS delay spread in the laboratory under LOS conditions at 5.8 GHz?", "answer": "15.6 ns", "evidence": "| S3 | Laboratory | 5.8 | 8 | 1.2 | LOS | 15.6 | 2.7 | 450 |", "location": "sheet Measurements"},
-    {"source": "measurement-campaign.xlsx", "question": "What is the floor area of the warehouse measurement site?", "answer": "2400 square metres.", "evidence": "| S4 | Warehouse | 2400 | Steel frame |", "location": "sheet Sites"},
-    {"source": "measurement-campaign.xlsx", "question": "How is measurement site S2 constructed?", "answer": "Brick walls; it is a long narrow corridor with metal doors.", "evidence": "| S2 | Corridor | 210 | Brick walls | Long narrow corridor, metal doors |", "location": "sheet Sites"},
-
-    {"source": "model-design.docx", "question": "How many hidden neurons does the proposed delay spread network use?", "answer": "Eight hidden neurons.", "evidence": "one hidden layer of eight neurons and one output neuron"},
-    {"source": "model-design.docx", "question": "After how many epochs did training of the delay spread network stop?", "answer": "After 64 epochs, when validation error had not improved for 6 epochs.", "evidence": "Training stopped after 64 epochs"},
-    {"source": "model-design.docx", "question": "What R squared did the proposed neural network reach on the test sites?", "answer": "0.93 (RMSE 4.1 ns).", "evidence": "| Neural network, 8 hidden neurons (proposed) | 4.1 | 0.93 |"},
-    {"source": "model-design.docx", "question": "What are the limitations of the delay spread model?", "answer": "Validated only for 2.4 GHz and 5.8 GHz and buildings up to 2,400 square metres; outdoor-to-indoor links and millimetre-wave frequencies are not covered.", "evidence": "validated only for the 2.4 GHz and 5.8 GHz bands and for buildings up to 2,400 square metres"},
-    {"source": "model-design.docx", "question": "How were the categorical inputs encoded for the delay spread network?", "answer": "One-hot encoded (continuous inputs scaled to -1 to 1).", "evidence": "Categorical inputs (environment type and LOS/NLOS condition) are one-hot encoded"},
-
-    {"source": "project-presentation.pptx", "question": "What future work is planned for the delay spread model?", "answer": "Extend it to 60 GHz millimetre-wave links, add outdoor-to-indoor measurements, and deploy it inside a network planning tool.", "evidence": "Extend the model to 60 GHz millimetre-wave links", "location": "slide 5"},
-    {"source": "project-presentation.pptx", "question": "Why is a large delay spread a problem for IoT links?", "answer": "It forces lower data rates for IoT links.", "evidence": "Large delay spread forces lower data rates for IoT links", "location": "slide 2"},
-
-    {"source": "faq.md", "question": "How many channel snapshots were collected in the measurement campaign?", "answer": "3,985 channel snapshots across the five sites.", "evidence": "A total of 3,985 channel snapshots were collected across the five sites"},
-    {"source": "faq.md", "question": "Which sites were held out for testing the delay spread model?", "answer": "Sites S4 and S5 (S1, S2 and S3 were used for training and validation).", "evidence": "sites S4 and S5 were held out for testing"},
-    {"source": "faq.md", "question": "What software was used to build and train the delay spread network?", "answer": "Python with PyTorch, using a custom Levenberg-Marquardt optimiser.", "evidence": "trained in Python with PyTorch, using a custom Levenberg-Marquardt optimiser"}
+    {
+      "source": "project-summary.txt",
+      "question": "What is the title of the delay spread research project?",
+      "answer": "A Neural Network Model of RMS Delay Spread for Indoor Internet-of-Things Deployments",
+      "evidence": "A Neural Network Model of RMS Delay Spread for Indoor Internet-of-Things Deployments"
+    },
+    {
+      "source": "project-summary.txt",
+      "question": "Who is the author of the RMS delay spread project and which institute are they from?",
+      "answer": "Alex Morgan, Department of Electronics and Communication, Northbridge Institute of Technology, Riverton.",
+      "evidence": "Author: Alex Morgan, Department of Electronics and Communication, Northbridge Institute of Technology"
+    },
+    {
+      "source": "project-summary.txt",
+      "question": "What does RMS delay spread describe?",
+      "answer": "How much a transmitted signal is smeared in time by multipath reflections; it limits the symbol rate a link can support.",
+      "evidence": "describes how much a transmitted signal is smeared in time by multipath reflections"
+    },
+    {
+      "source": "project-summary.txt",
+      "question": "What are the five inputs of the delay spread neural network?",
+      "answer": "Transmitter-receiver distance, carrier frequency, antenna height, environment type, and the LOS/NLOS condition.",
+      "evidence": "the transmitter-receiver distance, the carrier frequency, the antenna height, the environment type, and the line-of-sight or non-line-of-sight (LOS/NLOS) condition"
+    },
+    {
+      "source": "project-summary.txt",
+      "question": "Which probability distribution does the shadowing term follow?",
+      "answer": "A log-normal distribution, found by maximum-likelihood estimation.",
+      "evidence": "this shadowing term was found to follow a log-normal distribution"
+    },
+    {
+      "source": "project-summary.txt",
+      "question": "How much did the neural model reduce the prediction RMSE compared with the log-distance model?",
+      "answer": "From 9.8 ns to 4.1 ns on the held-out test sites.",
+      "evidence": "reduced the prediction RMSE from 9.8 ns to 4.1 ns"
+    },
+    {
+      "source": "project-summary.txt",
+      "question": "For which degree programme was the delay spread project done?",
+      "answer": "A Master of Technology programme (final-year research project).",
+      "evidence": "final-year research project of a Master of Technology programme"
+    },
+    {
+      "source": "publication-certificate.pdf",
+      "question": "In which journal was the delay spread article published, and what is its ISSN?",
+      "answer": "Journal of Applied Wireless Engineering, ISSN 2799-0417.",
+      "evidence": "Journal of Applied Wireless Engineering, ISSN 2799-0417",
+      "location": "p. 1"
+    },
+    {
+      "source": "publication-certificate.pdf",
+      "question": "Which volume and issue of the journal contains the delay spread article?",
+      "answer": "Volume 14, Issue 3, March 2024.",
+      "evidence": "Volume 14, Issue 3, March 2024",
+      "location": "p. 1"
+    },
+    {
+      "source": "publication-certificate.pdf",
+      "question": "What is the impact factor of the Journal of Applied Wireless Engineering?",
+      "answer": "4.21",
+      "evidence": "Journal impact factor: 4.21",
+      "location": "p. 1"
+    },
+    {
+      "source": "publication-certificate.pdf",
+      "question": "Which society publishes the Journal of Applied Wireless Engineering?",
+      "answer": "The Society for Wireless Systems Research.",
+      "evidence": "of the Society for Wireless Systems Research",
+      "location": "p. 1"
+    },
+    {
+      "source": "publication-certificate.pdf",
+      "question": "What is the DOI of the delay spread article?",
+      "answer": "10.5555/jawe.2024.0317",
+      "evidence": "DOI: 10.5555/jawe.2024.0317",
+      "location": "p. 2"
+    },
+    {
+      "source": "publication-certificate.pdf",
+      "question": "When was the delay spread manuscript received and when was it accepted?",
+      "answer": "Received 2 November 2023; accepted after revision on 9 February 2024.",
+      "evidence": "Received: 2 November 2023",
+      "location": "p. 2"
+    },
+    {
+      "source": "publication-certificate.pdf",
+      "question": "What kind of peer review did the delay spread article go through?",
+      "answer": "Double-blind review by two reviewers.",
+      "evidence": "Review process: double-blind, two reviewers",
+      "location": "p. 2"
+    },
+    {
+      "source": "measurement-campaign.xlsx",
+      "question": "What mean RMS delay spread was measured at the warehouse site in NLOS conditions?",
+      "answer": "58.4 ns (std dev 11.2 ns) at 45 m, 2.4 GHz.",
+      "evidence": "| S4 | Warehouse | 2.4 | 45 | 3 | NLOS | 58.4 | 11.2 | 355 |",
+      "location": "sheet Measurements"
+    },
+    {
+      "source": "measurement-campaign.xlsx",
+      "question": "What was the mean RMS delay spread in the laboratory under LOS conditions at 5.8 GHz?",
+      "answer": "15.6 ns",
+      "evidence": "| S3 | Laboratory | 5.8 | 8 | 1.2 | LOS | 15.6 | 2.7 | 450 |",
+      "location": "sheet Measurements"
+    },
+    {
+      "source": "measurement-campaign.xlsx",
+      "question": "What is the floor area of the warehouse measurement site?",
+      "answer": "2400 square metres.",
+      "evidence": "| S4 | Warehouse | 2400 | Steel frame |",
+      "location": "sheet Sites"
+    },
+    {
+      "source": "measurement-campaign.xlsx",
+      "question": "How is measurement site S2 constructed?",
+      "answer": "Brick walls; it is a long narrow corridor with metal doors.",
+      "evidence": "| S2 | Corridor | 210 | Brick walls | Long narrow corridor, metal doors |",
+      "location": "sheet Sites"
+    },
+    {
+      "source": "model-design.docx",
+      "question": "How many hidden neurons does the proposed delay spread network use?",
+      "answer": "Eight hidden neurons.",
+      "evidence": "one hidden layer of eight neurons and one output neuron"
+    },
+    {
+      "source": "model-design.docx",
+      "question": "After how many epochs did training of the delay spread network stop?",
+      "answer": "After 64 epochs, when validation error had not improved for 6 epochs.",
+      "evidence": "Training stopped after 64 epochs"
+    },
+    {
+      "source": "model-design.docx",
+      "question": "What R squared did the proposed neural network reach on the test sites?",
+      "answer": "0.93 (RMSE 4.1 ns).",
+      "evidence": "| Neural network, 8 hidden neurons (proposed) | 4.1 | 0.93 |"
+    },
+    {
+      "source": "model-design.docx",
+      "question": "What are the limitations of the delay spread model?",
+      "answer": "Validated only for 2.4 GHz and 5.8 GHz and buildings up to 2,400 square metres; outdoor-to-indoor links and millimetre-wave frequencies are not covered.",
+      "evidence": "validated only for the 2.4 GHz and 5.8 GHz bands and for buildings up to 2,400 square metres"
+    },
+    {
+      "source": "model-design.docx",
+      "question": "How were the categorical inputs encoded for the delay spread network?",
+      "answer": "One-hot encoded (continuous inputs scaled to -1 to 1).",
+      "evidence": "Categorical inputs (environment type and LOS/NLOS condition) are one-hot encoded"
+    },
+    {
+      "source": "project-presentation.pptx",
+      "question": "What future work is planned for the delay spread model?",
+      "answer": "Extend it to 60 GHz millimetre-wave links, add outdoor-to-indoor measurements, and deploy it inside a network planning tool.",
+      "evidence": "Extend the model to 60 GHz millimetre-wave links",
+      "location": "slide 5"
+    },
+    {
+      "source": "project-presentation.pptx",
+      "question": "Why is a large delay spread a problem for IoT links?",
+      "answer": "It forces lower data rates for IoT links.",
+      "evidence": "Large delay spread forces lower data rates for IoT links",
+      "location": "slide 2"
+    },
+    {
+      "source": "faq.md",
+      "question": "How many channel snapshots were collected in the measurement campaign?",
+      "answer": "3,985 channel snapshots across the five sites.",
+      "evidence": "A total of 3,985 channel snapshots were collected across the five sites"
+    },
+    {
+      "source": "faq.md",
+      "question": "Which sites were held out for testing the delay spread model?",
+      "answer": "Sites S4 and S5 (S1, S2 and S3 were used for training and validation).",
+      "evidence": "sites S4 and S5 were held out for testing"
+    },
+    {
+      "source": "faq.md",
+      "question": "What software was used to build and train the delay spread network?",
+      "answer": "Python with PyTorch, using a custom Levenberg-Marquardt optimiser.",
+      "evidence": "trained in Python with PyTorch, using a custom Levenberg-Marquardt optimiser"
+    },
+    {
+      "source": "scanned-lab-notebook.png",
+      "question": "What back-to-back cable loss was measured during the channel sounder calibration?",
+      "answer": "0.8 dB",
+      "evidence": "Back-to-back cable loss: 0.8 dB"
+    },
+    {
+      "source": "scanned-lab-notebook.png",
+      "question": "What reference antenna gain is recorded in the calibration log?",
+      "answer": "6 dBi",
+      "evidence": "Reference antenna gain: 6 dBi"
+    },
+    {
+      "source": "scanned-lab-notebook.png",
+      "question": "What noise floor was recorded in the lab notebook calibration log?",
+      "answer": "-97 dBm",
+      "evidence": "Noise floor: -97 dBm"
+    },
+    {
+      "source": "scanned-lab-notebook.png",
+      "question": "Who operated the channel sounder calibration and on what date?",
+      "answer": "J. Rivera, on 12 January 2024",
+      "evidence": "Operator: J. Rivera"
+    },
+    {
+      "source": "scanned-calibration-certificate.pdf",
+      "question": "What is the number of the calibration certificate?",
+      "answer": "CAL-2024-031",
+      "evidence": "Certificate No. CAL-2024-031",
+      "location": "p. 1"
+    },
+    {
+      "source": "scanned-calibration-certificate.pdf",
+      "question": "Which instrument does the calibration certificate cover?",
+      "answer": "Vector network analyser VNA-7",
+      "evidence": "Vector network analyser VNA-7",
+      "location": "p. 1"
+    },
+    {
+      "source": "scanned-calibration-certificate.pdf",
+      "question": "Until when is the instrument calibration valid?",
+      "answer": "31 December 2024",
+      "evidence": "Valid until: 31 December 2024",
+      "location": "p. 1"
+    },
+    {
+      "source": "scanned-calibration-certificate.pdf",
+      "question": "Which lab calibrated the vector network analyser?",
+      "answer": "Riverton Metrology Lab",
+      "evidence": "Riverton Metrology Lab",
+      "location": "p. 1"
+    }
   ]
 }

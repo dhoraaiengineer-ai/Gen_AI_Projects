@@ -49,6 +49,7 @@ def test_ingest_then_query(harness: AppHarness) -> None:
                 "added": 1,
                 "removed": 0,
                 "golden_questions": 0,
+                "guardrail_flags": [],
                 "error": None,
             }
         ],
@@ -91,7 +92,14 @@ def test_agent_endpoint(harness: AppHarness) -> None:
     with harness.client(tool_call, "Paris (geo.md).") as c:
         c.post("/api/v1/ingest", json=INGEST_BODY)
         r = c.post("/api/v1/agent", json={"task": "Capital of France?"})
-    assert r.json() == {"answer": "Paris (geo.md).", "tool_calls": 1, "model": "gpt-4.1-nano", "web_sources": []}
+    assert r.json() == {
+        "answer": "Paris (geo.md).",
+        "tool_calls": 1,
+        "model": "gpt-4.1-nano",
+        "web_sources": [],
+        "blocked": False,
+        "guardrails": [],
+    }
 
 
 def test_agent_stops_at_iteration_limit(harness: AppHarness) -> None:

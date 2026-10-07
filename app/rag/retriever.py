@@ -14,6 +14,7 @@ from langchain_core.vectorstores import VectorStore
 
 from app.core.metrics import RETRIEVAL_LATENCY
 from app.rag.chunking import PARENT_CONTENT_KEY, PARENT_ID_KEY, Chunker, ChunkingStrategy, content_id
+from app.rag.filters import MetadataFilter, to_callable_filter
 from app.rag.loaders import Section
 from app.rag.registry import DocumentRecord, DocumentRegistry
 
@@ -98,6 +99,7 @@ class Retriever:
         default_k: int,
         registry: DocumentRegistry,
         keyword_search: "KeywordSearch | None" = None,
+        vector_filter: Callable[[MetadataFilter], Any] = to_callable_filter,
         reranker: "Reranker | None" = None,
         rerank_candidates: int = 12,
     ):
@@ -108,6 +110,7 @@ class Retriever:
         self.default_k = default_k
         self.registry = registry
         self.keyword_search = keyword_search  # None = vector search only
+        self.vector_filter = vector_filter  # MetadataFilter -> the vector store's filter format
         self.reranker = reranker  # None = keep the fused order
         self.rerank_candidates = rerank_candidates
 
@@ -142,12 +145,15 @@ class Retriever:
             return IngestResult(source, IngestStatus.UNCHANGED, strategy, chunks=len(previous.chunk_ids))
 
         chunker = self.chunker_factory(strategy, overlap_pct)
+        doc_meta = json.dumps(metadata, sort_keys=True)
         chunks: dict[str, Document] = {}
         for section in sections:
             for chunk in chunker.split(section.text, {**metadata, **section.metadata, "source": source}):
                 # Same source + strategy + content -> same id: duplicated text inside a document is stored once,
                 # and chunks that survive an edit keep their id (and embedding).
-                key = f"{chunk.metadata.get(PARENT_ID_KEY, '')}:{chunk.page_content}"
+                # Document-level metadata (file type, tags) is part of the id: changing a document's tags
+                # re-writes its chunks, so filters always see the current metadata.
+                key = f"{doc_meta}:{chunk.metadata.get(PARENT_ID_KEY, '')}:{chunk.page_content}"
                 chunks.setdefault(content_id(source, strategy, key), chunk)
 
         old_ids = set(previous.chunk_ids) if previous else set()
@@ -193,7 +199,12 @@ class Retriever:
         return self.registry.list()
 
     def retrieve(
-        self, query: str | Sequence[str], k: int | None = None, *, rerank: bool = True
+        self,
+        query: str | Sequence[str],
+        k: int | None = None,
+        *,
+        rerank: bool = True,
+        filters: MetadataFilter | None = None,
     ) -> list[RetrievedChunk]:
         """Top-k chunks for one query, or for several phrasings of it (e.g. a rewritten follow-up plus the
         user's own words). Each query runs a vector search and, when configured, a keyword search; all the
@@ -207,9 +218,11 @@ class Retriever:
         ranked_lists: list[list[tuple[Document, float]]] = []
         with RETRIEVAL_LATENCY.time():
             for q in queries:
-                ranked_lists.append(self.vector_store.similarity_search_with_relevance_scores(q, k=fetch))
+                # Filters apply inside each search, so top_k is filled from matching chunks only.
+                extra = {"filter": self.vector_filter(filters)} if filters else {}
+                ranked_lists.append(self.vector_store.similarity_search_with_relevance_scores(q, k=fetch, **extra))
                 if self.keyword_search is not None:
-                    ranked_lists.append(self.keyword_search.search(q, fetch))
+                    ranked_lists.append(self.keyword_search.search(q, fetch, filters))
         fused = reciprocal_rank_fusion(ranked_lists)
 
         seen: set[object] = set()
@@ -253,7 +266,7 @@ class Reranker(Protocol):
 
 
 class KeywordSearch(Protocol):
-    def search(self, query: str, k: int) -> list[tuple[Document, float]]: ...
+    def search(self, query: str, k: int, filters: MetadataFilter | None = None) -> list[tuple[Document, float]]: ...
 
 
 _WORD = re.compile(r"[a-z0-9][a-z0-9./-]*", re.IGNORECASE)
@@ -269,10 +282,12 @@ class InMemoryKeywordSearch:
     def __init__(self, vector_store: Any):
         self.vector_store = vector_store
 
-    def search(self, query: str, k: int) -> list[tuple[Document, float]]:
+    def search(self, query: str, k: int, filters: MetadataFilter | None = None) -> list[tuple[Document, float]]:
         terms = {t.lower() for t in _WORD.findall(query)} - _STOPWORDS
         scored = []
         for item in self.vector_store.store.values():
+            if filters and not filters.matches(item["metadata"]):
+                continue
             words = {w.lower() for w in _WORD.findall(item["text"])}
             overlap = len(terms & words)
             if overlap:
@@ -290,9 +305,15 @@ def _expand_parent(doc: Document) -> Document:
     return Document(page_content=parent, metadata=metadata, id=doc.id)
 
 
+def _untrusted(chunk: RetrievedChunk) -> str:
+    """Chunks the document guardrail flagged (e.g. embedded "ignore previous instructions") are labelled."""
+    flag = chunk.document.metadata.get("guardrail")
+    return f' untrusted="{flag}"' if flag else ""
+
+
 def format_context(chunks: list[RetrievedChunk]) -> str:
     """Render chunks as numbered documents the model can cite as [1], [2], ..., tagged with source and location."""
     return "\n\n".join(
-        f'<document index="{i}" source="{c.citation}">\n{c.document.page_content}\n</document>'
+        f'<document index="{i}" source="{c.citation}"{_untrusted(c)}>\n{c.document.page_content}\n</document>'
         for i, c in enumerate(chunks, start=1)
     )

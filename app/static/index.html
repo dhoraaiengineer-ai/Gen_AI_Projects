@@ -46,7 +46,7 @@
         <textarea id="doc-text" name="text" rows="8" placeholder="Paste document text…"></textarea>
 
         <label for="files">Or upload files</label>
-        <input id="files" name="files" type="file" accept=".pdf,.xlsx,.xlsm,.docx,.pptx,.csv,.tsv,.txt,.md,.markdown,.json" multiple>
+        <input id="files" name="files" type="file" accept=".pdf,.xlsx,.xlsm,.docx,.pptx,.csv,.tsv,.txt,.md,.markdown,.json,.png,.jpg,.jpeg,.tif,.tiff,.bmp,.webp" multiple>
 
         <label for="chunking">Chunking strategy</label>
         <select id="chunking" name="chunking">
@@ -60,6 +60,9 @@
         <label for="overlap">Overlap % (optional)</label>
         <input id="overlap" name="overlap" type="number" min="0" max="50" step="1"
                placeholder="Default: 15% for chunks, 10% for parent-child children">
+
+        <label for="tags">Tags (optional, comma-separated)</label>
+        <input id="tags" name="tags" type="text" maxlength="500" placeholder="e.g. finance, 2024">
 
         <button type="submit" id="ingest-btn">Add to knowledge base</button>
         <p id="ingest-result" class="result" role="status" aria-live="polite"></p>
@@ -93,6 +96,16 @@
           <label><input type="radio" name="mode" value="agent"> Research</label>
           <button type="button" id="new-chat-btn" class="link" title="Start a conversation with no memory of this one">New chat</button>
         </div>
+        <details class="filters" id="filters">
+          <summary>Search in: <span id="filter-summary">all documents</span></summary>
+          <label for="filter-sources">Documents</label>
+          <select id="filter-sources" multiple size="4" aria-describedby="filter-hint"></select>
+          <label for="filter-types">File types</label>
+          <select id="filter-types" multiple size="3"></select>
+          <label for="filter-tags">Tags</label>
+          <input id="filter-tags" type="text" placeholder="e.g. finance">
+          <p class="hint" id="filter-hint">Ctrl/Cmd-click to pick several. Leave empty to search everything.</p>
+        </details>
         <div class="composer-row">
           <textarea id="question" rows="2" placeholder="Ask a question… (Enter to send, Shift+Enter for a new line)" maxlength="4000" required></textarea>
           <button type="submit" id="ask-btn">Send</button>

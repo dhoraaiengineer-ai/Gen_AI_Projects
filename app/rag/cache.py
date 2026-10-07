@@ -105,16 +105,18 @@ class AnswerCache:
     def _version(self) -> str:
         return self.store.get(f"{self.namespace}:kb_version") or "0"
 
-    def _key(self, question: str, top_k: int | None) -> str:
-        return f"{self.namespace}:answer:{self._version()}:{_digest(normalize_question(question), top_k)}"
+    def _key(self, question: str, top_k: int | None, scope: str = "") -> str:
+        digest = _digest(normalize_question(question), top_k, scope)
+        return f"{self.namespace}:answer:{self._version()}:{digest}"
 
-    def get(self, question: str, top_k: int | None) -> dict[str, Any] | None:
-        raw = self.store.get(self._key(question, top_k))
+    def get(self, question: str, top_k: int | None, scope: str = "") -> dict[str, Any] | None:
+        """scope: anything else that changes the answer, e.g. the metadata filter."""
+        raw = self.store.get(self._key(question, top_k, scope))
         CACHE_REQUESTS.labels("answer", "hit" if raw else "miss").inc()
         return json.loads(raw) if raw else None
 
-    def set(self, question: str, top_k: int | None, value: dict[str, Any]) -> None:
-        self.store.set(self._key(question, top_k), json.dumps(value), self.ttl)
+    def set(self, question: str, top_k: int | None, value: dict[str, Any], scope: str = "") -> None:
+        self.store.set(self._key(question, top_k, scope), json.dumps(value), self.ttl)
 
     def invalidate(self) -> None:
         """Documents changed: bump the version so every cached answer becomes unreachable (it then expires)."""

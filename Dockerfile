@@ -35,6 +35,8 @@ ENV PATH="/opt/venv/bin:$PATH" \
 # runs from /opt/venv and never installs anything, and old copies of these tools carry known CVEs.
 RUN apt-get update \
  && apt-get upgrade -y --no-install-recommends \
+ # OpenCV (used by the OCR engine) needs these two shared libraries at runtime.
+ && apt-get install -y --no-install-recommends libgl1 libglib2.0-0 \
  && rm -rf /var/lib/apt/lists/* \
  && (python -m pip uninstall -y pip setuptools wheel || true)
 

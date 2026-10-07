@@ -136,6 +136,12 @@ class Settings(BaseSettings):
     # a refusal). Checks citations and that numbers/identifiers in the answer appear in the passages.
     hallucination_guard: Literal["off", "flag", "block"] = "flag"
 
+    # Guardrails: policy-driven input / document / output checks (app/guardrails/policy.yaml).
+    guardrails_enabled: bool = True
+    guardrails_policy_path: str | None = None  # another policy file; default = the packaged one
+    # OCR for scanned PDF pages and image uploads (RapidOCR, offline).
+    ocr_enabled: bool = True
+
     # Retrieval
     top_k: int = Field(4, ge=1, le=50)
     # Hybrid search: add Postgres full-text keyword matches to vector search (fused by reciprocal rank).

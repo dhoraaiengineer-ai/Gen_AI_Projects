@@ -11,7 +11,12 @@ from collections.abc import Callable, Iterable
 from dataclasses import dataclass, field
 from pathlib import PurePath
 
+from app.rag import ocr
+
 logger = logging.getLogger(__name__)
+
+# Set from settings at startup (OCR_ENABLED); module-level so the loaders stay plain functions.
+OCR_ENABLED = True
 
 
 class UnsupportedFileError(ValueError):
@@ -65,18 +70,47 @@ def _load_delimited(data: bytes) -> LoadedFile:
     return LoadedFile([Section(_decode(data))], tabular=True)
 
 
+# A page with less text than this is treated as scanned and read with OCR (if it has images).
+MIN_TEXT_CHARS_PER_PAGE = 20
+
+
 def _load_pdf(data: bytes) -> LoadedFile:
+    """Text layer per page; pages without one (scans, photos of documents) are OCR'd from their images."""
     from pypdf import PdfReader
 
     reader = PdfReader(io.BytesIO(data))
-    sections = [
-        Section(text, {"page": str(number)})
-        for number, page in enumerate(reader.pages, start=1)
-        if (text := (page.extract_text() or "").strip())
-    ]
+    sections: list[Section] = []
+    for number, page in enumerate(reader.pages, start=1):
+        text = (page.extract_text() or "").strip()
+        if len(text) < MIN_TEXT_CHARS_PER_PAGE and (scanned := _ocr_page_images(page)):
+            sections.append(Section(scanned, {"page": str(number), "ocr": "true"}))
+        elif text:
+            sections.append(Section(text, {"page": str(number)}))
     if not sections:
-        raise UnsupportedFileError("no extractable text (scanned PDFs need OCR, which isn't supported yet)")
+        raise UnsupportedFileError("no text found, even with OCR (blank or unreadable scan?)")
     return LoadedFile(sections)
+
+
+def _ocr_page_images(page: object) -> str:
+    if not OCR_ENABLED:
+        return ""
+    texts = []
+    for image in getattr(page, "images", []):
+        try:
+            texts.append(ocr.default_engine().read(image.data))
+        except Exception:
+            logger.warning("OCR failed for a PDF page image", exc_info=True)
+    return "\n".join(t for t in texts if t.strip()).strip()
+
+
+def _load_image(data: bytes) -> LoadedFile:
+    """Photos and scans (PNG, JPG, TIFF, BMP, WEBP) are read with OCR."""
+    if not OCR_ENABLED:
+        raise UnsupportedFileError("images need OCR, which is disabled (OCR_ENABLED=false)")
+    text = ocr.default_engine().read(data)
+    if not text.strip():
+        raise UnsupportedFileError("no text found in the image")
+    return LoadedFile([Section(text, {"ocr": "true"})])
 
 
 def _load_xlsx(data: bytes) -> LoadedFile:
@@ -140,6 +174,13 @@ LOADERS: dict[str, Callable[[bytes], LoadedFile]] = {
     ".xlsm": _load_xlsx,
     ".docx": _load_docx,
     ".pptx": _load_pptx,
+    ".png": _load_image,
+    ".jpg": _load_image,
+    ".jpeg": _load_image,
+    ".tif": _load_image,
+    ".tiff": _load_image,
+    ".bmp": _load_image,
+    ".webp": _load_image,
 }
 
 SUPPORTED_EXTENSIONS = tuple(LOADERS)

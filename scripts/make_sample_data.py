@@ -311,6 +311,38 @@ def write_pptx(path: Path) -> None:
     deck.save(path)
 
 
+SCANNED_NOTEBOOK = [
+    "LAB NOTEBOOK - CALIBRATION LOG",
+    "Date: 12 January 2024",
+    "Channel sounder calibrated at 2.4 GHz and 5.8 GHz",
+    "Back-to-back cable loss: 0.8 dB",
+    "Reference antenna gain: 6 dBi",
+    "Noise floor: -97 dBm",
+    "Operator: J. Rivera",
+]
+
+SCANNED_CERTIFICATE = [
+    "CALIBRATION CERTIFICATE",
+    "Certificate No. CAL-2024-031",
+    "Instrument: Vector network analyser VNA-7",
+    "Calibrated by: Riverton Metrology Lab",
+    "Valid until: 31 December 2024",
+]
+
+
+def write_scan(path: Path, lines: list[str]) -> None:
+    """An image of a page (like a phone photo or a scanner output) with no text layer: only OCR can read it.
+    Saved as PNG, or as an image-only PDF when the path ends in .pdf."""
+    from PIL import Image, ImageDraw, ImageFont
+
+    font = ImageFont.load_default(size=34)
+    page = Image.new("RGB", (1240, 120 + 64 * len(lines)), (250, 249, 245))
+    draw = ImageDraw.Draw(page)
+    for i, line in enumerate(lines):
+        draw.text((70, 60 + 64 * i), line, fill=(20, 20, 20), font=font)
+    page.save(path, "PDF" if path.suffix == ".pdf" else "PNG", resolution=150)
+
+
 def main() -> None:
     logging.basicConfig(level=logging.INFO, format="%(message)s")
     OUT.mkdir(parents=True, exist_ok=True)
@@ -320,6 +352,8 @@ def main() -> None:
     write_docx(OUT / "model-design.docx")
     write_pptx(OUT / "project-presentation.pptx")
     (OUT / "faq.md").write_text(FAQ_MD, encoding="utf-8")
+    write_scan(OUT / "scanned-lab-notebook.png", SCANNED_NOTEBOOK)
+    write_scan(OUT / "scanned-calibration-certificate.pdf", SCANNED_CERTIFICATE)
     for path in sorted(OUT.iterdir()):
         logger.info("wrote %s (%d bytes)", path.relative_to(OUT.parent.parent.parent), path.stat().st_size)
 

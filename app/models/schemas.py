@@ -16,6 +16,7 @@ class DocumentIn(BaseModel):
 
 class IngestRequest(BaseModel):
     documents: list[DocumentIn] = Field(..., min_length=1, max_length=100)
+    tags: list[str] = Field(default_factory=list, max_length=20, description="Tags for filtering, e.g. finance")
     chunking: ChunkingStrategy | None = Field(None, description="Chunking strategy; omit to use the server default")
     chunk_overlap_pct: float | None = Field(
         None,
@@ -33,6 +34,7 @@ class DocumentResult(BaseModel):
     added: int = Field(0, description="Chunks embedded by this upload")
     removed: int = Field(0, description="Stale chunks deleted by this upload")
     golden_questions: int = Field(0, description="Golden Q&A pairs generated for this document")
+    guardrail_flags: list[str] = Field(default_factory=list, description="e.g. prompt_injection found in the file")
     error: str | None = None
 
 
@@ -50,10 +52,26 @@ SESSION_ID = Field(
 )
 
 
+class QueryFilters(BaseModel):
+    """Metadata filter: only search chunks from these documents / file types / tags (all optional)."""
+
+    sources: list[str] = Field(default_factory=list, max_length=50, description="File names")
+    file_types: list[str] = Field(default_factory=list, max_length=20, description='e.g. ["pdf", "xlsx"]')
+    tags: list[str] = Field(default_factory=list, max_length=20, description="Tags given at upload")
+
+
+class GuardrailEvent(BaseModel):
+    stage: Literal["input", "documents", "output"]
+    check: str
+    action: Literal["allow", "flag", "redact", "block"]
+    detail: str
+
+
 class QueryRequest(BaseModel):
     question: str = Field(..., min_length=1, max_length=4000)
     top_k: int | None = Field(None, ge=1, le=20)
     session_id: str | None = SESSION_ID
+    filters: QueryFilters | None = None
 
 
 class SourceChunk(BaseModel):
@@ -71,11 +89,14 @@ class QueryResponse(BaseModel):
     standalone_question: str | None = Field(None, description="The follow-up rewritten using the conversation")
     grounded: bool | None = Field(None, description="Passed the hallucination guard (None when it is off)")
     grounding_issues: list[str] = Field(default_factory=list, description="Why the answer may not be grounded")
+    blocked: bool = Field(False, description="Stopped by a guardrail (the answer is the policy refusal)")
+    guardrails: list[GuardrailEvent] = Field(default_factory=list, description="Guardrail checks that fired")
 
 
 class AgentRequest(BaseModel):
     task: str = Field(..., min_length=1, max_length=4000)
     session_id: str | None = SESSION_ID
+    filters: QueryFilters | None = None
 
 
 class AgentResponse(BaseModel):
@@ -83,6 +104,8 @@ class AgentResponse(BaseModel):
     tool_calls: int
     model: str
     web_sources: list[str] = Field(default_factory=list, description="URLs of web results the agent read")
+    blocked: bool = False
+    guardrails: list[GuardrailEvent] = Field(default_factory=list)
 
 
 class LivenessResponse(BaseModel):
@@ -217,3 +240,12 @@ class SessionOut(BaseModel):
 
 class SessionListResponse(BaseModel):
     sessions: list[SessionOut]
+
+
+class SourceInfo(BaseModel):
+    source: str
+    file_type: str
+
+
+class SourceListResponse(BaseModel):
+    sources: list[SourceInfo]

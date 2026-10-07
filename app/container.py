@@ -4,6 +4,7 @@ import logging
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass, field
 from functools import partial
+from typing import Any
 
 from langchain_core.embeddings import Embeddings
 from langchain_core.language_models import BaseChatModel, LanguageModelInput
@@ -16,7 +17,8 @@ from app.agents.research_agent import as_model_list, build_research_agent
 from app.config import Settings
 from app.core.auth import TokenVerifier, build_supabase_verifier
 from app.core.circuit import BreakerRegistry
-from app.rag import providers
+from app.guardrails.engine import Guardrails, load_policy
+from app.rag import loaders, providers
 from app.rag.cache import AnswerCache, InMemoryKeyValueStore, KeyValueStore, PromptCache
 from app.rag.chunking import (
     Chunker,
@@ -28,8 +30,10 @@ from app.rag.chunking import (
     overlap_chars,
 )
 from app.rag.evaluation import Evaluator
+from app.rag.filters import MetadataFilter, to_callable_filter, to_pgvector_filter
 from app.rag.golden import GoldenGenerator, GoldenStore, InMemoryGoldenStore
 from app.rag.memory import ConversationMemory, ConversationStore, InMemoryConversationStore
+from app.rag.prompts import prompt_fingerprints
 from app.rag.ragas_metrics import RagasJudge
 from app.rag.registry import DocumentRegistry, InMemoryDocumentRegistry
 from app.rag.rerank import LLMReranker
@@ -71,6 +75,7 @@ def build_container_from(
     kv_store: KeyValueStore | None = None,
     conversations: ConversationStore | None = None,
     keyword_search: KeywordSearch | None = None,
+    vector_filter: Callable[[MetadataFilter], Any] = to_callable_filter,
 ) -> Container:
     """Wire the app from already-built dependencies. Tests use this with fakes (and in-memory stores)."""
     kv_store = kv_store or InMemoryKeyValueStore()
@@ -93,6 +98,7 @@ def build_container_from(
         registry or InMemoryDocumentRegistry(),
         keyword_search if settings.hybrid_search else None,
         rerank_candidates=settings.rerank_candidates,
+        vector_filter=vector_filter,
     )
     answer_llm = (
         llm.with_fallbacks(answer_fallbacks, exceptions_to_handle=tuple(fallback_exceptions))
@@ -101,12 +107,24 @@ def build_container_from(
     )
     if settings.rerank_enabled:
         retriever.reranker = LLMReranker(answer_llm)  # same fallback chain, breakers and prompt cache
+    guardrails = (
+        Guardrails(load_policy(settings.guardrails_policy_path), prompt_fingerprints())
+        if settings.guardrails_enabled
+        else None
+    )
+    loaders.OCR_ENABLED = settings.ocr_enabled
     rag_graph = build_rag_graph(retriever, answer_llm)
     service = RAGService(
         retriever=retriever,
         rag_graph=rag_graph,
         research_agent=build_research_agent(
-            retriever, llm, agent_fallback_llm, fallback_exceptions, web_search, settings.web_search_max_results
+            retriever,
+            llm,
+            agent_fallback_llm,
+            fallback_exceptions,
+            web_search,
+            settings.web_search_max_results,
+            content_guard=(lambda text: guardrails.check_document(text, "web").text) if guardrails else None,
         ),
         model_name=settings.llm_model,
         agent_max_iterations=settings.agent_max_iterations,
@@ -119,6 +137,7 @@ def build_container_from(
         memory=memory,
         rewriter=answer_llm,
         hallucination_guard=settings.hallucination_guard,
+        guardrails=guardrails,
         audit_content=settings.audit_log_content,
     )
     return Container(service=service, readiness_checks=readiness_checks or {}, verifier=verifier)
@@ -225,6 +244,7 @@ def build_container(settings: Settings) -> Container:
         kv_store=kv_store,
         conversations=providers.PostgresConversationStore(engine, settings.collection_name),
         keyword_search=providers.PostgresKeywordSearch(engine, settings.collection_name),
+        vector_filter=to_pgvector_filter,
     )
     container._closers.append(engine.dispose)
     if isinstance(kv_store, providers.RedisKeyValueStore):

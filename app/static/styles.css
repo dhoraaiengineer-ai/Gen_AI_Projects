@@ -153,6 +153,11 @@ button:disabled { opacity: 0.55; cursor: progress; }
 
 .meta { font-size: 12px; color: var(--muted); margin-top: 8px; white-space: normal; }
 .meta.warn { color: var(--warn); margin-top: 4px; }
+.meta.guard { color: var(--muted); margin-top: 4px; }
+.filters { font-size: 13px; color: var(--muted); margin-bottom: 6px; }
+.filters summary { cursor: pointer; }
+.filters[open] { display: flex; flex-direction: column; gap: 4px; }
+.filters select, .filters input { width: 100%; font: inherit; color: inherit; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 4px 8px; }
 
 .cite {
   display: inline-block;

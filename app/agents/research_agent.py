@@ -7,10 +7,11 @@ Tools: `search_knowledge_base` (always) and `search_web` (only when a web search
 """
 
 import logging
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 
 from langchain_core.language_models import BaseChatModel
 from langchain_core.messages import SystemMessage
+from langchain_core.runnables import RunnableConfig
 from langchain_core.tools import BaseTool, tool
 from langgraph.graph import START, MessagesState, StateGraph
 from langgraph.graph.state import CompiledStateGraph
@@ -19,7 +20,7 @@ from langgraph.prebuilt import ToolNode, tools_condition
 from app.core.metrics import WEB_SEARCHES
 from app.rag.prompts import AGENT_SYSTEM_PROMPT, AGENT_WEB_SEARCH_PROMPT
 from app.rag.retriever import Retriever, format_context
-from app.rag.websearch import WebSearch, WebSearchError, format_web_results
+from app.rag.websearch import WebResult, WebSearch, WebSearchError, format_web_results
 
 logger = logging.getLogger(__name__)
 
@@ -28,18 +29,21 @@ WEB_TOOL_NAME = "search_web"
 
 def build_search_tool(retriever: Retriever) -> BaseTool:
     @tool
-    def search_knowledge_base(query: str, top_k: int = 4) -> str:
+    def search_knowledge_base(query: str, config: RunnableConfig, top_k: int = 4) -> str:
         """Semantic search over the ingested documents. Returns the most relevant passages
         with their source names. Use short, specific queries; search again with different
         wording if the results are thin. top_k is the number of passages (1-10)."""
         # No LLM re-ranking here: the agent judges results itself, and it may search several times.
-        chunks = retriever.retrieve(query, max(1, min(top_k, 10)), rerank=False)
+        filters = (config.get("configurable") or {}).get("filters")  # the request's metadata filter
+        chunks = retriever.retrieve(query, max(1, min(top_k, 10)), rerank=False, filters=filters)
         return format_context(chunks) if chunks else "No matching passages."
 
     return search_knowledge_base
 
 
-def build_web_search_tool(web_search: WebSearch, max_results: int) -> BaseTool:
+def build_web_search_tool(
+    web_search: WebSearch, max_results: int, content_guard: Callable[[str], str] | None = None
+) -> BaseTool:
     @tool(WEB_TOOL_NAME, response_format="content_and_artifact")
     def search_web(query: str) -> tuple[str, list[str]]:
         """Search the public web. Use it only when the knowledge base doesn't cover the question, or the
@@ -53,6 +57,8 @@ def build_web_search_tool(web_search: WebSearch, max_results: int) -> BaseTool:
         WEB_SEARCHES.labels("ok" if results else "empty").inc()
         if not results:
             return "No web results.", []
+        if content_guard is not None:  # web pages are untrusted: mark injected instructions, redact secrets
+            results = [WebResult(r.title, r.url, content_guard(r.content), r.score) for r in results]
         return format_web_results(results), [r.url for r in results]  # artifact: URLs for the API response
 
     return search_web
@@ -71,11 +77,12 @@ def build_research_agent(
     fallback_exceptions: Sequence[type[BaseException]] = (Exception,),
     web_search: WebSearch | None = None,
     web_max_results: int = 5,
+    content_guard: Callable[[str], str] | None = None,
 ) -> CompiledStateGraph:
     tools = [build_search_tool(retriever)]
     system_prompt = AGENT_SYSTEM_PROMPT
     if web_search is not None:
-        tools.append(build_web_search_tool(web_search, web_max_results))
+        tools.append(build_web_search_tool(web_search, web_max_results, content_guard))
         system_prompt += "\n\n" + AGENT_WEB_SEARCH_PROMPT
     # Tools must be bound on each model before chaining fallbacks (RunnableWithFallbacks has no bind_tools).
     llm_with_tools = llm.bind_tools(tools)

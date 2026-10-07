@@ -9,6 +9,7 @@ from langchain_core.runnables import Runnable
 from langgraph.graph import END, START, StateGraph
 from langgraph.graph.state import CompiledStateGraph
 
+from app.rag.filters import MetadataFilter
 from app.rag.prompts import NO_DOCUMENTS_ANSWER, RAG_SYSTEM_PROMPT, RAG_USER_TEMPLATE
 from app.rag.retriever import RetrievedChunk, Retriever, format_context, normalize_citations
 
@@ -18,6 +19,7 @@ logger = logging.getLogger(__name__)
 class RAGState(TypedDict, total=False):
     question: str
     search_queries: list[str]  # extra phrasings to retrieve with (e.g. the user's original follow-up)
+    filters: MetadataFilter | None  # only search chunks matching this metadata
     top_k: int | None
     chunks: list[RetrievedChunk]
     answer: str
@@ -27,7 +29,7 @@ class RAGState(TypedDict, total=False):
 def build_rag_graph(retriever: Retriever, llm: Runnable[LanguageModelInput, BaseMessage]) -> CompiledStateGraph:
     def retrieve(state: RAGState) -> RAGState:
         queries = [state["question"], *state.get("search_queries", [])]
-        chunks = retriever.retrieve(queries, state.get("top_k"))
+        chunks = retriever.retrieve(queries, state.get("top_k"), filters=state.get("filters"))
         logger.info("retrieved chunks", extra={"count": len(chunks)})
         return {"chunks": chunks}
 
