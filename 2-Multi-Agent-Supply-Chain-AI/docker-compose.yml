@@ -1,0 +1,73 @@
+# Local stack:  docker compose up --build
+#   Frontend  http://localhost:3010   (sign in with a demo user from scripts/bootstrap_users.py)
+#   API       http://localhost:8010   (OpenAPI docs at /docs)
+# Ports avoid 3000/8000/6379 so this runs next to other local projects.
+name: supply-chain-ai
+
+x-hardened: &hardened
+  read_only: true
+  tmpfs: ["/tmp"]
+  cap_drop: ["ALL"]
+  security_opt: ["no-new-privileges:true"]
+
+services:
+  migrate:
+    <<: *hardened
+    build: .
+    image: supply-chain-ai-api:local
+    env_file: .env
+    environment:
+      LOG_FORMAT: text
+    # Idempotent: migrations apply once, seeding skips existing data, unchanged documents aren't re-embedded.
+    command: ["sh", "-c", "alembic upgrade head && python scripts/seed_data.py && python scripts/ingest_sample_docs.py"]
+    restart: "no"
+
+  api:
+    <<: *hardened
+    build: .
+    image: supply-chain-ai-api:local
+    env_file: .env
+    environment:
+      ENV: local
+      LOG_FORMAT: json
+      REDIS_URL: redis://redis:6379/0
+      CORS_ORIGINS: http://localhost:3010
+    ports: ["8010:8000"]
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+  frontend:
+    <<: *hardened
+    build:
+      context: ./frontend
+      args:
+        NEXT_PUBLIC_DATA_SOURCE: api
+        NEXT_PUBLIC_ENVIRONMENT: Local
+    image: supply-chain-ai-frontend:local
+    environment:
+      BACKEND_URL: http://api:8000
+    tmpfs: ["/tmp", "/app/.next/cache:uid=10001,gid=10001"]
+    ports: ["3010:3000"]
+    depends_on:
+      api:
+        condition: service_healthy
+    restart: unless-stopped
+
+  redis:
+    <<: *hardened
+    image: redis:7.4-alpine
+    command: ["redis-server", "--save", "", "--appendonly", "no", "--maxmemory", "128mb", "--maxmemory-policy", "allkeys-lru", "--protected-mode", "yes"]
+    # Start as the image's redis user: the entrypoint's root chown fails once all capabilities are dropped.
+    user: "999:1000"
+    tmpfs: ["/data:uid=999,gid=1000"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+    # Not published to the host: only the api service reaches it on the compose network.

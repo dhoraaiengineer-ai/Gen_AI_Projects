@@ -1,6 +1,6 @@
 """Run the API locally without Docker (handles the Windows event-loop requirement of async psycopg).
 
-    uv run python scripts/dev_server.py        # http://localhost:8000  (docs at /docs)
+uv run python scripts/dev_server.py        # http://localhost:8000  (docs at /docs)
 """
 
 from __future__ import annotations

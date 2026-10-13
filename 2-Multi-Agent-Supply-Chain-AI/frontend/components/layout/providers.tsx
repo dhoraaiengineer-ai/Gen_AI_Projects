@@ -6,6 +6,8 @@ import { ThemeProvider, useTheme } from "next-themes";
 import { Toaster } from "sonner";
 import { TooltipProvider } from "@/components/ui/primitives";
 import { ApiError } from "@/lib/api";
+import { AuthProvider } from "@/lib/auth";
+import { AuthGate } from "@/components/auth/auth-gate";
 
 function ThemedToaster() {
   const { resolvedTheme } = useTheme();
@@ -31,7 +33,9 @@ export function Providers({ children }: { children: React.ReactNode }) {
     <ThemeProvider attribute="class" defaultTheme="light" enableSystem disableTransitionOnChange>
       <QueryClientProvider client={queryClient}>
         <TooltipProvider delayDuration={250}>
-          {children}
+          <AuthProvider>
+            <AuthGate>{children}</AuthGate>
+          </AuthProvider>
           <ThemedToaster />
         </TooltipProvider>
       </QueryClientProvider>

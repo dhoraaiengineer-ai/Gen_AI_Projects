@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import time
 from typing import Any, Literal
 
 from fastapi import APIRouter, Depends, Path, Query
@@ -16,18 +15,16 @@ from app.services.analytics_report import analytics_report
 router = APIRouter(prefix="/api", tags=["operations"])
 SKU = Path(pattern=r"^[Ss][Kk][Uu]-\d{3,6}$")
 
-_overview_cache: dict[str, Any] = {}
+
+async def build_overview(services: Services) -> dict[str, Any]:
+    data = await services.dashboard.overview(await services.dashboard.recommendations())
+    data["supplyDemand"] = await services.dashboard.supply_demand()
+    return data
 
 
 @router.get("/dashboard/overview")
 async def overview(_: User = Depends(require_user), services: Services = Depends(get_services)) -> dict[str, Any]:
-    cached = _overview_cache.get("v")
-    if cached and time.monotonic() - cached[0] < 60:
-        return cached[1]  # type: ignore[no-any-return]
-    data = await services.dashboard.overview(await services.dashboard.recommendations())
-    data["supplyDemand"] = await services.dashboard.supply_demand()
-    _overview_cache["v"] = (time.monotonic(), data)
-    return data
+    return await services.read_models.get("overview", lambda: build_overview(services))  # type: ignore[no-any-return]
 
 
 @router.get("/inventory/summary", response_model=s.InventorySummary, response_model_by_alias=True)
@@ -103,7 +100,7 @@ async def shipments(
 
 @router.get("/logistics/summary", response_model=s.LogisticsSummary, response_model_by_alias=True)
 async def logistics_summary(_: User = Depends(require_user), services: Services = Depends(get_services)) -> s.LogisticsSummary:
-    return await services.dashboard.logistics_summary()
+    return await services.read_models.get("logistics", services.dashboard.logistics_summary)  # type: ignore[no-any-return]
 
 
 @router.get("/analytics")

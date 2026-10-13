@@ -32,6 +32,15 @@ def _configure_tracing(settings: Settings) -> None:
         os.environ["LANGCHAIN_TRACING_V2"] = "false"
 
 
+async def _warm(services: Services) -> None:
+    """Precompute expensive read models so the first dashboard request is instant."""
+    from app.api.routes_ops import build_overview
+
+    await services.analytics.warm()
+    await services.read_models.get("overview", lambda: build_overview(services))
+    await services.read_models.get("logistics", services.dashboard.logistics_summary)
+
+
 def create_app(settings: Settings | None = None, services: Services | None = None) -> FastAPI:
     settings = settings or get_settings()
     setup_logging(settings.log_level, settings.log_format)
@@ -41,7 +50,7 @@ def create_app(settings: Settings | None = None, services: Services | None = Non
     async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         app.state.services = services or await build_services(settings)
         # Warm the inventory snapshot so the first dashboard request is fast.
-        warm = asyncio.create_task(app.state.services.analytics.warm())
+        warm = asyncio.create_task(_warm(app.state.services))
         warm.add_done_callback(lambda t: t.exception() and logger.error("snapshot warm-up failed", exc_info=t.exception()))
         logger.info("application started", extra={"env": settings.env, "version": __version__})
         yield

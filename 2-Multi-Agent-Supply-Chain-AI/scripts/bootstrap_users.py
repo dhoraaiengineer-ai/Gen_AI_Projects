@@ -77,15 +77,22 @@ def main() -> None:
             user = _find(client, s.supabase_url, secret, email)
             if user is None:
                 raise SystemExit(f"{email} has no account yet — sign up in the app first")
-            r = client.put(f"{s.supabase_url}/auth/v1/admin/users/{user['id']}", headers=_headers(secret), json={"app_metadata": {"app_role": role}})
+            r = client.put(
+                f"{s.supabase_url}/auth/v1/admin/users/{user['id']}", headers=_headers(secret), json={"app_metadata": {"app_role": role}}
+            )
             r.raise_for_status()
             print(f"{email} is now {role} (sign out and back in to refresh the token)")
             return
 
         password = _password()
         for email, name, role in DEMO_USERS:
-            body = {"email": email, "password": password, "email_confirm": True,
-                    "user_metadata": {"full_name": name}, "app_metadata": {"app_role": role}}
+            body = {
+                "email": email,
+                "password": password,
+                "email_confirm": True,
+                "user_metadata": {"full_name": name},
+                "app_metadata": {"app_role": role},
+            }
             existing = _find(client, s.supabase_url, secret, email)
             if existing:
                 r = client.put(f"{s.supabase_url}/auth/v1/admin/users/{existing['id']}", headers=_headers(secret), json=body)

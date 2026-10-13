@@ -384,6 +384,26 @@ the browser-visible publishable key; RLS with no policies denies that path, whil
 
 ## Run locally
 
+### With Docker (recommended)
+
+```bash
+cp .env.example .env                         # fill in Supabase + LLM keys (never commit .env)
+uv run python scripts/bootstrap_users.py     # once: demo users per role (password saved to .env)
+docker compose up --build
+```
+
+| Service | URL / role |
+|---|---|
+| Frontend (API mode) | http://localhost:3010 — sign in as `admin@supplyai.example` (or approver / analyst / viewer) with `DEMO_USER_PASSWORD` |
+| API | http://localhost:8010 — OpenAPI docs at `/docs` |
+| migrate (one-shot) | `alembic upgrade head` → seed data → ingest sample documents; all idempotent |
+| redis | short-term memory, answer cache, rate limits; not published to the host |
+
+Containers run as non-root (uid 10001) with read-only root filesystems, all capabilities dropped and
+`no-new-privileges`. The ports avoid 3000/8000/6379, so the stack runs next to other local projects.
+
+### Without Docker
+
 Requirements: Python 3.12 (installed by `uv`), Node 20+, a Supabase project and at least one LLM key.
 
 ```bash
@@ -441,13 +461,14 @@ Every setting is an environment variable documented in [.env.example](.env.examp
 ## Tests and quality
 
 ```bash
-uv run pytest -q                              # 51 offline tests (fakes only; never reads .env)
+uv run pytest -q                              # 57 offline tests (fakes only; never reads .env)
 uv run ruff check . && uv run ruff format --check .
 cd frontend && npx tsc --noEmit && npx eslint . && npx playwright test   # 25 browser tests
 ```
 
 The test suites cover:
 
+- **Graph (offline, fake tools and LLMs):** stage ordering and parallelism, approval interrupt and resume, injection blocked before any agent, out-of-scope, single-agent routing, and a verified report when every LLM provider is down.
 - **Unit:** business maths (including the SKU-100 scenario), forecasting accuracy, supplier disqualification,
   logistics rules, guardrails (6 attack types, PII/PHI, secrets, poisoned context, output grounding), loaders for
   every format, golden evidence verification, and the architecture rule.

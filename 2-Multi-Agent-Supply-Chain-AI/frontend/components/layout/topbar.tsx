@@ -7,6 +7,7 @@ import { BookOpen, ChevronRight, CircleHelp, Keyboard, LifeBuoy, LogOut, Menu, M
 import { navItemFor, sectionFor } from "@/lib/navigation";
 import { DATA_SOURCE, ENVIRONMENT_LABEL } from "@/lib/constants";
 import { useCurrentUser } from "@/hooks/use-api";
+import { useAuth } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, Tooltip } from "@/components/ui/primitives";
 import {
@@ -60,6 +61,7 @@ function EnvironmentBadge() {
 
 export function Topbar({ onOpenMobileNav }: { onOpenMobileNav: () => void }) {
   const { data: user } = useCurrentUser();
+  const { signOut } = useAuth();
   const { resolvedTheme, setTheme } = useTheme();
   return (
     <header className="sticky top-0 z-20 flex h-14 items-center gap-3 border-b bg-background/85 px-4 backdrop-blur-md sm:px-6">
@@ -127,7 +129,7 @@ export function Topbar({ onOpenMobileNav }: { onOpenMobileNav: () => void }) {
               {resolvedTheme === "dark" ? <Sun /> : <Moon />} {resolvedTheme === "dark" ? "Light mode" : "Dark mode"}
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem disabled={DATA_SOURCE === "mock"}>
+            <DropdownMenuItem disabled={DATA_SOURCE === "mock"} onSelect={() => void signOut()}>
               <LogOut /> Sign out
             </DropdownMenuItem>
           </DropdownMenuContent>

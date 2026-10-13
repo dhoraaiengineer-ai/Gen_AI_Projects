@@ -49,7 +49,7 @@ async def agents_run(body: s.ChatRequest, user: User = Depends(require_user), se
 
 @router.get("/agents", response_model=list[s.AgentInfo], response_model_by_alias=True)
 async def agents(_: User = Depends(require_user), services: Services = Depends(get_services)) -> list[s.AgentInfo]:
-    return await services.dashboard.agents()
+    return await services.read_models.get("agents", services.dashboard.agents)  # type: ignore[no-any-return]
 
 
 # ----------------------------------------------------------------------------- approvals (human-in-the-loop)
@@ -84,6 +84,7 @@ async def decide(
     approval_id: str, body: s.ApprovalDecision, user: User = Depends(require_approver), services: Services = Depends(get_services)
 ) -> s.ApprovalOut:
     approval = await services.agents.decide(approval_id, body.decision, user, body.comment)
+    services.read_models.invalidate("overview")
     await services.activity.record(
         {"run_id": approval.thread_id, "user": {"id": user.id}},
         agent="user",

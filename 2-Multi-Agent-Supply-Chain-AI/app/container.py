@@ -34,6 +34,7 @@ from app.rag.providers import (
 from app.rag.retrieval import HybridRetriever
 from app.services.dashboard import DashboardService
 from app.services.inventory_analytics import InventoryAnalytics
+from app.services.swr_cache import SwrCache
 from app.services.workflow import ActivityService, ApprovalService, MemoryService
 
 logger = logging.getLogger(__name__)
@@ -57,6 +58,7 @@ class Services:
     verifier: TokenVerifier | None
     breakers: BreakerRegistry
     web: WebSearch | None = None
+    read_models: SwrCache = field(default_factory=lambda: SwrCache(ttl_seconds=60))
     closers: list[Any] = field(default_factory=list)
 
 

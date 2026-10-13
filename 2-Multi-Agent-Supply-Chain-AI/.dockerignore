@@ -1,0 +1,12 @@
+# Allow-list: ignore everything, then include only what the API image needs. Secrets (.env) can never enter.
+*
+!app/
+!migrations/
+!alembic.ini
+!pyproject.toml
+!uv.lock
+!README.md
+!scripts/seed_data.py
+!scripts/ingest_sample_docs.py
+!data/sample_docs/
+**/__pycache__
