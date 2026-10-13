@@ -241,7 +241,11 @@ Status legend: ✅ done · 🔄 in progress · ⏳ not started
     alert rules (`promtool` valid), Grafana dashboard, Kubernetes base/overlay (kubeconform
     34/34 valid). Fixes found live: parallel agent tool calls failed over HTTP (per-call MCP
     sessions), MCP servers dropped `mcp_tool_calls` rows (tenant scope per call), API preloaded
-    ~1 GB of models it does not use in HTTP mode. 10 MCP tests incl. regressions.
+    ~1 GB of models it does not use in HTTP mode. 2026-10-13: the gateway's MCP sessions were
+    owned by whichever task started them (a request or a dashboard refresh) and broke when it
+    ended (`Connection closed`, cancel-scope errors, dashboards stuck loading) → a dedicated owner
+    task with a start lock; circuit-breaker badges showed CLOSED as an error. 12 MCP tests incl.
+    regressions; 313 backend tests pass. README rewritten with live UI screenshots.
   - **Written, not yet run:** Docker images + `docker compose` (build interrupted; the dev PC
     has 12 GB RAM with < 1 GB free and the split stack ran out of memory), Terraform
     `validate` (AWS provider timed out starting), GitHub Actions CI/CD (`p3-ci.yml`,

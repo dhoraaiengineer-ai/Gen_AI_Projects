@@ -8,6 +8,8 @@ request ``_meta`` and parses the reply into a :class:`ToolResult`. Transport fai
 
 from __future__ import annotations
 
+import asyncio
+import contextlib
 import json
 import logging
 import time
@@ -59,7 +61,9 @@ class McpGateway:
         self._clients: dict[str, Client] = {}
         self._urls: dict[str, str] = {}
         self._http: Any = None
-        self._stack: AsyncExitStack | None = None
+        self._lock = asyncio.Lock()
+        self._owner: asyncio.Task[None] | None = None
+        self._stop = asyncio.Event()
 
     async def __aenter__(self) -> McpGateway:
         await self.start()
@@ -69,41 +73,61 @@ class McpGateway:
         await self.close()
 
     async def start(self) -> None:
-        if self._stack is not None:
-            return
-        stack = AsyncExitStack()
+        """Open the sessions in a dedicated owner task and wait until they are ready.
+
+        MCP client sessions run anyio task groups that must be exited by the task that entered
+        them. The first caller may be a request or a short-lived background refresh; if it
+        owned the sessions they would break when it finished (``Connection closed`` for every
+        later call). The owner task lives until :meth:`close`."""
+        async with self._lock:
+            if self._owner is not None and not self._owner.done():
+                return
+            ready: asyncio.Future[None] = asyncio.get_running_loop().create_future()
+            self._stop = asyncio.Event()
+            self._owner = asyncio.create_task(self._own(ready, self._stop), name="mcp-gateway")
+            await ready  # re-raises a connection failure
+
+    async def _own(self, ready: asyncio.Future[None], stop: asyncio.Event) -> None:
         try:
-            for name, target in self._targets.items():
-                if isinstance(target, str):
-                    if self._http is None:
-                        self._http = await stack.enter_async_context(
-                            create_mcp_http_client(headers=self._headers)
-                        )
-                    self._urls[name] = target
-                else:
-                    self._clients[name] = await stack.enter_async_context(Client(target))
-        except BaseException:
-            await stack.aclose()
-            raise
-        self._stack = stack
-        transports = sorted(
-            {"http" if isinstance(t, str) else "inmemory" for t in self._targets.values()}
-        )
-        logger.info(
-            "mcp gateway connected",
-            extra={
-                "servers": sorted([*self._clients, *self._urls]),
-                "transport": ",".join(transports),
-            },
-        )
+            async with AsyncExitStack() as stack:
+                for name, target in self._targets.items():
+                    if isinstance(target, str):
+                        if self._http is None:
+                            self._http = await stack.enter_async_context(
+                                create_mcp_http_client(headers=self._headers)
+                            )
+                        self._urls[name] = target
+                    else:
+                        self._clients[name] = await stack.enter_async_context(Client(target))
+                transports = sorted(
+                    {"http" if isinstance(t, str) else "inmemory" for t in self._targets.values()}
+                )
+                logger.info(
+                    "mcp gateway connected",
+                    extra={
+                        "servers": sorted([*self._clients, *self._urls]),
+                        "transport": ",".join(transports),
+                    },
+                )
+                ready.set_result(None)
+                await stop.wait()
+        except BaseException as exc:
+            if not ready.done():
+                ready.set_exception(exc)
+            else:
+                logger.exception("mcp gateway stopped unexpectedly")
+        finally:
+            self._http = None
+            self._clients.clear()
+            self._urls.clear()
 
     async def close(self) -> None:
-        if self._stack is not None:
-            await self._stack.aclose()
-        self._stack = None
-        self._http = None
-        self._clients.clear()
-        self._urls.clear()
+        owner, self._owner = self._owner, None
+        if owner is None:
+            return
+        self._stop.set()
+        with contextlib.suppress(Exception):
+            await owner
 
     @asynccontextmanager
     async def _session(self, server: str) -> AsyncIterator[Client]:

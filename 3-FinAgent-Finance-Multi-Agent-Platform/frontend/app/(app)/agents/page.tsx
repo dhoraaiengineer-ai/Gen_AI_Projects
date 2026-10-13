@@ -6,6 +6,10 @@ import { api } from "@/lib/api";
 import { label, num, when } from "@/lib/format";
 import { useResource } from "@/presenters/useResource";
 
+// The API reports breaker states as CLOSED / HALF_OPEN / OPEN.
+const breakerTone = (state: string) =>
+  ({ closed: "good", half_open: "warn", open: "bad" } as const)[state.toLowerCase() as "closed"] ?? "muted";
+
 export default function AgentsPage() {
   const agents = useResource("agents", api.agents);
   const models = useResource("models", api.models);
@@ -36,7 +40,7 @@ export default function AgentsPage() {
               <p className="mb-1 text-xs uppercase tracking-wide text-muted">Circuit breakers</p>
               {Object.keys(s.circuits).length === 0 && <p className="text-muted">All closed (no failures recorded).</p>}
               {Object.entries(s.circuits).map(([k, v]) => (
-                <p key={k} className="font-mono text-xs">{k}: <Badge tone={v === "closed" ? "good" : "bad"}>{v}</Badge></p>
+                <p key={k} className="font-mono text-xs">{k}: <Badge tone={breakerTone(v)}>{v.toLowerCase()}</Badge></p>
               ))}
             </div>
           </div>

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 from typing import Any
 
 from src.core.domain import Role
@@ -110,3 +111,29 @@ async def test_invalid_arguments_and_unrouted_tools() -> None:
         )  # finance server not connected
     assert not invalid.ok
     assert unrouted.error is not None and unrouted.error.code == "not_found"
+
+
+async def test_gateway_survives_the_task_that_started_it() -> None:
+    """A short-lived task (e.g. a dashboard refresh) may start the gateway; later calls from
+    other tasks must still work and close() must not raise a cancel-scope error."""
+    reg, _ = make_registry()
+    gateway = McpGateway(reg, {"risk": build_mcp_server("risk", reg)})  # type: ignore[dict-item]
+    await asyncio.create_task(gateway.start())  # the starting task finishes here
+    ctx = ToolContext(role=Role.RISK_MANAGER, tenant_id=TENANT, agent="risk")
+    results = await asyncio.gather(
+        *(
+            asyncio.create_task(gateway.call("calculate_var", {"portfolio_id": "PF-A"}, ctx))
+            for _ in range(3)
+        )
+    )
+    assert all(r.ok for r in results), [r.error for r in results]
+    await gateway.close()
+    await gateway.close()  # idempotent
+
+
+async def test_concurrent_starts_open_one_set_of_sessions() -> None:
+    reg, _ = make_registry()
+    gateway = McpGateway(reg, {"risk": build_mcp_server("risk", reg)})  # type: ignore[dict-item]
+    await asyncio.gather(*(gateway.start() for _ in range(5)))
+    assert await gateway.list_tools("risk") == ["calculate_var"]
+    await gateway.close()
