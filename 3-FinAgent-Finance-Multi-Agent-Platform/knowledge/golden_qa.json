@@ -1,0 +1,98 @@
+{
+  "description": "Golden questions for the sample knowledge base. Evidence quotes must appear verbatim in the source document (checked by tests/rag). 'roles' lists roles allowed to see the source; others must not retrieve it.",
+  "items": [
+    {
+      "id": "g01",
+      "question": "What is the single issuer concentration limit in the investment policy?",
+      "source": "Investment_Policy_Statement.docx",
+      "evidence": "No single issuer may exceed 25% of portfolio NAV.",
+      "answer_contains": ["25%"]
+    },
+    {
+      "id": "g02",
+      "question": "What is the 1-day 95% VaR budget?",
+      "source": "Investment_Policy_Statement.docx",
+      "evidence": "The 1-day 95% Value-at-Risk budget is 2.5% of NAV",
+      "answer_contains": ["2.5%"]
+    },
+    {
+      "id": "g03",
+      "question": "Which trades require approval before an order is created?",
+      "source": "Investment_Policy_Statement.docx",
+      "evidence": "Any proposed trade with a notional value above $250,000 requires approval",
+      "answer_contains": ["$250,000"]
+    },
+    {
+      "id": "g04",
+      "question": "Why did ACME's gross margin decline in FY2025?",
+      "source": "ACME_Annual_Report_FY2025.pdf",
+      "evidence": "Gross margin declined from 39.0% in FY2024 to 34.0% in FY2025 because of an",
+      "answer_contains": ["input-cost"]
+    },
+    {
+      "id": "g05",
+      "question": "How much did NovaTek revenue grow in Q2 2026?",
+      "source": "NVTK_Q2_2026_Earnings_Review.pptx",
+      "evidence": "Revenue grew 42% year on year in Q2 2026.",
+      "answer_contains": ["42%"]
+    },
+    {
+      "id": "g06",
+      "question": "How often does the Risk Committee meet?",
+      "source": "Risk_Management_Framework.md",
+      "evidence": "The Risk Committee meets monthly",
+      "answer_contains": ["monthly"]
+    },
+    {
+      "id": "g07",
+      "question": "Which securities are on the restricted list and why?",
+      "source": "Restricted_List.csv",
+      "evidence": "Pending merger: firm holds material non-public information",
+      "answer_contains": ["ORBX"],
+      "roles": ["risk_manager", "portfolio_manager", "compliance_officer", "admin"]
+    },
+    {
+      "id": "g08",
+      "question": "What did the investment committee decide about the NVTK position?",
+      "source": "Board_Minutes_IC_Sep2026.md",
+      "evidence": "reducing NVTK in Portfolio A to 22% of NAV by 30 November 2026",
+      "answer_contains": ["22%"],
+      "roles": ["risk_manager", "portfolio_manager", "compliance_officer", "admin"]
+    },
+    {
+      "id": "g09",
+      "question": "What is the outlook for the semiconductor sector?",
+      "source": "Semiconductor_Outlook_Q4_2026.html",
+      "evidence": "We move the semiconductor sector to Neutral from Overweight.",
+      "answer_contains": ["Neutral"]
+    },
+    {
+      "id": "g10",
+      "question": "What was ACME's net debt to EBITDA ratio?",
+      "source": "ACME_Annual_Report_FY2025.pdf",
+      "evidence": "Net debt to EBITDA was 2.4x at the end of FY2025",
+      "answer_contains": ["2.4x"]
+    },
+    {
+      "id": "g11",
+      "question": "What happened to Meridian Bio shares in September?",
+      "source": "Market_News_Sep2026.json",
+      "evidence": "Meridian Bio shares fell 22% after its lead candidate failed its phase III readout.",
+      "answer_contains": ["22%"]
+    },
+    {
+      "id": "g12",
+      "question": "What is the maximum share of net assets a diversified fund may hold in one issuer under FA-7?",
+      "source": "Regulation_FA-7_Summary.txt",
+      "evidence": "must not invest more than 25% of its net assets in securities of a single issuer",
+      "answer_contains": ["25%"]
+    },
+    {
+      "id": "r01",
+      "question": "What is the favourite colour of ACME's chief executive?",
+      "source": null,
+      "evidence": null,
+      "refusal": true
+    }
+  ]
+}

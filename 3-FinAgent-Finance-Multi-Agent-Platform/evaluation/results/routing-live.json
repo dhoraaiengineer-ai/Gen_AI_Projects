@@ -1,0 +1,463 @@
+{
+  "suite": "routing-live",
+  "params": {
+    "live": true,
+    "answers": false,
+    "judge": false
+  },
+  "at": "2026-10-09T01:43:49",
+  "metrics": {
+    "routing_accuracy": 1.0,
+    "routing_macro_f1": 1.0,
+    "entity_accuracy": 1.0,
+    "n": 32
+  },
+  "methods": {
+    "llm": 32
+  },
+  "per_class": {
+    "company_analysis": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "support": 2.0
+    },
+    "compliance_check": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "support": 3.0
+    },
+    "executive_report": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "support": 2.0
+    },
+    "forecast": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "support": 2.0
+    },
+    "fraud_detection": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "support": 3.0
+    },
+    "knowledge_question": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "support": 6.0
+    },
+    "market_overview": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "support": 3.0
+    },
+    "out_of_scope": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "support": 2.0
+    },
+    "portfolio_overview": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "support": 2.0
+    },
+    "portfolio_risk": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "support": 3.0
+    },
+    "rebalance": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "support": 2.0
+    },
+    "risk_increase_explanation": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "support": 2.0
+    }
+  },
+  "confusion": {
+    "company_analysis": {
+      "company_analysis": 2
+    },
+    "compliance_check": {
+      "compliance_check": 3
+    },
+    "executive_report": {
+      "executive_report": 2
+    },
+    "forecast": {
+      "forecast": 2
+    },
+    "fraud_detection": {
+      "fraud_detection": 3
+    },
+    "knowledge_question": {
+      "knowledge_question": 6
+    },
+    "market_overview": {
+      "market_overview": 3
+    },
+    "out_of_scope": {
+      "out_of_scope": 2
+    },
+    "portfolio_overview": {
+      "portfolio_overview": 2
+    },
+    "portfolio_risk": {
+      "portfolio_risk": 3
+    },
+    "rebalance": {
+      "rebalance": 2
+    },
+    "risk_increase_explanation": {
+      "risk_increase_explanation": 2
+    }
+  },
+  "items": [
+    {
+      "id": "rt01",
+      "expected": "risk_increase_explanation",
+      "predicted": "risk_increase_explanation",
+      "correct": true,
+      "method": "llm",
+      "portfolio": "PF-A",
+      "tickers": [],
+      "ms": 4295.1
+    },
+    {
+      "id": "rt02",
+      "expected": "risk_increase_explanation",
+      "predicted": "risk_increase_explanation",
+      "correct": true,
+      "method": "llm",
+      "portfolio": "PF-A",
+      "tickers": [],
+      "ms": 1076.8
+    },
+    {
+      "id": "rt03",
+      "expected": "portfolio_risk",
+      "predicted": "portfolio_risk",
+      "correct": true,
+      "method": "llm",
+      "portfolio": "PF-B",
+      "tickers": [],
+      "ms": 948.5
+    },
+    {
+      "id": "rt04",
+      "expected": "portfolio_risk",
+      "predicted": "portfolio_risk",
+      "correct": true,
+      "method": "llm",
+      "portfolio": "PF-C",
+      "tickers": [],
+      "ms": 844.3
+    },
+    {
+      "id": "rt05",
+      "expected": "portfolio_risk",
+      "predicted": "portfolio_risk",
+      "correct": true,
+      "method": "llm",
+      "portfolio": "PF-A",
+      "tickers": [],
+      "ms": 991.8
+    },
+    {
+      "id": "rt06",
+      "expected": "portfolio_overview",
+      "predicted": "portfolio_overview",
+      "correct": true,
+      "method": "llm",
+      "portfolio": "PF-B",
+      "tickers": [],
+      "ms": 1001.3
+    },
+    {
+      "id": "rt07",
+      "expected": "portfolio_overview",
+      "predicted": "portfolio_overview",
+      "correct": true,
+      "method": "llm",
+      "portfolio": "PF-C",
+      "tickers": [],
+      "ms": 1015.6
+    },
+    {
+      "id": "rt08",
+      "expected": "compliance_check",
+      "predicted": "compliance_check",
+      "correct": true,
+      "method": "llm",
+      "portfolio": "PF-A",
+      "tickers": [],
+      "ms": 968.3
+    },
+    {
+      "id": "rt09",
+      "expected": "compliance_check",
+      "predicted": "compliance_check",
+      "correct": true,
+      "method": "llm",
+      "portfolio": "PF-C",
+      "tickers": [],
+      "ms": 896.1
+    },
+    {
+      "id": "rt10",
+      "expected": "rebalance",
+      "predicted": "rebalance",
+      "correct": true,
+      "method": "llm",
+      "portfolio": "PF-A",
+      "tickers": [],
+      "ms": 905.7
+    },
+    {
+      "id": "rt11",
+      "expected": "rebalance",
+      "predicted": "rebalance",
+      "correct": true,
+      "method": "llm",
+      "portfolio": "PF-A",
+      "tickers": [],
+      "ms": 880.1
+    },
+    {
+      "id": "rt12",
+      "expected": "executive_report",
+      "predicted": "executive_report",
+      "correct": true,
+      "method": "llm",
+      "portfolio": "PF-A",
+      "tickers": [],
+      "ms": 959.5
+    },
+    {
+      "id": "rt13",
+      "expected": "executive_report",
+      "predicted": "executive_report",
+      "correct": true,
+      "method": "llm",
+      "portfolio": "PF-B",
+      "tickers": [],
+      "ms": 896.1
+    },
+    {
+      "id": "rt14",
+      "expected": "market_overview",
+      "predicted": "market_overview",
+      "correct": true,
+      "method": "llm",
+      "portfolio": null,
+      "tickers": [],
+      "ms": 934.9
+    },
+    {
+      "id": "rt15",
+      "expected": "market_overview",
+      "predicted": "market_overview",
+      "correct": true,
+      "method": "llm",
+      "portfolio": null,
+      "tickers": [
+        "NVTK"
+      ],
+      "ms": 923.1
+    },
+    {
+      "id": "rt16",
+      "expected": "market_overview",
+      "predicted": "market_overview",
+      "correct": true,
+      "method": "llm",
+      "portfolio": null,
+      "tickers": [],
+      "ms": 1057.1
+    },
+    {
+      "id": "rt17",
+      "expected": "fraud_detection",
+      "predicted": "fraud_detection",
+      "correct": true,
+      "method": "llm",
+      "portfolio": null,
+      "tickers": [],
+      "ms": 916.2
+    },
+    {
+      "id": "rt18",
+      "expected": "fraud_detection",
+      "predicted": "fraud_detection",
+      "correct": true,
+      "method": "llm",
+      "portfolio": null,
+      "tickers": [],
+      "ms": 921.4
+    },
+    {
+      "id": "rt19",
+      "expected": "fraud_detection",
+      "predicted": "fraud_detection",
+      "correct": true,
+      "method": "llm",
+      "portfolio": null,
+      "tickers": [],
+      "ms": 962.3
+    },
+    {
+      "id": "rt20",
+      "expected": "company_analysis",
+      "predicted": "company_analysis",
+      "correct": true,
+      "method": "llm",
+      "portfolio": null,
+      "tickers": [
+        "ACME"
+      ],
+      "ms": 927.2
+    },
+    {
+      "id": "rt21",
+      "expected": "company_analysis",
+      "predicted": "company_analysis",
+      "correct": true,
+      "method": "llm",
+      "portfolio": null,
+      "tickers": [
+        "ACME",
+        "NVTK"
+      ],
+      "ms": 906.2
+    },
+    {
+      "id": "rt22",
+      "expected": "forecast",
+      "predicted": "forecast",
+      "correct": true,
+      "method": "llm",
+      "portfolio": null,
+      "tickers": [
+        "NVTK"
+      ],
+      "ms": 884.0
+    },
+    {
+      "id": "rt23",
+      "expected": "forecast",
+      "predicted": "forecast",
+      "correct": true,
+      "method": "llm",
+      "portfolio": null,
+      "tickers": [
+        "ACME"
+      ],
+      "ms": 893.6
+    },
+    {
+      "id": "rt24",
+      "expected": "knowledge_question",
+      "predicted": "knowledge_question",
+      "correct": true,
+      "method": "llm",
+      "portfolio": null,
+      "tickers": [],
+      "ms": 841.1
+    },
+    {
+      "id": "rt25",
+      "expected": "knowledge_question",
+      "predicted": "knowledge_question",
+      "correct": true,
+      "method": "llm",
+      "portfolio": null,
+      "tickers": [],
+      "ms": 849.9
+    },
+    {
+      "id": "rt26",
+      "expected": "knowledge_question",
+      "predicted": "knowledge_question",
+      "correct": true,
+      "method": "llm",
+      "portfolio": null,
+      "tickers": [],
+      "ms": 888.4
+    },
+    {
+      "id": "rt27",
+      "expected": "knowledge_question",
+      "predicted": "knowledge_question",
+      "correct": true,
+      "method": "llm",
+      "portfolio": null,
+      "tickers": [],
+      "ms": 865.1
+    },
+    {
+      "id": "rt28",
+      "expected": "knowledge_question",
+      "predicted": "knowledge_question",
+      "correct": true,
+      "method": "llm",
+      "portfolio": null,
+      "tickers": [],
+      "ms": 940.9
+    },
+    {
+      "id": "rt29",
+      "expected": "out_of_scope",
+      "predicted": "out_of_scope",
+      "correct": true,
+      "method": "llm",
+      "portfolio": null,
+      "tickers": [],
+      "ms": 876.1
+    },
+    {
+      "id": "rt30",
+      "expected": "out_of_scope",
+      "predicted": "out_of_scope",
+      "correct": true,
+      "method": "llm",
+      "portfolio": null,
+      "tickers": [],
+      "ms": 929.6
+    },
+    {
+      "id": "rt31",
+      "expected": "knowledge_question",
+      "predicted": "knowledge_question",
+      "correct": true,
+      "method": "llm",
+      "portfolio": null,
+      "tickers": [],
+      "ms": 936.9
+    },
+    {
+      "id": "rt32",
+      "expected": "compliance_check",
+      "predicted": "portfolio_overview",
+      "correct": true,
+      "method": "llm",
+      "portfolio": "PF-A",
+      "tickers": [],
+      "ms": 956.0
+    }
+  ]
+}

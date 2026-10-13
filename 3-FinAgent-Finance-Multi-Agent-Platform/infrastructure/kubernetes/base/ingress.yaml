@@ -1,0 +1,21 @@
+# AWS Load Balancer Controller. Only the UI and /api/v1 are routed; /metrics, /a2a, /docs and the
+# MCP servers are never reachable from outside the cluster.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: finagent
+  annotations:
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/target-type: ip
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTPS": 443}]'
+    alb.ingress.kubernetes.io/ssl-policy: ELBSecurityPolicy-TLS13-1-2-2021-06
+    alb.ingress.kubernetes.io/healthcheck-path: /health
+    alb.ingress.kubernetes.io/load-balancer-attributes: idle_timeout.timeout_seconds=300
+spec:
+  ingressClassName: alb
+  rules:
+    - host: finagent.example.com
+      http:
+        paths:
+          - {path: /api/v1, pathType: Prefix, backend: {service: {name: api, port: {number: 8020}}}}
+          - {path: /, pathType: Prefix, backend: {service: {name: frontend, port: {number: 3020}}}}

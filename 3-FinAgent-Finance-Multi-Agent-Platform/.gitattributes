@@ -1,0 +1,26 @@
+# Normalise text to LF in the repo (document hashing and shell scripts depend on it).
+* text=auto eol=lf
+
+# Windows-only scripts keep CRLF.
+*.bat  text eol=crlf
+*.cmd  text eol=crlf
+*.ps1  text eol=crlf
+
+# Binaries: never diff or convert.
+*.png  binary
+*.jpg  binary
+*.jpeg binary
+*.gif  binary
+*.ico  binary
+*.webp binary
+*.pdf  binary
+*.xlsx binary
+*.docx binary
+*.pptx binary
+*.woff binary
+*.woff2 binary
+*.ttf  binary
+*.pkl  binary
+*.joblib binary
+*.onnx binary
+*.parquet binary

@@ -1,0 +1,18 @@
+# Non-secret settings. Secrets (LLM keys, DATABASE_URL, SUPABASE_*, MCP_SERVICE_TOKEN,
+# METRICS_TOKEN) live in the `finagent-secrets` Secret, synced by CD from AWS Secrets Manager.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: finagent-config
+data:
+  APP_ENV: production
+  DEMO_MODE: "false"
+  LOG_FORMAT: json
+  LOG_LEVEL: INFO
+  REDIS_ENABLED: "true"
+  MCP_TRANSPORT: http
+  MCP_URL_TEMPLATE: http://mcp-{server}:{port}/mcp
+  MLFLOW_URL: sqlite:///mlruns/mlflow.db  # absent in the image -> exported, SHA-checked bundles
+  OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector.observability:4318
+  CORS_ORIGINS: https://finagent.example.com
+  HF_HUB_OFFLINE: "1"

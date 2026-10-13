@@ -1,0 +1,135 @@
+{
+  "suite": "tools",
+  "params": {
+    "live": false,
+    "answers": false,
+    "judge": false
+  },
+  "at": "2026-10-09T02:02:55",
+  "metrics": {
+    "agent_selection_f1": 1.0,
+    "required_tool_recall": 1.0,
+    "exact_plan_rate": 1.0,
+    "agent_success_rate": 1.0,
+    "n": 7
+  },
+  "items": [
+    {
+      "id": "tl01",
+      "intent": "risk_increase_explanation",
+      "agents": [
+        "portfolio",
+        "market",
+        "risk",
+        "compliance"
+      ],
+      "agent_f1": 1.0,
+      "missing_tools": [],
+      "tool_recall": 1.0,
+      "tools_called": 9,
+      "status": [
+        "ok",
+        "ok",
+        "ok",
+        "ok"
+      ],
+      "seconds": 5.7
+    },
+    {
+      "id": "tl02",
+      "intent": "compliance_check",
+      "agents": [
+        "portfolio",
+        "compliance"
+      ],
+      "agent_f1": 1.0,
+      "missing_tools": [],
+      "tool_recall": 1.0,
+      "tools_called": 4,
+      "status": [
+        "ok",
+        "ok"
+      ],
+      "seconds": 1.8
+    },
+    {
+      "id": "tl03",
+      "intent": "rebalance",
+      "agents": [
+        "portfolio",
+        "risk",
+        "compliance"
+      ],
+      "agent_f1": 1.0,
+      "missing_tools": [],
+      "tool_recall": 1.0,
+      "tools_called": 8,
+      "status": [
+        "ok",
+        "ok",
+        "ok"
+      ],
+      "seconds": 1.3
+    },
+    {
+      "id": "tl04",
+      "intent": "fraud_detection",
+      "agents": [
+        "fraud"
+      ],
+      "agent_f1": 1.0,
+      "missing_tools": [],
+      "tool_recall": 1.0,
+      "tools_called": 2,
+      "status": [
+        "ok"
+      ],
+      "seconds": 1.5
+    },
+    {
+      "id": "tl05",
+      "intent": "forecast",
+      "agents": [
+        "prediction"
+      ],
+      "agent_f1": 1.0,
+      "missing_tools": [],
+      "tool_recall": 1.0,
+      "tools_called": 1,
+      "status": [
+        "ok"
+      ],
+      "seconds": 1.5
+    },
+    {
+      "id": "tl06",
+      "intent": "knowledge_question",
+      "agents": [
+        "research"
+      ],
+      "agent_f1": 1.0,
+      "missing_tools": [],
+      "tool_recall": 1.0,
+      "tools_called": 1,
+      "status": [
+        "ok"
+      ],
+      "seconds": 13.5
+    },
+    {
+      "id": "tl07",
+      "intent": "market_overview",
+      "agents": [
+        "market"
+      ],
+      "agent_f1": 1.0,
+      "missing_tools": [],
+      "tool_recall": 1.0,
+      "tools_called": 2,
+      "status": [
+        "ok"
+      ],
+      "seconds": 2.1
+    }
+  ]
+}

@@ -1,0 +1,55 @@
+{
+  "ACME_Annual_Report_FY2025.pdf": {
+    "doc_type": "filing",
+    "classification": "public",
+    "ticker": "ACME",
+    "fiscal_period": "FY2025"
+  },
+  "Investment_Policy_Statement.docx": {
+    "doc_type": "policy",
+    "classification": "internal",
+    "effective_date": "2026-01-01"
+  },
+  "Risk_Management_Framework.md": {
+    "doc_type": "policy",
+    "classification": "internal"
+  },
+  "NVTK_Q2_2026_Earnings_Review.pptx": {
+    "doc_type": "research",
+    "classification": "internal",
+    "ticker": "NVTK",
+    "fiscal_period": "Q2 2026"
+  },
+  "Financial_Statements_Summary.xlsx": {
+    "doc_type": "statement",
+    "classification": "public"
+  },
+  "Restricted_List.csv": {
+    "doc_type": "policy",
+    "classification": "restricted"
+  },
+  "Regulation_FA-7_Summary.txt": {
+    "doc_type": "regulation",
+    "classification": "public"
+  },
+  "Market_News_Sep2026.json": {
+    "doc_type": "news",
+    "classification": "public"
+  },
+  "Risk_Queries.sql": {
+    "doc_type": "internal",
+    "classification": "internal"
+  },
+  "Semiconductor_Outlook_Q4_2026.html": {
+    "doc_type": "research",
+    "classification": "internal"
+  },
+  "Compliance_Alert_NVTK.eml": {
+    "doc_type": "internal",
+    "classification": "confidential"
+  },
+  "Board_Minutes_IC_Sep2026.md": {
+    "doc_type": "internal",
+    "classification": "confidential"
+  }
+}

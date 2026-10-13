@@ -1,0 +1,179 @@
+# CI: lint → types → unit tests → DB integration tests → security scans → image build + smoke.
+# Offline by design: no LLM keys, no Supabase, no AWS. Live checks stay manual (pytest -m live).
+name: "Project 3 · CI"
+
+on:
+  push:
+    branches: [main]
+    paths: ["3-FinAgent-Finance-Multi-Agent-Platform/**", ".github/workflows/p3-*.yml"]
+  pull_request:
+    paths: ["3-FinAgent-Finance-Multi-Agent-Platform/**", ".github/workflows/p3-*.yml"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: p3-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: 3-FinAgent-Finance-Multi-Agent-Platform/backend
+    steps:
+      - uses: actions/checkout@v5
+      - uses: astral-sh/setup-uv@v6
+        with:
+          version: "0.12.0"
+          enable-cache: true
+          cache-dependency-glob: 3-FinAgent-Finance-Multi-Agent-Platform/backend/uv.lock
+      - run: uv sync --frozen
+      - name: Lint
+        run: uv run ruff check . && uv run ruff format --check .
+      - name: Type check
+        run: uv run mypy src
+      - name: Unit + architecture tests (offline)
+        run: uv run pytest -q
+
+  backend-integration:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: pgvector/pgvector:pg17
+        env:
+          POSTGRES_PASSWORD: finagent_ci
+          POSTGRES_DB: finagent
+        ports: ["5440:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres" --health-interval 5s --health-timeout 3s
+          --health-retries 20
+    env:
+      TEST_DATABASE_URL: postgresql+psycopg://postgres:finagent_ci@127.0.0.1:5440/finagent
+    defaults:
+      run:
+        working-directory: 3-FinAgent-Finance-Multi-Agent-Platform/backend
+    steps:
+      - uses: actions/checkout@v5
+      - uses: astral-sh/setup-uv@v6
+        with:
+          version: "0.12.0"
+          enable-cache: true
+          cache-dependency-glob: 3-FinAgent-Finance-Multi-Agent-Platform/backend/uv.lock
+      - run: uv sync --frozen
+      - name: Migrate + seed
+        run: |
+          uv run alembic -x url=$TEST_DATABASE_URL upgrade head
+          uv run python -m scripts.seed --url $TEST_DATABASE_URL
+      - name: Integration tests (SQL, RLS, tenancy, tools on the DB)
+        run: uv run pytest -q tests/integration
+
+  frontend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: 3-FinAgent-Finance-Multi-Agent-Platform/frontend
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: 3-FinAgent-Finance-Multi-Agent-Platform/frontend/package-lock.json
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm run build
+      - name: Playwright (mock mode)
+        run: |
+          npx playwright install --with-deps chromium
+          rm -rf .next
+          npm run test:e2e
+
+  security:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - name: Secret scan
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Dependency + IaC scan
+        uses: aquasecurity/trivy-action@0.33.1
+        with:
+          scan-type: fs
+          scan-ref: 3-FinAgent-Finance-Multi-Agent-Platform
+          scanners: vuln,misconfig,secret
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          exit-code: "1"
+
+  images:
+    needs: [backend, frontend]
+    if: ${{ !failure() && !cancelled() }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: docker/setup-buildx-action@v3
+      - name: Build backend
+        uses: docker/build-push-action@v6
+        with:
+          context: 3-FinAgent-Finance-Multi-Agent-Platform
+          file: 3-FinAgent-Finance-Multi-Agent-Platform/backend/Dockerfile
+          tags: finagent-backend:ci
+          load: true
+          cache-from: type=gha,scope=p3-backend
+          cache-to: type=gha,mode=max,scope=p3-backend
+      - name: Build frontend
+        uses: docker/build-push-action@v6
+        with:
+          context: 3-FinAgent-Finance-Multi-Agent-Platform/frontend
+          tags: finagent-frontend:ci
+          load: true
+          cache-from: type=gha,scope=p3-frontend
+          cache-to: type=gha,mode=max,scope=p3-frontend
+      - name: Smoke test (read-only, non-root, health + MCP auth)
+        run: |
+          docker run -d --name api --read-only --tmpfs /tmp --cap-drop ALL \
+            -e DATABASE_URL=postgresql+psycopg://x:y@127.0.0.1:1/none -e REDIS_ENABLED=false \
+            -p 8020:8020 finagent-backend:ci
+          docker run -d --name mcp --read-only --tmpfs /tmp --cap-drop ALL \
+            -e DATABASE_URL=postgresql+psycopg://x:y@127.0.0.1:1/none -e REDIS_ENABLED=false \
+            -e MCP_SERVICE_TOKEN=ci-token -p 8021:8021 finagent-backend:ci \
+            python -m src.mcp.run market --host 0.0.0.0
+          for i in $(seq 1 60); do curl -fsS localhost:8020/health && curl -fsS localhost:8021/health && break; sleep 2; done
+          test "$(docker exec api id -u)" = "10001"
+          curl -fsS localhost:8020/metrics | grep -q finagent_http_requests_total
+          test "$(curl -s -o /dev/null -w '%{http_code}' -X POST localhost:8021/mcp)" = "401"
+      - name: Image scan
+        uses: aquasecurity/trivy-action@0.33.1
+        with:
+          image-ref: finagent-backend:ci
+          severity: CRITICAL
+          ignore-unfixed: true
+          exit-code: "1"
+
+  infrastructure:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: hashicorp/setup-terraform@v3
+      - name: Terraform fmt + validate (no backend, no AWS credentials)
+        working-directory: 3-FinAgent-Finance-Multi-Agent-Platform/infrastructure/terraform
+        run: |
+          terraform fmt -check -recursive
+          terraform init -backend=false -input=false
+          terraform validate
+      - name: Kubernetes manifests
+        run: |
+          kubectl kustomize 3-FinAgent-Finance-Multi-Agent-Platform/infrastructure/kubernetes/overlays/production > /tmp/k8s.yaml
+          docker run --rm -v /tmp:/w ghcr.io/yannh/kubeconform:v0.7.0 -strict -summary \
+            -ignore-missing-schemas /w/k8s.yaml
+      - name: Prometheus rules
+        run: |
+          docker run --rm --entrypoint promtool -v "$PWD/3-FinAgent-Finance-Multi-Agent-Platform/monitoring/prometheus:/etc/prometheus:ro" \
+            prom/prometheus:v3.5.0 check config /etc/prometheus/prometheus.yml

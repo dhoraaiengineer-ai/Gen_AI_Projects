@@ -1,0 +1,149 @@
+[project]
+name = "finagent"
+version = "0.1.0"
+description = "Multi-agent decision support for portfolio risk, fraud and research at an asset manager."
+readme = "README.md"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "alembic>=1.14",
+    "fastapi>=0.115",
+    "httpx>=0.27",
+    "langchain-core>=0.3.40",
+    "langchain-openai>=0.3.8",
+    "langgraph>=0.3",
+    "langgraph-checkpoint-postgres>=2.0",
+    "lightgbm>=4.5",
+    "mcp>=1.6",
+    "mlflow-skinny>=2.20",
+    "numpy>=2.1",
+    "openpyxl>=3.1",
+    "opentelemetry-exporter-otlp-proto-http>=1.45",
+    "opentelemetry-sdk>=1.45",
+    "pgvector>=0.3.6",
+    "prometheus-client>=0.21",
+    "psycopg-pool>=3.2",
+    "psycopg[binary]>=3.2",
+    "pydantic>=2.9",
+    "pydantic-settings>=2.6",
+    "pyjwt[crypto]>=2.10",
+    "pypdf>=5.0",
+    "pypdfium2>=4.30",
+    "pytesseract>=0.3.13",
+    "python-docx>=1.1",
+    "python-pptx>=1.0",
+    "redis>=5.2",
+    "scikit-learn>=1.5",
+    "sentence-transformers>=3.3",
+    "sqlalchemy[asyncio]>=2.0.36",
+    "sqlparse>=0.5",
+    "tiktoken>=0.8",
+    "torch>=2.5",
+    "uvicorn[standard]>=0.32",
+    "websockets>=17.2",
+]
+
+[dependency-groups]
+dev = [
+    "mypy>=1.13",
+    "pre-commit>=4.0",
+    "pytest>=8.3",
+    "pytest-asyncio>=0.24",
+    "ruff>=0.8",
+]
+
+[tool.uv]
+package = false
+
+# CPU-only torch (cross-encoder re-ranker): avoids ~3 GB of CUDA wheels in Linux containers.
+[tool.uv.sources]
+torch = { index = "pytorch-cpu" }
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
+
+# ------------------------------------------------------------------ ruff
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+extend-exclude = ["frontend", "src/db/migrations/versions"]
+
+[tool.ruff.lint]
+select = [
+  "E", "W", "F",   # pycodestyle, pyflakes
+  "I",             # isort
+  "B",             # bugbear
+  "UP",            # pyupgrade
+  "N",             # naming
+  "S",             # bandit (security)
+  "ASYNC",         # async pitfalls
+  "C4", "SIM", "RET", "PTH",
+  "PL",            # pylint subset
+  "RUF",
+  "T20",           # no print() in app code
+  "ANN",           # type hints
+]
+ignore = [
+  "PLR0913",       # many args is fine for tool/settings constructors
+  "PLR2004",       # magic numbers are normal in financial maths
+  "RUF001", "RUF002", "RUF003",  # unicode punctuation in finance text
+  "N818",          # taxonomy names like NotFound / RateLimited read better than *Error
+  "ANN401",        # wrappers must mirror LangChain's (*args: Any, **kwargs: Any) signatures
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S101", "ANN", "PLR2004", "S105", "S106"]
+"scripts/**" = ["T20", "E501", "PLR0912", "PLR0915"]  # terminal CLIs: printing and wide output
+# Data literals (fictional instruments, cities) are clearer as one row per line.
+"src/data/ingestion/synthetic_*.py" = ["E501", "PLR0917"]
+# Each build() defines one small handler per tool; splitting would only scatter them.
+"src/tools/*.py" = ["PLR0915", "PLR0917"]
+# User-facing sentences (agent highlights, intent descriptions) stay on one line for review.
+"src/agents/*/agent.py" = ["E501"]
+"src/orchestration/routing.py" = ["E501"]
+# Guardrail patterns are long alternations; wrapping them hurts review.
+"src/guardrails/checks.py" = ["E501"]
+# build_graph() defines one small node function per graph step.
+"src/orchestration/graph.py" = ["PLR0915"]
+
+[tool.ruff.format]
+quote-style = "double"
+line-ending = "lf"
+
+# ---------------------------------------------------------------- pytest
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+addopts = "-ra --strict-markers -m 'not live'"
+markers = [
+  "live: calls real external services (LLMs, Supabase, Tavily); never run in CI by default",
+]
+filterwarnings = ["error::DeprecationWarning:src.*"]
+
+# ------------------------------------------------------------------ mypy
+[tool.mypy]
+python_version = "3.12"
+strict = true
+packages = ["src"]
+plugins = ["pydantic.mypy"]
+warn_unreachable = true
+pretty = true
+
+[[tool.mypy.overrides]]
+module = ["langchain_anthropic.*", "langchain_aws.*", "sentence_transformers.*", "pytesseract.*"]
+ignore_missing_imports = true  # optional provider SDKs
+
+[[tool.mypy.overrides]]
+module = ["sklearn.*", "joblib.*"]
+ignore_missing_imports = true  # no type stubs published
+
+[[tool.mypy.overrides]]
+module = ["torch.*", "transformers.*", "sentence_transformers.*", "pypdfium2.*", "pptx.*", "docx.*", "openpyxl.*", "pytesseract.*", "PIL.*", "tiktoken.*"]
+follow_imports = "skip"  # huge or untyped third-party packages; our adapters are typed
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = ["tests.*"]
+disallow_untyped_defs = false

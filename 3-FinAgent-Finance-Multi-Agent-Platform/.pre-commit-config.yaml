@@ -1,0 +1,46 @@
+# Install once: uv run pre-commit install
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: check-yaml
+      - id: check-toml
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
+      - id: check-added-large-files
+        args: ["--maxkb=1024"]
+      - id: detect-private-key
+      - id: mixed-line-ending
+        args: ["--fix=lf"]
+  - repo: local
+    hooks:
+      - id: forbid-env
+        name: never commit .env files
+        entry: ".env files must not be committed"
+        language: fail
+        files: '(^|/)\.env($|\.(?!example$))'
+      - id: ruff-check
+        name: ruff check
+        entry: uv run --project backend ruff check --fix --config backend/pyproject.toml
+        language: system
+        types: [python]
+        files: ^backend/
+      - id: ruff-format
+        name: ruff format
+        entry: uv run --project backend ruff format --config backend/pyproject.toml
+        language: system
+        types: [python]
+        files: ^backend/
+      - id: mypy
+        name: mypy
+        entry: bash -c 'cd backend && uv run mypy'
+        language: system
+        types: [python]
+        files: ^backend/
+        pass_filenames: false
+      - id: pytest-architecture
+        name: architecture tests
+        entry: bash -c 'cd backend && uv run pytest -q tests/architecture'
+        language: system
+        pass_filenames: false
+        always_run: true

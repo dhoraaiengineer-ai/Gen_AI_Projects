@@ -1,0 +1,26 @@
+{
+  "title": "Market news September 2026",
+  "items": [
+    {
+      "id": "n-101",
+      "date": "2026-09-22",
+      "ticker": "NVTK",
+      "headline": "NovaTek raises data-centre guidance",
+      "body": "NovaTek Semiconductor raised its data-centre outlook after strong hyperscaler demand."
+    },
+    {
+      "id": "n-102",
+      "date": "2026-09-25",
+      "ticker": "MRDN",
+      "headline": "Meridian Bio phase III trial misses primary endpoint",
+      "body": "Meridian Bio shares fell 22% after its lead candidate failed its phase III readout."
+    },
+    {
+      "id": "n-103",
+      "date": "2026-09-29",
+      "ticker": "ACME",
+      "headline": "ACME signs repricing deal with largest customer",
+      "body": "ACME agreed index-linked pricing that passes steel costs through from January 2027."
+    }
+  ]
+}

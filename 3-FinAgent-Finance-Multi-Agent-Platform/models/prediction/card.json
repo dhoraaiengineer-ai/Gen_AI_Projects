@@ -1,0 +1,48 @@
+{
+  "algorithm": "LightGBM quantile regression (q=0.1, 0.5, 0.9)",
+  "data_hash": "1f7c5f4a1f6c8938",
+  "features": [
+    "ret_5d",
+    "ret_21d",
+    "ret_63d",
+    "vol_21d",
+    "vol_63d",
+    "vol_126d",
+    "ewma_vol",
+    "vol_ratio",
+    "drawdown_126d",
+    "beta_63d",
+    "market_ret_21d",
+    "market_vol_21d"
+  ],
+  "horizon_days": 21,
+  "kind": "prediction",
+  "metrics": {
+    "return_21d_baseline_mae": 0.087021,
+    "return_21d_beats_baseline": 1.0,
+    "return_21d_coverage_80": 0.7465,
+    "return_21d_mae": 0.080516,
+    "return_21d_pinball_q50": 0.040258,
+    "volatility_21d_baseline_mae": 0.06695,
+    "volatility_21d_beats_baseline": 0.0,
+    "volatility_21d_coverage_80": 0.6239,
+    "volatility_21d_mae": 0.075769,
+    "volatility_21d_pinball_q50": 0.037884
+  },
+  "mlflow_run_id": "7dc00a938b3e43c5bae69b7d98bba6e3",
+  "model": "forecast-lgbm",
+  "registry": "forecast-lgbm",
+  "rows": {
+    "test": 5940,
+    "train": 25740,
+    "valid": 5445
+  },
+  "sha256": "0c9c100b4fd05cac45cd0a7ef29d0d3d3516db69e55f42d7b8096116bbb469c0",
+  "split": "time-based 70/15/15",
+  "targets": [
+    "return_21d",
+    "volatility_21d"
+  ],
+  "trained_at": "2026-10-08T13:34:22+00:00",
+  "version": "2"
+}

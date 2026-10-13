@@ -1,0 +1,81 @@
+# FinAgent alerts. Thresholds are starting points for a decision-support workload, not SLAs.
+groups:
+  - name: finagent-availability
+    rules:
+      - alert: FinAgentTargetDown
+        expr: up{job=~"finagent-.*"} == 0
+        for: 2m
+        labels: {severity: critical}
+        annotations:
+          summary: "{{ $labels.job }} target {{ $labels.instance }} is down"
+      - alert: FinAgentHigh5xxRate
+        expr: |
+          sum(rate(finagent_http_requests_total{status=~"5.."}[5m]))
+            / clamp_min(sum(rate(finagent_http_requests_total[5m])), 1e-9) > 0.05
+        for: 5m
+        labels: {severity: warning}
+        annotations:
+          summary: "More than 5% of API requests fail with 5xx"
+      - alert: FinAgentSlowReads
+        expr: |
+          histogram_quantile(0.95, sum by (le, route) (
+            rate(finagent_http_request_seconds_bucket{route!~"/api/v1/chat.*|/api/v1/analyze.*|/api/v1/agents.*"}[10m])
+          )) > 2
+        for: 10m
+        labels: {severity: warning}
+        annotations:
+          summary: "p95 latency of {{ $labels.route }} above 2 s"
+
+  - name: finagent-llm
+    rules:
+      - alert: FinAgentCircuitOpen
+        expr: finagent_circuit_state == 2
+        for: 1m
+        labels: {severity: warning}
+        annotations:
+          summary: "Circuit open for {{ $labels.key }} (quota or provider outage); fallbacks in use"
+      - alert: FinAgentLlmErrorRate
+        expr: |
+          sum(rate(finagent_llm_requests_total{status!="ok"}[10m]))
+            / clamp_min(sum(rate(finagent_llm_requests_total[10m])), 1e-9) > 0.25
+        for: 10m
+        labels: {severity: warning}
+        annotations:
+          summary: "More than 25% of LLM calls fail"
+      - alert: FinAgentLlmSpendHigh
+        expr: sum(increase(finagent_llm_cost_usd_total[1h])) > 5
+        labels: {severity: info}
+        annotations:
+          summary: "Estimated LLM spend above $5 in the last hour"
+
+  - name: finagent-agents-tools
+    rules:
+      - alert: FinAgentAgentFailures
+        expr: |
+          sum by (agent) (rate(finagent_agent_runs_total{status="failed"}[15m]))
+            / clamp_min(sum by (agent) (rate(finagent_agent_runs_total[15m])), 1e-9) > 0.2
+        for: 15m
+        labels: {severity: warning}
+        annotations:
+          summary: "Agent {{ $labels.agent }} fails more than 20% of runs"
+      - alert: FinAgentToolTimeouts
+        expr: sum by (tool) (increase(finagent_tool_calls_total{status="timeout"}[15m])) > 3
+        labels: {severity: warning}
+        annotations:
+          summary: "Tool {{ $labels.tool }} timed out more than 3 times in 15 min"
+      - alert: FinAgentMcpTransportErrors
+        expr: sum by (server) (increase(finagent_mcp_calls_total{status="transport_error"}[10m])) > 0
+        for: 5m
+        labels: {severity: warning}
+        annotations:
+          summary: "MCP transport errors to {{ $labels.server }} (server down or token mismatch)"
+      - alert: FinAgentPermissionDenials
+        expr: sum(increase(finagent_tool_calls_total{status="denied"}[15m])) > 20
+        labels: {severity: info}
+        annotations:
+          summary: "Unusual number of denied tool calls (check audit_log)"
+      - alert: FinAgentTelemetryDropped
+        expr: increase(finagent_telemetry_dropped_total[15m]) > 0
+        labels: {severity: warning}
+        annotations:
+          summary: "Execution records dropped (audit trail incomplete)"

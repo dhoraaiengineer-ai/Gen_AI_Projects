@@ -1,0 +1,11 @@
+# CD sets the image tags (`kustomize edit set image ...`) to the commit SHA pushed to ECR.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources: [../../base]
+images:
+  - name: finagent-backend
+    newName: ACCOUNT_ID.dkr.ecr.ap-southeast-1.amazonaws.com/finagent-backend
+    newTag: CHANGE_ME
+  - name: finagent-frontend
+    newName: ACCOUNT_ID.dkr.ecr.ap-southeast-1.amazonaws.com/finagent-frontend
+    newTag: CHANGE_ME

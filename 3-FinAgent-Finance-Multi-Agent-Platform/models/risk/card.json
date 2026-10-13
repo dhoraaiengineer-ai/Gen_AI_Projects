@@ -1,0 +1,42 @@
+{
+  "algorithm": "LightGBM regressor x5 (bagged)",
+  "data_hash": "8c00873f8518fb43",
+  "features": [
+    "vol_63d",
+    "vol_252d",
+    "vol_ratio",
+    "max_drawdown_252d",
+    "return_63d",
+    "beta",
+    "top1_weight",
+    "herfindahl",
+    "sector_max",
+    "defensive_weight",
+    "market_vol_63d",
+    "market_regime"
+  ],
+  "kind": "risk",
+  "metrics": {
+    "baseline_mae": 12.513141,
+    "baseline_r2": -2.0187,
+    "baseline_rmse": 13.869381,
+    "beats_baseline": 1.0,
+    "test_category_accuracy": 0.6467,
+    "test_mae": 5.379289,
+    "test_r2": 0.3029,
+    "test_rmse": 6.664914
+  },
+  "mlflow_run_id": "ab0ce08547d944baaa6c4e86801c252f",
+  "model": "risk-lgbm",
+  "registry": "risk-lgbm",
+  "rows": {
+    "test": 2400,
+    "train": 8400,
+    "valid": 1800
+  },
+  "sha256": "ce7585c304c1d9ed434d402a46b13ab7f66373f3400836a1cf3a548afad40f8e",
+  "split": "time-based 70/15/15",
+  "target": "realised risk over the next 63 trading days (0-100; 60% vol, 40% drawdown)",
+  "trained_at": "2026-10-08T13:31:01+00:00",
+  "version": "2"
+}

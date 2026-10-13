@@ -1,0 +1,17 @@
+# Prometheus Operator. Scrapes /metrics with the METRICS_TOKEN bearer from `finagent-secrets`.
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: finagent
+  labels: {release: kube-prometheus-stack}
+spec:
+  selector:
+    matchExpressions:
+      - {key: app.kubernetes.io/component, operator: In, values: [api, mcp]}
+  endpoints:
+    - port: http
+      path: /metrics
+      interval: 30s
+      authorization:
+        type: Bearer
+        credentials: {name: finagent-secrets, key: METRICS_TOKEN}

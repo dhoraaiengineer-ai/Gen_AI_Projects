@@ -1,0 +1,59 @@
+# ---- secrets: never commit (the template .env.example is the only exception)
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+secrets/
+
+# ---- python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+dist/
+build/
+*.egg-info/
+
+# ---- ML artefacts (trained in Stage 3b; metadata stays tracked)
+models/**/*.pkl
+models/**/*.joblib
+models/**/*.pt
+models/**/*.onnx
+mlruns/
+models/.registry-cache/
+mlartifacts/
+
+# ---- data / generated
+data/raw/
+data/generated/
+*.log
+
+# ---- node / frontend
+node_modules/
+.next/
+out/
+coverage/
+playwright-report/
+test-results/
+*.tsbuildinfo
+next-env.d.ts
+
+# ---- infra
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfplan
+.terraform.lock.hcl.bak
+
+# ---- editors / OS
+.vscode/*
+!.vscode/extensions.json
+.idea/
+.DS_Store
+Thumbs.db

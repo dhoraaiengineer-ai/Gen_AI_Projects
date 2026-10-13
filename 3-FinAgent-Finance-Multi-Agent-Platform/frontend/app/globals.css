@@ -1,0 +1,22 @@
+@import "tailwindcss";
+
+/* Deep-navy enterprise theme with semantic colours (good / warn / bad / accent). */
+@theme {
+  --color-ink: #0a1022;
+  --color-panel: #111a33;
+  --color-muted: #8d9bbd;
+  --color-accent: #5eb3ff;
+  --color-good: #34d399;
+  --color-warn: #fbbf24;
+  --color-bad: #f87171;
+}
+
+html,
+body {
+  background: var(--color-ink);
+  color: #e6ecff;
+}
+
+body {
+  font-family: var(--font-geist-sans), system-ui, sans-serif;
+}

@@ -1,0 +1,58 @@
+# Deny by default; allow only the paths the architecture needs.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny
+spec:
+  podSelector: {}
+  policyTypes: [Ingress, Egress]
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-dns-and-service-egress
+spec:
+  podSelector: {}
+  policyTypes: [Egress]
+  egress:
+    - ports: [{port: 53, protocol: UDP}, {port: 53, protocol: TCP}]
+    # LLM providers, Supabase Auth/JWKS, Postgres poolers (5432/6543), ElastiCache, OTel collector
+    - ports: [{port: 443}, {port: 5432}, {port: 6543}, {port: 6379}, {port: 4318}]
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: frontend
+spec:
+  podSelector: {matchLabels: {app.kubernetes.io/name: frontend}}
+  policyTypes: [Ingress, Egress]
+  ingress:
+    - ports: [{port: 3020}]  # from the ALB (target-type ip)
+  egress:
+    - to: [{podSelector: {matchLabels: {app.kubernetes.io/name: api}}}]
+      ports: [{port: 8020}]
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: api
+spec:
+  podSelector: {matchLabels: {app.kubernetes.io/name: api}}
+  policyTypes: [Ingress, Egress]
+  ingress:
+    - ports: [{port: 8020}]  # ALB, frontend proxy, Prometheus
+  egress:
+    - to: [{podSelector: {matchLabels: {app.kubernetes.io/component: mcp}}}]
+      ports: [{port: 8021}, {port: 8022}, {port: 8023}, {port: 8024}, {port: 8025}, {port: 8026}]
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: mcp-from-api-and-prometheus
+spec:
+  podSelector: {matchLabels: {app.kubernetes.io/component: mcp}}
+  policyTypes: [Ingress]
+  ingress:
+    - from: [{podSelector: {matchLabels: {app.kubernetes.io/name: api}}}]
+    - from:
+        - namespaceSelector: {matchLabels: {kubernetes.io/metadata.name: monitoring}}

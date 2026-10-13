@@ -1,0 +1,26 @@
+{
+  "description": "Tool-selection golden set: question → agents that must run and tools that must be called (subset; extra calls are allowed but counted for precision). 'role' is the demo user's role.",
+  "items": [
+    {"id": "tl01", "question": "Why has the risk of Portfolio A increased?", "role": "risk_manager",
+     "agents": ["portfolio", "market", "risk", "compliance"],
+     "tools": ["get_portfolio_summary", "get_holdings", "get_market_summary", "explain_risk_change", "calculate_var", "check_policy_limits"]},
+    {"id": "tl02", "question": "Check Portfolio C against our policy limits", "role": "compliance_officer",
+     "agents": ["portfolio", "compliance"],
+     "tools": ["get_portfolio_summary", "check_policy_limits"]},
+    {"id": "tl03", "question": "Propose a rebalance for Portfolio A", "role": "portfolio_manager",
+     "agents": ["portfolio", "risk", "compliance"],
+     "tools": ["propose_rebalance", "check_policy_limits"]},
+    {"id": "tl04", "question": "Is transaction TX-004512 fraudulent?", "role": "fraud_analyst",
+     "agents": ["fraud"],
+     "tools": ["predict_fraud"]},
+    {"id": "tl05", "question": "Forecast NVTK volatility for next month", "role": "risk_manager",
+     "agents": ["prediction"],
+     "tools": ["predict_market_trend"]},
+    {"id": "tl06", "question": "What does our investment policy say about the VaR budget?", "role": "analyst",
+     "agents": ["research"],
+     "tools": ["answer_from_documents"]},
+    {"id": "tl07", "question": "What is happening in the market this month?", "role": "analyst",
+     "agents": ["market"],
+     "tools": ["get_market_summary", "get_market_news"]}
+  ]
+}

@@ -1,0 +1,113 @@
+{
+  "suite": "chunking",
+  "params": {
+    "live": false,
+    "answers": false,
+    "judge": false
+  },
+  "at": "2026-10-09T01:27:05",
+  "metrics": {
+    "best_strategy": "auto",
+    "best_evidence_recall_at_5": 1.0,
+    "n": 12
+  },
+  "strategies": {
+    "auto": {
+      "chunks": 31,
+      "avg_tokens": 56.7,
+      "source_recall_at_5": 1.0,
+      "mrr": 0.958,
+      "evidence_recall_at_5": 1.0
+    },
+    "fixed": {
+      "chunks": 31,
+      "avg_tokens": 50.9,
+      "source_recall_at_5": 1.0,
+      "mrr": 0.958,
+      "evidence_recall_at_5": 1.0
+    },
+    "sliding_window": {
+      "chunks": 31,
+      "avg_tokens": 50.9,
+      "source_recall_at_5": 1.0,
+      "mrr": 0.958,
+      "evidence_recall_at_5": 1.0
+    },
+    "recursive": {
+      "chunks": 31,
+      "avg_tokens": 52.3,
+      "source_recall_at_5": 1.0,
+      "mrr": 0.958,
+      "evidence_recall_at_5": 1.0
+    },
+    "sentence_window": {
+      "chunks": 59,
+      "avg_tokens": 26.8,
+      "source_recall_at_5": 1.0,
+      "mrr": 0.958,
+      "evidence_recall_at_5": 1.0
+    },
+    "semantic": {
+      "skipped": "ValidationFailed: semantic chunking needs an embedding model"
+    },
+    "structure": {
+      "chunks": 31,
+      "avg_tokens": 52.3,
+      "source_recall_at_5": 1.0,
+      "mrr": 0.958,
+      "evidence_recall_at_5": 1.0
+    },
+    "parent_child": {
+      "chunks": 31,
+      "avg_tokens": 56.7,
+      "source_recall_at_5": 1.0,
+      "mrr": 0.958,
+      "evidence_recall_at_5": 1.0
+    },
+    "hierarchical": {
+      "chunks": 74,
+      "avg_tokens": 60.4,
+      "source_recall_at_5": 1.0,
+      "mrr": 0.938,
+      "evidence_recall_at_5": 1.0
+    },
+    "table": {
+      "chunks": 31,
+      "avg_tokens": 99.4,
+      "source_recall_at_5": 1.0,
+      "mrr": 0.958,
+      "evidence_recall_at_5": 1.0
+    },
+    "record": {
+      "chunks": 25,
+      "avg_tokens": 64.8,
+      "source_recall_at_5": 1.0,
+      "mrr": 0.958,
+      "evidence_recall_at_5": 1.0
+    },
+    "code": {
+      "chunks": 31,
+      "avg_tokens": 52.3,
+      "source_recall_at_5": 1.0,
+      "mrr": 0.958,
+      "evidence_recall_at_5": 1.0
+    },
+    "slide": {
+      "chunks": 31,
+      "avg_tokens": 52.3,
+      "source_recall_at_5": 1.0,
+      "mrr": 0.958,
+      "evidence_recall_at_5": 1.0
+    },
+    "multimodal": {
+      "chunks": 31,
+      "avg_tokens": 57.2,
+      "source_recall_at_5": 1.0,
+      "mrr": 0.958,
+      "evidence_recall_at_5": 1.0
+    },
+    "proposition": {
+      "skipped": "ValidationFailed: proposition chunking is opt-in and needs an LLM"
+    }
+  }
+}

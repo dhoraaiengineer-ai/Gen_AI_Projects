@@ -1,0 +1,82 @@
+# CD: manual only. Build → push to ECR (immutable SHA tags) → migrate Job → rollout on EKS.
+# Requires the GitHub environment `production` with AWS_ROLE_ARN (Terraform output
+# github_cd_role_arn), AWS_ACCOUNT_ID and EKS_CLUSTER, plus SUPABASE_URL /
+# SUPABASE_PUBLISHABLE_KEY as variables. No long-lived AWS keys (GitHub OIDC).
+name: "Project 3 · CD"
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: Target environment
+        type: choice
+        options: [production]
+        default: production
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: p3-cd-${{ inputs.environment }}
+  cancel-in-progress: false
+
+env:
+  AWS_REGION: ap-southeast-1
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+      - id: ecr
+        uses: aws-actions/amazon-ecr-login@v2
+      - uses: docker/setup-buildx-action@v3
+      - name: Build + push backend
+        uses: docker/build-push-action@v6
+        with:
+          context: 3-FinAgent-Finance-Multi-Agent-Platform
+          file: 3-FinAgent-Finance-Multi-Agent-Platform/backend/Dockerfile
+          push: true
+          tags: ${{ steps.ecr.outputs.registry }}/finagent-backend:${{ github.sha }}
+      - name: Build + push frontend
+        uses: docker/build-push-action@v6
+        with:
+          context: 3-FinAgent-Finance-Multi-Agent-Platform/frontend
+          push: true
+          build-args: |
+            SUPABASE_URL=${{ vars.SUPABASE_URL }}
+            SUPABASE_PUBLISHABLE_KEY=${{ vars.SUPABASE_PUBLISHABLE_KEY }}
+          tags: ${{ steps.ecr.outputs.registry }}/finagent-frontend:${{ github.sha }}
+      - name: Kubeconfig
+        run: aws eks update-kubeconfig --name "${{ vars.EKS_CLUSTER }}" --region "$AWS_REGION"
+      - name: Sync secrets from Secrets Manager
+        run: |
+          kubectl create namespace finagent --dry-run=client -o yaml | kubectl apply -f -
+          aws secretsmanager get-secret-value --secret-id "${{ vars.EKS_CLUSTER }}/app" \
+            --query SecretString --output text > /tmp/app.json
+          python3 -c "import json;[print(f'{k}={v}') for k,v in json.load(open('/tmp/app.json')).items()]" > /tmp/app.env
+          kubectl -n finagent create secret generic finagent-secrets --from-env-file=/tmp/app.env \
+            --dry-run=client -o yaml | kubectl apply -f -
+          rm -f /tmp/app.json /tmp/app.env
+      - name: Set image tags
+        working-directory: 3-FinAgent-Finance-Multi-Agent-Platform/infrastructure/kubernetes/overlays/production
+        run: |
+          kustomize edit set image \
+            finagent-backend=${{ steps.ecr.outputs.registry }}/finagent-backend:${{ github.sha }} \
+            finagent-frontend=${{ steps.ecr.outputs.registry }}/finagent-frontend:${{ github.sha }}
+      - name: Migrate, then roll out
+        run: |
+          kubectl kustomize 3-FinAgent-Finance-Multi-Agent-Platform/infrastructure/kubernetes/overlays/production > /tmp/all.yaml
+          kubectl -n finagent delete job migrate --ignore-not-found
+          kubectl apply -f /tmp/all.yaml --selector app.kubernetes.io/name=migrate
+          kubectl -n finagent wait --for=condition=complete job/migrate --timeout=600s
+          kubectl apply -f /tmp/all.yaml
+          for d in api frontend mcp-market mcp-finance mcp-risk mcp-research mcp-portfolio mcp-ml; do
+            kubectl -n finagent rollout status deployment/$d --timeout=600s
+          done

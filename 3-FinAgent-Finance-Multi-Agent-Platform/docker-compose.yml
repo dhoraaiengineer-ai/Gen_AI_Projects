@@ -1,0 +1,190 @@
+# FinAgent full stack, local (ADR-004, ADR-036). Secrets come from the root .env (never baked).
+#
+#   docker compose up -d --build                     # postgres, redis, migrate, 6 MCP, api, ui
+#   docker compose --profile monitoring up -d        # + prometheus :9020, grafana :3021, jaeger
+#   docker compose --profile mlflow up -d mlflow     # MLflow UI :5020 over backend/mlruns
+#
+# Published on 127.0.0.1 only: UI 3020, API 8020 (+ monitoring/MLflow ports). Postgres, Redis and
+# the MCP servers stay on the compose network (inspect SQL with `docker compose exec postgres psql`).
+# Data lives in a local Postgres + pgvector (not Supabase); sign-in still uses Supabase Auth.
+
+name: finagent
+
+x-hardening: &hardening
+  read_only: true
+  tmpfs: ["/tmp"]
+  cap_drop: ["ALL"]
+  security_opt: ["no-new-privileges:true"]
+  restart: unless-stopped
+
+x-backend: &backend
+  <<: *hardening
+  image: finagent-backend:local
+  env_file: [.env]
+  environment: &backend-env
+    APP_ENV: ${COMPOSE_APP_ENV:-local}  # local keeps /docs for checking; production hides it
+    LOG_FORMAT: json
+    DATABASE_URL: postgresql+psycopg://finagent:${LOCAL_PG_PASSWORD:-finagent_local}@postgres:5432/finagent
+    REDIS_URL: redis://redis:6379/0
+    REDIS_ENABLED: "true"
+    MCP_TRANSPORT: http
+    MCP_URL_TEMPLATE: http://mcp-{server}:{port}/mcp
+    MCP_SERVICE_TOKEN: ${MCP_SERVICE_TOKEN:?set MCP_SERVICE_TOKEN in .env (any long random string)}
+    MLFLOW_URL: sqlite:///mlruns/mlflow.db  # absent in the image → exported model bundles
+    OTEL_EXPORTER_OTLP_ENDPOINT: ${COMPOSE_OTEL_ENDPOINT:-}
+  depends_on:
+    migrate:
+      condition: service_completed_successfully
+
+x-mcp: &mcp
+  <<: *backend
+  healthcheck:
+    test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:$$MCP_PORT/health || exit 1"]
+    interval: 15s
+    timeout: 5s
+    start_period: 60s
+    retries: 5
+
+services:
+  postgres:
+    image: pgvector/pgvector:pg17
+    environment:
+      POSTGRES_USER: finagent
+      POSTGRES_PASSWORD: ${LOCAL_PG_PASSWORD:-finagent_local}
+      POSTGRES_DB: finagent
+    volumes: ["pgdata:/var/lib/postgresql/data"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U finagent -d finagent"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--save", "", "--appendonly", "no", "--maxmemory", "128mb",
+              "--maxmemory-policy", "allkeys-lru"]
+    <<: *hardening
+    user: "999:999"  # the image's redis user: no gosu step, so cap_drop ALL works
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  # One-shot: schema + RLS, synthetic seed, sample knowledge base (idempotent on re-runs).
+  # Cost: ingestion makes ~1 embedding call per changed file (~12 calls, ~2k tokens per tenant).
+  migrate:
+    <<: *hardening
+    image: finagent-backend:local
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    env_file: [.env]
+    environment:
+      <<: *backend-env
+    command: >
+      sh -c "alembic upgrade head &&
+             python -m scripts.seed &&
+             python -m scripts.ingest_kb --tenant northwind &&
+             python -m scripts.ingest_kb --tenant contoso"
+    restart: "no"
+    depends_on:
+      postgres: {condition: service_healthy}
+      redis: {condition: service_healthy}
+
+  mcp-market:
+    <<: *mcp
+    command: ["python", "-m", "src.mcp.run", "market", "--host", "0.0.0.0"]
+    environment: {<<: *backend-env, MCP_PORT: "8021"}
+  mcp-finance:
+    <<: *mcp
+    command: ["python", "-m", "src.mcp.run", "finance", "--host", "0.0.0.0"]
+    environment: {<<: *backend-env, MCP_PORT: "8022"}
+  mcp-risk:
+    <<: *mcp
+    command: ["python", "-m", "src.mcp.run", "risk", "--host", "0.0.0.0"]
+    environment: {<<: *backend-env, MCP_PORT: "8023"}
+  mcp-research:
+    <<: *mcp
+    command: ["python", "-m", "src.mcp.run", "research", "--host", "0.0.0.0"]
+    environment: {<<: *backend-env, MCP_PORT: "8024"}
+  mcp-portfolio:
+    <<: *mcp
+    command: ["python", "-m", "src.mcp.run", "portfolio", "--host", "0.0.0.0"]
+    environment: {<<: *backend-env, MCP_PORT: "8025"}
+  mcp-ml:
+    <<: *mcp
+    command: ["python", "-m", "src.mcp.run", "ml", "--host", "0.0.0.0"]
+    environment: {<<: *backend-env, MCP_PORT: "8026"}
+
+  api:
+    <<: *backend
+    ports: ["127.0.0.1:8020:8020"]
+    depends_on:
+      migrate: {condition: service_completed_successfully}
+      mcp-market: {condition: service_healthy}
+      mcp-finance: {condition: service_healthy}
+      mcp-risk: {condition: service_healthy}
+      mcp-research: {condition: service_healthy}
+      mcp-portfolio: {condition: service_healthy}
+      mcp-ml: {condition: service_healthy}
+
+  frontend:
+    <<: *hardening
+    image: finagent-frontend:local
+    build:
+      context: frontend
+      args:
+        SUPABASE_URL: ${SUPABASE_URL:-}
+        SUPABASE_PUBLISHABLE_KEY: ${SUPABASE_PUBLISHABLE_KEY:-}
+        NEXT_PUBLIC_API_MODE: proxy
+    environment:
+      API_INTERNAL_URL: http://api:8020
+    ports: ["127.0.0.1:3020:3020"]
+    depends_on:
+      api: {condition: service_healthy}
+
+  # ------------------------------------------------------------ profiles
+  mlflow:
+    profiles: ["mlflow"]
+    image: ghcr.io/mlflow/mlflow:v3.5.0
+    command: ["mlflow", "server", "--host", "0.0.0.0", "--port", "5020",
+              "--backend-store-uri", "sqlite:////mlruns/mlflow.db", "--serve-artifacts",
+              "--artifacts-destination", "/mlruns/artifacts"]
+    volumes: ["./backend/mlruns:/mlruns"]
+    ports: ["127.0.0.1:5020:5020"]
+
+  prometheus:
+    profiles: ["monitoring"]
+    image: prom/prometheus:v3.5.0
+    command: ["--config.file=/etc/prometheus/prometheus.yml", "--web.listen-address=:9020",
+              "--storage.tsdb.retention.time=7d"]
+    volumes:
+      - ./monitoring/prometheus:/etc/prometheus:ro
+      - promdata:/prometheus
+    ports: ["127.0.0.1:9020:9020"]
+
+  grafana:
+    profiles: ["monitoring"]
+    image: grafana/grafana:12.1.0
+    environment:
+      GF_SERVER_HTTP_PORT: "3021"
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-admin}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    volumes:
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./monitoring/dashboards:/var/lib/grafana/dashboards:ro
+    ports: ["127.0.0.1:3021:3021"]
+    depends_on: [prometheus]
+
+  jaeger:  # OTLP receiver + trace UI; set COMPOSE_OTEL_ENDPOINT=http://jaeger:4318 to export
+    profiles: ["monitoring"]
+    image: jaegertracing/all-in-one:1.72.0
+    environment:
+      COLLECTOR_OTLP_ENABLED: "true"
+    ports: ["127.0.0.1:16686:16686"]
+
+volumes:
+  pgdata:
+  promdata:

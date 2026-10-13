@@ -1,0 +1,18 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: finagent
+labels:
+  - pairs: {app.kubernetes.io/part-of: finagent}
+resources:
+  - namespace.yaml
+  - configmap.yaml
+  - api.yaml
+  - mcp.yaml
+  - frontend.yaml
+  - migrate-job.yaml
+  - ingress.yaml
+  - networkpolicy.yaml
+  - servicemonitor.yaml
+images:
+  - {name: finagent-backend, newName: finagent-backend, newTag: local}
+  - {name: finagent-frontend, newName: finagent-frontend, newTag: local}
