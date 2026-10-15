@@ -1,0 +1,18 @@
+flowchart TD
+  q[Question] --> g1{Input guardrails<br/>local: PHI redaction, injection, jailbreak}
+  g1 --> t{Urgent-symptom triage<br/>rules on raw text + LLM on redacted text}
+  t -->|emergency| e[Emergency notice FIRST<br/>local number, crisis line]
+  t --> b{Guardrail block?}
+  e --> b
+  b -->|yes| r1[Refusal card]
+  b -->|no| s{Scope classifier<br/>rules + temperature-0 LLM}
+  s -->|unsafe / out of scope| r2[Refusal or redirect]
+  s -->|info, research, diagnosis, dosing| c{Answer cache<br/>clean answers only}
+  c -->|hit| out
+  c -->|miss| ret[Hybrid retrieval + re-rank<br/>newest guideline version preferred]
+  ret -->|no passages| nc[Not covered - model never called]
+  ret --> gen[Grounded generation<br/>temperature 0.1-0.3, cite every sentence]
+  gen --> g2{Output guardrails<br/>prompt leak, PHI, secrets}
+  g2 --> chk{Post-answer checks<br/>dosing quotes, diagnosis, citations,<br/>numbers, drug names, faithfulness judge}
+  chk -->|fail| r3[Refusal template]
+  chk -->|pass| out[Answer + sources, dates, limitations,<br/>medicine warning, disclaimer]

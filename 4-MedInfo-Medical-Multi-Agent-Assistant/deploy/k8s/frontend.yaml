@@ -1,0 +1,89 @@
+# Frontend: unprivileged nginx serving the static UI and proxying /api/ to the backend Service.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: medinfo-frontend
+  namespace: medinfo
+  labels: {app.kubernetes.io/name: medinfo-frontend}
+spec:
+  replicas: 2
+  revisionHistoryLimit: 5
+  strategy:
+    type: RollingUpdate
+    rollingUpdate: {maxSurge: 1, maxUnavailable: 0}
+  selector:
+    matchLabels: {app.kubernetes.io/name: medinfo-frontend}
+  template:
+    metadata:
+      labels: {app.kubernetes.io/name: medinfo-frontend}
+    spec:
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        seccompProfile: {type: RuntimeDefault}
+      containers:
+        - name: nginx
+          image: FRONTEND_IMAGE_PLACEHOLDER  # replaced by CD with the ECR image
+          ports:
+            - {name: http, containerPort: 8080}
+          env:
+            - {name: BACKEND_UPSTREAM, value: "medinfo-backend:80"}
+            - name: SUPABASE_URL
+              valueFrom: {secretKeyRef: {name: medinfo-secrets, key: SUPABASE_URL}}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: {drop: ["ALL"]}
+          resources:
+            requests: {cpu: 50m, memory: 64Mi}
+            limits: {memory: 128Mi}
+          livenessProbe:
+            httpGet: {path: /frontend-healthz, port: http}
+            periodSeconds: 15
+          readinessProbe:
+            httpGet: {path: /frontend-healthz, port: http}
+            periodSeconds: 10
+          volumeMounts:
+            - {name: tmp, mountPath: /tmp}
+      volumes:
+        - name: tmp
+          emptyDir: {medium: Memory, sizeLimit: 16Mi}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: medinfo-frontend
+  namespace: medinfo
+  labels: {app.kubernetes.io/name: medinfo-frontend}
+spec:
+  type: ClusterIP
+  selector: {app.kubernetes.io/name: medinfo-frontend}
+  ports:
+    - {name: http, port: 80, targetPort: http}
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: medinfo-frontend
+  namespace: medinfo
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels: {app.kubernetes.io/name: medinfo-frontend}
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: medinfo-frontend
+  namespace: medinfo
+spec:
+  scaleTargetRef: {apiVersion: apps/v1, kind: Deployment, name: medinfo-frontend}
+  minReplicas: 2
+  maxReplicas: 4
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target: {type: Utilization, averageUtilization: 70}

@@ -1,0 +1,19 @@
+flowchart LR
+  user([User / Clinician / Admin]) -->|HTTPS| alb[ALB + TLS]
+  alb --> fe[Frontend: nginx, static UI<br/>non-root, read-only FS]
+  fe -->|/api proxy, SSE| api[FastAPI backend<br/>one uvicorn worker per pod]
+  subgraph app[Backend pod - non-root, read-only FS]
+    api --> guard[Guardrails<br/>policy.yaml]
+    api --> safety[Safety layer<br/>triage, scope, answer checks]
+    api --> svc[ChatService]
+    svc --> rag[LangGraph RAG graph<br/>rewrite, retrieve, generate]
+    svc --> agent[Research agent<br/>LangGraph tool loop]
+    rag --> hybrid[Hybrid retriever<br/>pgvector + BM25 + RRF + LLM re-rank]
+  end
+  hybrid --> pg[(Supabase Postgres<br/>pgvector, registry, conversations, review)]
+  svc --> redis[(Redis<br/>cache, short-term memory, rate limits)]
+  rag --> llm{{Model chain<br/>EURI then Gemini then Groq}}
+  safety --> llm
+  agent --> web{{Tavily web search<br/>medical allow-list only}}
+  api --> auth{{Supabase Auth<br/>JWKS, ES256/RS256}}
+  api --> prom[Prometheus /metrics] --> grafana[Grafana + alerts]

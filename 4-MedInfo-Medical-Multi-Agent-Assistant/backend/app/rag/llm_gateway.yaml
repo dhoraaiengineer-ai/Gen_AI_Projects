@@ -1,0 +1,21 @@
+# LLM gateway policy: model routing and token limits for every model call (app/rag/gateway.py).
+# Ops configuration, reviewed like code. Safety does not depend on these numbers: a call that does not fit
+# its budget fails the same way a provider outage does (classifiers fail open to rules, the judge fails
+# closed, the answer is not generated).
+version: 1
+
+# Token counts are ESTIMATES (characters / chars_per_token, rounded up) so budgeting works offline
+# without downloading a tokenizer. Real usage reported by the provider is recorded in metrics separately.
+chars_per_token: 4
+
+# Routes name a model chain (see Settings):
+#   quality -> LLM_ANSWER_CHAIN               (answers, faithfulness judge)
+#   fast    -> LLM_FAST_CHAIN, if set; otherwise the answer chain (classifiers, re-ranker, rewriter)
+tasks:
+  triage:     {route: fast,    min_output_tokens: 32,  max_output_tokens: 80,   max_input_tokens: 1500}
+  scope:      {route: fast,    min_output_tokens: 16,  max_output_tokens: 40,   max_input_tokens: 1500}
+  rewrite:    {route: fast,    min_output_tokens: 64,  max_output_tokens: 160,  max_input_tokens: 2500}
+  rerank:     {route: fast,    min_output_tokens: 32,  max_output_tokens: 80,   max_input_tokens: 4000}
+  judge:      {route: quality, min_output_tokens: 64,  max_output_tokens: 120,  max_input_tokens: 6000}
+  answer:     {route: quality, min_output_tokens: 256, max_output_tokens: 1200, max_input_tokens: 6000}
+  eval_judge: {route: quality, min_output_tokens: 64,  max_output_tokens: 300,  max_input_tokens: 8000}

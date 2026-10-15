@@ -1,0 +1,17 @@
+{
+  "name": "medinfo-frontend",
+  "version": "0.1.0",
+  "private": true,
+  "description": "MedInfo Assistant UI: plain HTML/CSS/JS, no build step. Dependencies here are dev tooling only (lint + browser tests); nothing is bundled or shipped.",
+  "scripts": {
+    "lint": "eslint src tests playwright.config.js",
+    "test": "playwright test --grep-invert @screenshots",
+    "screenshots": "playwright test --grep @screenshots"
+  },
+  "devDependencies": {
+    "@eslint/js": "10.0.1",
+    "@playwright/test": "1.64.0",
+    "eslint": "10.12.0",
+    "globals": "17.13.0"
+  }
+}

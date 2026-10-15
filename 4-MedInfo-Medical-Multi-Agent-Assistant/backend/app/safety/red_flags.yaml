@@ -1,0 +1,130 @@
+# Urgent-symptom (red-flag) rules.
+#
+# STATUS: DRAFT — NOT YET CLINICIAN-REVIEWED. A qualified clinician must review and sign off this
+# file (set reviewed_by / reviewed_on) before any real-world use. Bump `version` on every change.
+#
+# Patterns are Python regular expressions matched against the normalised question
+# (lower-case, curly quotes straightened, whitespace collapsed). Rules are deliberately
+# over-inclusive: a false alarm is safer than a missed emergency. The LLM classifier is a
+# second opinion for paraphrases; if EITHER fires, the emergency message is shown first.
+#
+# crisis: true  -> also show crisis-line resources and skip answer generation.
+# poison: true  -> also show the poison-information line when configured.
+
+version: "0.1.0-draft"
+status: draft_pending_clinician_review
+reviewed_by: null
+reviewed_on: null
+
+categories:
+  - id: chest_pain
+    label: Possible heart attack (chest pain or pressure)
+    patterns:
+      - "chest (pain|pressure|tightness|tightening|discomfort|heaviness|hurts)"
+      - "(pain|pressure|tightness|heaviness|squeezing) (in|on|across|around) (my |the |his |her |their )?chest"
+      - "crushing (pain|feeling|sensation)"
+      - "pain (spreading|radiating|going|moving) (to|down|into|up) (my |the |his |her )?(left )?(arm|jaw|neck|shoulder|back)"
+      - "(having|had|having a|is having) (a )?heart attack"
+      - "(think|might|may|could) (be|i'm|i am|he's|she's|they're)? ?having a heart attack"
+
+  - id: stroke
+    label: Possible stroke (FAST signs)
+    patterns:
+      - "(face|mouth|smile) (is |has )?(drooping|droops|drooped|droopy|numb|lopsided|fallen)"
+      - "drooping (face|mouth)"
+      - "(sudden|suddenly)\\b.{0,40}(weak|weakness|numb|numbness|paraly)"
+      - "(can't|cannot|can not|unable to) (lift|raise|move|feel) (my |his |her |their |one |the )?(left |right )?(arm|arms|leg|legs|side)"
+      - "slurred speech|slurring (my |his |her |their )?(words|speech)|speech (is |became )?slurred"
+      - "(sudden|suddenly)\\b.{0,30}(can't|cannot|trouble|difficulty|unable to) (speak|talk|understand|see)"
+      - "(having|had|is having) a stroke"
+      - "(think|might|may|could) (be )?(having|had) a stroke"
+
+  - id: breathing
+    label: Severe breathing difficulty
+    patterns:
+      - "(can't|cannot|can not|unable to|struggling to|hard to) (breathe|breath|catch (my|his|her|their) breath)"
+      - "(difficulty|trouble|problems?) breathing"
+      - "(severe|serious|extreme|sudden) (shortness of breath|breathlessness|difficulty breathing)"
+      - "\\b(gasping|choking)\\b"
+      - "(lips|face|skin|fingers) (are |is |turning |turned |going |gone )?(blue|grey|gray)"
+      - "(short of breath|breathless) (at rest|while resting|lying down)"
+
+  - id: anaphylaxis
+    label: Possible anaphylaxis (severe allergic reaction)
+    patterns:
+      - "anaphyla"
+      - "(throat|tongue|lips?|face) (is |are |feels |feel )?(swelling|swollen|closing|tight|tightening)"
+      - "swelling (of|in) (my |the |his |her |their )?(throat|tongue|lips|face|mouth)"
+      - "allergic reaction.{0,60}(breath|swell|throat|dizzy|faint|wheez)"
+      - "\\bepi-?pen\\b|adrenaline auto-?injector"
+
+  - id: heavy_bleeding
+    label: Heavy or uncontrolled bleeding
+    patterns:
+      - "(heavy|severe|uncontrolled|uncontrollable|a lot of|lots of|profuse|massive|serious) bleeding"
+      - "bleeding (heavily|profusely|a lot|badly|won't stop|will not stop|that won't stop|that will not stop|non-?stop)"
+      - "(won't|will not|can't|cannot) stop (the )?bleeding"
+      - "(vomiting|coughing|throwing up|spitting) (up )?blood"
+      - "blood (is )?(spurting|pouring|gushing)"
+
+  - id: unconscious_seizure
+    label: Loss of consciousness or seizure
+    patterns:
+      - "\\b(unconscious|unresponsive|passed out|collapsed|blacked out)\\b"
+      - "(not waking|won't wake|can't wake|cannot wake|will not wake)"
+      - "(having|had|is having|keeps having) (a )?(seizure|fit|convulsion)s?"
+      - "\\b(seizing|convulsing|fitting)\\b"
+      - "(not|isn't|is not|stopped) breathing"
+
+  - id: self_harm
+    label: Suicidal thoughts or self-harm
+    crisis: true
+    patterns:
+      - "(kill|hurt|harm|cut|cutting|harming|hurting|killing) (my ?self|myself)"
+      - "(end|take|ending|taking) my (own )?life"
+      - "\\bi('m| am)? ?(feel|feeling|felt)? ?suicidal"
+      - "(want|wanted|going|plan|planning|thinking about|thoughts of|tempted) (to )?(die|end it all|end it|kill myself|end my life)"
+      - "(thinking|thoughts) (about|of) (suicide|killing myself|ending my life|self-?harm)"
+      - "(don't|do not) want to (live|be alive|wake up|be here)"
+      - "better off dead|no reason to live|no point (in )?living"
+      - "i('ve| have) been (self-?harming|cutting)"
+
+  - id: overdose_poisoning
+    label: Overdose or poisoning
+    poison: true
+    patterns:
+      - "overdos(e|ed|ing)"
+      - "(took|taken|swallowed|ate|drank|had) (too many|too much|a (whole|full) (bottle|pack|packet|box|strip)|all (my|the|of (my|the|his|her)))"
+      - "(swallowed|drank|ingested|ate|eaten|drunk).{0,30}(bleach|poison|detergent|antifreeze|pesticide|weed ?killer|button batter|batter(y|ies)|pills|tablets|capsules|medicine)"
+      - "\\bpoisoned\\b"
+      - "(child|kid|toddler|baby|son|daughter) (has )?(swallowed|ate|eaten|drank|drunk|got into)"
+
+  - id: meningitis_signs
+    label: High fever with stiff neck or non-fading rash
+    patterns:
+      - "(fever|temperature).{0,60}(stiff neck|neck (is )?stiff|rash)"
+      - "(stiff neck|neck (is )?stiff|rash).{0,60}(fever|temperature)"
+      - "rash (that )?(doesn't|does not|won't) fade"
+      - "(non-?blanching|purple|purpuric) (rash|spots)"
+
+  - id: pregnancy_emergency
+    label: Pregnancy with bleeding or severe pain
+    patterns:
+      - "pregnan\\w*.{0,60}(bleed\\w*|severe (pain|cramp\\w*|headache)|waters? (broke|broken)|baby (has )?(stopped|not) moving|no (baby )?movements?)"
+      - "(bleed\\w*|severe (abdominal |stomach |belly |pelvic )?(pain|cramp\\w*)).{0,60}pregnan\\w*"
+
+  - id: infant_severe
+    label: Severe symptoms in an infant
+    patterns:
+      - "(baby|newborn|infant|\\d+[- ]?(month|week|day)s?[- ]?old)\\b.{0,60}(fever|temperature|not feeding|won't feed|floppy|limp|blue|not breathing|breathing (fast|hard)|seizure|fit|unresponsive|won't wake|high-pitched cry|bulging|rash|vomiting green|no wet (nappies|diapers))"
+      - "(fever|temperature|floppy|limp|not breathing|seizure|won't wake).{0,40}(my |our |the )?(baby|newborn|infant)"
+
+  - id: sudden_severe_headache
+    label: Sudden severe headache or sudden neurological change
+    patterns:
+      - "(sudden|suddenly|thunderclap|worst)\\b.{0,30}headache"
+      - "headache.{0,30}(came on suddenly|sudden|worst (ever|of my life)|like being hit)"
+      - "(sudden|suddenly)\\b.{0,20}(confusion|confused|vision loss|lost (my |his |her )?vision|went blind|double vision)"
+
+  # Clinician to add further categories (e.g. suspected sepsis, severe burns, testicular torsion,
+  # diabetic emergencies, acute abdomen) during review.

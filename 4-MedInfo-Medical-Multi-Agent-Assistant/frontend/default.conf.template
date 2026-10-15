@@ -1,0 +1,64 @@
+# Rendered with envsubst at container start: only ${BACKEND_UPSTREAM} and ${SUPABASE_URL} are replaced
+# (nginx variables such as $uri are left alone because they are not defined in the environment).
+server {
+    listen 8080;
+    root /usr/share/nginx/html;
+    client_max_body_size 12m;  # backend limit is MAX_UPLOAD_MB (default 10)
+
+    # Same strict policy as the backend: no inline script/style, no external assets, no framing.
+    add_header Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'self' ${SUPABASE_URL}; object-src 'none'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'" always;
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header Referrer-Policy "no-referrer" always;
+    add_header X-Frame-Options "DENY" always;
+    add_header Permissions-Policy "camera=(), microphone=(), geolocation=()" always;
+
+    location = /frontend-healthz {
+        access_log off;
+        default_type text/plain;
+        return 200 "ok\n";
+    }
+
+    # API (including the SSE answer stream) -> backend. Unbuffered so phases stream in real time.
+    location /api/ {
+        proxy_pass http://${BACKEND_UPSTREAM};
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Request-ID $request_id;
+        proxy_set_header Connection "";
+        proxy_buffering off;
+        proxy_read_timeout 120s;
+        # The security headers above apply; drop the backend's copies to avoid duplicates.
+        proxy_hide_header Content-Security-Policy;
+        proxy_hide_header X-Content-Type-Options;
+        proxy_hide_header Referrer-Policy;
+        proxy_hide_header X-Frame-Options;
+        proxy_hide_header Permissions-Policy;
+    }
+
+    # Assets are referenced as /static/... by index.html; always revalidated (ETag) to avoid stale JS.
+    location /static/ {
+        alias /usr/share/nginx/html/;
+        expires -1;
+    }
+
+    location = /favicon.ico {
+        alias /usr/share/nginx/html/favicon.svg;
+        default_type image/svg+xml;
+    }
+
+    location = / {
+        try_files /index.html =404;
+        expires -1;
+    }
+
+    # Backend-only endpoints are NOT exposed through the public frontend.
+    location ~ ^/(metrics|docs|openapi\.json|readyz|healthz)$ {
+        return 404;
+    }
+
+    location / {
+        return 404;
+    }
+}

@@ -1,0 +1,82 @@
+# Default deny everything, then allow only what is needed. Requires a CNI that enforces NetworkPolicy
+# (EKS: VPC CNI with network policy enabled - see infra/terraform/eks.tf).
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata: {name: default-deny-all, namespace: medinfo}
+spec:
+  podSelector: {}
+  policyTypes: [Ingress, Egress]
+---
+# Frontend: reachable from the ALB (VPC); may call DNS and the backend only.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata: {name: frontend, namespace: medinfo}
+spec:
+  podSelector:
+    matchLabels: {app.kubernetes.io/name: medinfo-frontend}
+  policyTypes: [Ingress, Egress]
+  ingress:
+    - from:
+        - ipBlock: {cidr: 10.0.0.0/16}  # VPC CIDR (ALB target-type ip); keep in sync with terraform
+      ports: [{port: 8080, protocol: TCP}]
+  egress:
+    - to:
+        - namespaceSelector:
+            matchLabels: {kubernetes.io/metadata.name: kube-system}
+          podSelector:
+            matchLabels: {k8s-app: kube-dns}
+      ports: [{port: 53, protocol: UDP}, {port: 53, protocol: TCP}]
+    - to:
+        - podSelector:
+            matchLabels: {app.kubernetes.io/name: medinfo-backend}
+      ports: [{port: 8000, protocol: TCP}]
+---
+# Backend: reachable ONLY from the frontend and Prometheus; may call DNS, Redis and HTTPS/Postgres egress.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata: {name: backend, namespace: medinfo}
+spec:
+  podSelector:
+    matchLabels: {app.kubernetes.io/name: medinfo-backend}
+  policyTypes: [Ingress, Egress]
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels: {app.kubernetes.io/name: medinfo-frontend}
+      ports: [{port: 8000, protocol: TCP}]
+    - from:
+        - namespaceSelector:
+            matchLabels: {kubernetes.io/metadata.name: monitoring}
+      ports: [{port: 8000, protocol: TCP}]
+  egress:
+    - to:
+        - namespaceSelector:
+            matchLabels: {kubernetes.io/metadata.name: kube-system}
+          podSelector:
+            matchLabels: {k8s-app: kube-dns}
+      ports: [{port: 53, protocol: UDP}, {port: 53, protocol: TCP}]
+    - to:
+        - podSelector:
+            matchLabels: {app.kubernetes.io/name: medinfo-redis}
+      ports: [{port: 6379, protocol: TCP}]
+    - to:
+        - ipBlock:
+            cidr: 0.0.0.0/0
+            except: [10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16, 169.254.0.0/16]
+      # Model APIs / Supabase Auth / Tavily (443); Supabase pooler (6543) and direct Postgres (5432).
+      ports: [{port: 443, protocol: TCP}, {port: 6543, protocol: TCP}, {port: 5432, protocol: TCP}]
+---
+# Redis: ONLY the backend may connect; Redis itself needs no egress.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata: {name: redis, namespace: medinfo}
+spec:
+  podSelector:
+    matchLabels: {app.kubernetes.io/name: medinfo-redis}
+  policyTypes: [Ingress, Egress]
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels: {app.kubernetes.io/name: medinfo-backend}
+      ports: [{port: 6379, protocol: TCP}]
+  egress: []

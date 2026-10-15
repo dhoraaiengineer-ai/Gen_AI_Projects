@@ -1,0 +1,16 @@
+flowchart TB
+  dev[GitHub push / PR] --> ci[CI: ruff, pytest, SAFETY SUITE,<br/>image build, smoke test on pgvector, Trivy]
+  ci --> tag[Tag / manual dispatch]
+  tag --> cd[CD: GitHub OIDC - no long-lived keys]
+  cd --> ecr[(ECR - immutable tags,<br/>scan on push, KMS)]
+  cd --> eks
+  subgraph aws[AWS ap-southeast-2 - same region as the database]
+    subgraph eks[EKS - secrets KMS-encrypted, NetworkPolicies]
+      ing[ALB Ingress TLS] --> pod1[app pod]
+      ing --> pod2[app pod]
+      pod1 --> rd[(Redis - only app may connect)]
+      pod2 --> rd
+    end
+  end
+  pod1 --> supa[(Supabase Postgres + Auth)]
+  pod2 --> models{{EURI / Gemini / Groq / Tavily}}

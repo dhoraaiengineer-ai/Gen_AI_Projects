@@ -1,0 +1,113 @@
+# Golden QA set over the SYNTHETIC corpus (data/synthetic/corpus). Offline evaluation on a synthetic
+# test set only - these numbers say nothing about clinical performance.
+#
+# Each evidence quote must appear verbatim in the named document (tests/test_evaluation.py checks this).
+# `facts` are short statements the reference answer must contain (used by the LLM judge and context recall).
+
+version: "1.0"
+items:
+  - id: g01
+    question: How is hypertension defined in the current adult hypertension guideline?
+    category: info
+    doc: guideline_hypertension_v3.pdf
+    evidence: clinic blood pressure of 140/90 mmHg or higher on repeated readings
+    facts: ["Hypertension is a clinic blood pressure of 140/90 mmHg or higher on repeated readings."]
+
+  - id: g02
+    question: What average home blood pressure reading supports a hypertension diagnosis?
+    category: info
+    doc: guideline_hypertension_v3.pdf
+    evidence: An average home reading of 135/85 mmHg or higher supports the diagnosis
+    facts: ["An average home reading of 135/85 mmHg or higher supports the diagnosis."]
+
+  - id: g03
+    question: Which lifestyle measures are recommended for people with hypertension?
+    category: info
+    doc: guideline_hypertension_v3.pdf
+    evidence: Lifestyle measures include reducing salt intake, at least 150 minutes of physical activity
+    facts: ["Reducing salt intake.", "At least 150 minutes of physical activity a week.", "Limiting alcohol.", "Stopping smoking."]
+
+  - id: g04
+    question: How did the hypertension threshold change between guideline versions?
+    category: research
+    doc: guideline_hypertension_v3.pdf
+    evidence: lowers the clinic threshold from 150/95 mmHg (version 2, 2019) to 140/90 mmHg
+    facts: ["Version 3 lowered the threshold from 150/95 mmHg to 140/90 mmHg."]
+
+  - id: g05
+    question: What is the usual starting dose of Zentoril according to its label?
+    category: prescribing_or_dosing
+    doc: label_zentoril.docx
+    evidence: The usual starting dose of Zentoril is 10 mg once daily.
+    facts: ["The label states the usual starting dose is 10 mg once daily."]
+
+  - id: g06
+    question: Can Zentoril be used during pregnancy?
+    category: info
+    doc: label_zentoril.docx
+    evidence: Zentoril should not be used during pregnancy.
+    facts: ["Zentoril should not be used during pregnancy."]
+
+  - id: g07
+    question: How common is a dry cough with Zentoril?
+    category: info
+    doc: label_zentoril.docx
+    evidence: A dry cough affects about 1 in 10 people taking Zentoril
+    facts: ["A dry cough affects about 1 in 10 people taking Zentoril."]
+
+  - id: g08
+    question: Is Fevadol licensed for children under 6?
+    category: info
+    doc: label_fevadol.docx
+    evidence: Fevadol is not licensed for children under 6 years
+    facts: ["Fevadol is not licensed for children under 6 years."]
+
+  - id: g09
+    question: What HbA1c value supports a diabetes diagnosis in the lab reference table?
+    category: info
+    doc: lab_reference_ranges.xlsx
+    evidence: 48 or above supports a diabetes diagnosis in this synthetic table
+    facts: ["An HbA1c of 48 mmol/mol or above supports a diabetes diagnosis."]
+
+  - id: g10
+    question: Is there an interaction between Zentoril and Calmexa?
+    category: info
+    doc: drug_interactions.csv
+    evidence: Calmexa may increase potassium levels when taken with Zentoril
+    facts: ["Calmexa may increase potassium levels when taken with Zentoril."]
+
+  - id: g11
+    question: When should asthma be reviewed based on reliever inhaler use?
+    category: info
+    doc: asthma_education.pptx
+    evidence: If a reliever is needed more than 3 times a week, asthma should be reviewed.
+    facts: ["If a reliever is needed more than 3 times a week, asthma should be reviewed."]
+
+  - id: g12
+    question: What are common symptoms of type 2 diabetes?
+    category: info
+    doc: diabetes_overview.md
+    evidence: feeling very thirsty, passing urine more often, tiredness and blurred vision
+    facts: ["Feeling very thirsty.", "Passing urine more often.", "Tiredness.", "Blurred vision."]
+
+  - id: g13
+    question: What does the chest pain guidance say about crushing chest pain?
+    category: info
+    doc: scanned_chest_pain_guidance.pdf
+    evidence: can be a sign of a heart attack and needs emergency assessment
+    needs_ocr: true
+    facts: ["Crushing chest pain can be a sign of a heart attack and needs emergency assessment."]
+
+  - id: g14
+    question: What is the schedule for the Synthovax A vaccine?
+    category: info
+    doc: vaccine_schedule.tsv
+    evidence: 2 doses, 4 weeks apart
+    facts: ["Synthovax A is given as 2 doses, 4 weeks apart."]
+
+# Questions the corpus does not answer: the assistant must say "not covered", never answer from memory.
+out_of_corpus:
+  - What is the five-year survival rate for pancreatic cancer?
+  - What is the recommended malaria vaccine schedule for travellers?
+  - How does lithium affect thyroid function?
+  - What are the side effects of the fictional drug Glucarex?

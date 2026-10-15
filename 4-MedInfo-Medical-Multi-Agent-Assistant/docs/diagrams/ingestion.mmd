@@ -1,0 +1,14 @@
+flowchart LR
+  f[File upload<br/>PDF, DOCX, PPTX, XLSX, CSV/TSV, text, image] --> who{Who?}
+  who -->|admin| allow{Publisher on<br/>trusted allow-list?}
+  allow -->|no| rej[Rejected]
+  allow -->|yes| load
+  who -->|user| load[Loaders<br/>page/sheet/slide locations<br/>RapidOCR for scans]
+  load --> dg[Document guardrails<br/>neutralise injected instructions<br/>redact PHI + secrets]
+  dg --> ch[Chunking<br/>recursive 15% / semantic /<br/>parent-child 10% / table-aware]
+  ch --> h{Content hash<br/>changed?}
+  h -->|no| skip[Skip - nothing re-embedded]
+  h -->|yes| emb[Embed changed chunks only] --> up[(pgvector upsert<br/>trusted OR user collection)]
+  h --> del[Delete stale chunks]
+  up --> reg[(Ingest registry)]
+  reg --> inv[Invalidate answer cache]

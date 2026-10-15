@@ -1,0 +1,18 @@
+# Prometheus Operator (kube-prometheus-stack) scrape config. If METRICS_TOKEN is set, CD also creates
+# Secret "medinfo-metrics" (key: token) in the monitoring namespace's reach.
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: medinfo-backend
+  namespace: medinfo
+  labels: {release: kube-prometheus-stack}
+spec:
+  selector:
+    matchLabels: {app.kubernetes.io/name: medinfo-backend}
+  endpoints:
+    - port: http
+      path: /metrics
+      interval: 30s
+      authorization:
+        type: Bearer
+        credentials: {name: medinfo-metrics, key: token}

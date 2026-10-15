@@ -1,0 +1,81 @@
+# Alert rules. Thresholds are starting points: tune on real traffic. Labels never carry PHI.
+groups:
+  - name: medinfo-safety
+    rules:
+      - alert: TriageSpike
+        # Emergency triage firing far above its usual rate (data issue, rule regression, or real event).
+        expr: |
+          sum(rate(medinfo_triage_events_total[15m]))
+            > 3 * sum(rate(medinfo_triage_events_total[6h] offset 15m)) + 0.05
+        for: 10m
+        labels: {severity: warning}
+        annotations:
+          summary: Emergency triage rate is more than 3x its recent baseline
+          runbook: Check recent red_flags.yaml changes and the triage classifier; review sampled answers.
+
+      - alert: RefusalRateShift
+        # Share of answers refused moved sharply vs the previous day (model/provider or retrieval change).
+        expr: |
+          abs(
+            (sum(rate(medinfo_refusals_total[1h])) / clamp_min(sum(rate(medinfo_chat_seconds_count[1h])), 0.001))
+            - (sum(rate(medinfo_refusals_total[1h] offset 1d)) / clamp_min(sum(rate(medinfo_chat_seconds_count[1h] offset 1d)), 0.001))
+          ) > 0.2
+        for: 30m
+        labels: {severity: warning}
+        annotations:
+          summary: Refusal rate changed by more than 20 percentage points vs yesterday
+
+      - alert: SafetyCheckFailures
+        # Grounding/faithfulness/dosing checks blocking many answers: likely a model or prompt regression.
+        expr: sum(rate(medinfo_safety_check_failures_total[15m])) / clamp_min(sum(rate(medinfo_chat_seconds_count[15m])), 0.001) > 0.3
+        for: 15m
+        labels: {severity: critical}
+        annotations:
+          summary: More than 30% of answers fail post-answer safety checks
+
+      - alert: ClassifierErrors
+        expr: sum(rate(medinfo_classifier_errors_total[10m])) > 0.1
+        for: 10m
+        labels: {severity: warning}
+        annotations:
+          summary: Safety classifiers are failing (rules-only triage/scope in effect)
+
+  - name: medinfo-reliability
+    rules:
+      - alert: CircuitOpen
+        expr: max by (model) (medinfo_circuit_state) == 2
+        for: 2m
+        labels: {severity: warning}
+        annotations:
+          summary: "Circuit open for model {{ $labels.model }}"
+
+      - alert: AllModelsDown
+        expr: min(medinfo_circuit_state) == 2
+        for: 2m
+        labels: {severity: critical}
+        annotations:
+          summary: Every model circuit is open; chat is returning 503
+
+      - alert: HighLatencyP95
+        expr: |
+          histogram_quantile(0.95, sum by (le, route) (rate(medinfo_http_request_seconds_bucket{route="/api/chat"}[10m]))) > 15
+        for: 10m
+        labels: {severity: warning}
+        annotations:
+          summary: p95 chat latency above 15s
+
+      - alert: High5xxRate
+        expr: |
+          sum(rate(medinfo_http_requests_total{status=~"5.."}[10m]))
+            / clamp_min(sum(rate(medinfo_http_requests_total[10m])), 0.001) > 0.05
+        for: 10m
+        labels: {severity: critical}
+        annotations:
+          summary: More than 5% of requests are failing with 5xx
+
+      - alert: RateLimitingSpike
+        expr: sum(rate(medinfo_rate_limited_total[10m])) > 1
+        for: 10m
+        labels: {severity: info}
+        annotations:
+          summary: Many requests are being rate limited (abuse or limits too low)

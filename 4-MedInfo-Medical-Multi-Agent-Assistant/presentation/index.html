@@ -1,0 +1,406 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MedInfo Assistant - Project Presentation</title>
+<style>
+  :root {
+    --bg: #0f1726; --panel: #ffffff; --ink: #172031; --muted: #566278; --line: #d6dde7;
+    --accent: #1557c0; --accent-soft: #e6eefb; --ok: #116c3c; --ok-bg: #e7f6ee;
+    --warn: #7a4b00; --warn-bg: #fff5df; --danger: #b42318; --danger-bg: #fef0ee;
+    --font: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; }
+  body { background: var(--bg); color: var(--ink); font: 18px/1.5 var(--font); }
+  .deck { height: 100vh; display: grid; grid-template-rows: auto 1fr auto; }
+  .topbar { display: flex; align-items: center; gap: 12px; padding: 10px 20px; color: #c9d4e6; font-size: 14px; }
+  .topbar strong { color: #fff; }
+  .progress { flex: 1; height: 6px; background: #24324a; border-radius: 99px; overflow: hidden; }
+  .progress > span { display: block; height: 100%; width: 0; background: #6ea1ff; transition: width .25s; }
+  .stage { display: grid; place-items: center; padding: 0 20px; overflow: hidden; }
+  .slide { display: none; width: min(1180px, 100%); max-height: calc(100vh - 120px); overflow: auto;
+           background: var(--panel); border-radius: 16px; padding: 36px 44px; box-shadow: 0 10px 40px rgba(0,0,0,.35); }
+  .slide.active { display: block; }
+  .slide h1 { font-size: 2.3rem; margin: 0 0 6px; line-height: 1.15; }
+  .slide h2 { font-size: 1.7rem; margin: 0 0 14px; color: var(--accent); }
+  .slide h3 { margin: 16px 0 6px; font-size: 1.05rem; }
+  .kicker { text-transform: uppercase; letter-spacing: .08em; font-size: 13px; color: var(--muted); font-weight: 700; }
+  .lead { font-size: 1.15rem; color: var(--muted); }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; }
+  .grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+  .card { border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; background: #fbfcfe; }
+  .card h3 { margin-top: 0; }
+  ul { margin: 6px 0; padding-left: 20px; } li { margin: 4px 0; }
+  table { width: 100%; border-collapse: collapse; font-size: 15px; }
+  th, td { text-align: left; padding: 7px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { background: #f2f5fa; }
+  img.diagram { display: block; max-width: 100%; max-height: 58vh; margin: 8px auto; border: 1px solid var(--line); border-radius: 10px; background: #fff; }
+  .badge { display: inline-block; font-size: 12px; font-weight: 700; padding: 2px 8px; border-radius: 99px; white-space: nowrap; }
+  .impl { background: var(--accent-soft); color: var(--accent); }
+  .live { background: var(--ok-bg); color: var(--ok); }
+  .plan { background: var(--warn-bg); color: var(--warn); }
+  .note { background: var(--warn-bg); color: var(--warn); border-radius: 10px; padding: 10px 14px; font-size: 15px; }
+  .danger { background: var(--danger-bg); color: var(--danger); border-radius: 10px; padding: 10px 14px; font-weight: 600; }
+  .flow { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 10px 0; }
+  .flow span { background: var(--accent-soft); color: var(--accent); border-radius: 8px; padding: 6px 10px; font-weight: 600; font-size: 15px; }
+  .flow b { color: var(--muted); }
+  code { background: #f2f5fa; padding: 1px 6px; border-radius: 6px; font-size: .9em; }
+  pre { background: #0f1726; color: #e7ecf3; padding: 12px 14px; border-radius: 10px; overflow-x: auto; font-size: 14px; }
+  .controls { display: flex; justify-content: center; align-items: center; gap: 14px; padding: 10px; color: #c9d4e6; font-size: 14px; }
+  .controls button { font: inherit; background: #24324a; color: #fff; border: 1px solid #3a4b68; border-radius: 10px; padding: 8px 16px; cursor: pointer; }
+  .controls button:disabled { opacity: .4; cursor: default; }
+  .controls button:focus-visible { outline: 3px solid #6ea1ff; outline-offset: 2px; }
+  .hint { opacity: .7; }
+  svg text { font-family: var(--font); }
+  @media (max-width: 820px) {
+    body { font-size: 16px; }
+    .slide { padding: 22px 18px; max-height: calc(100vh - 110px); }
+    .slide h1 { font-size: 1.7rem; } .slide h2 { font-size: 1.35rem; }
+    .grid2, .grid3 { grid-template-columns: 1fr; }
+    .hint { display: none; }
+  }
+  @media print {
+    @page { size: A4 landscape; margin: 12mm; }
+    body { background: #fff; }
+    .deck { height: auto; display: block; }
+    .topbar, .controls { display: none; }
+    .stage { display: block; padding: 0; }
+    .slide { display: block !important; max-height: none; overflow: visible; box-shadow: none; border: 1px solid var(--line);
+             page-break-after: always; break-after: page; margin: 0 0 8mm; }
+    img.diagram { max-height: 150mm; }
+  }
+</style>
+</head>
+<body>
+<div class="deck">
+  <div class="topbar" aria-hidden="true">
+    <strong>MedInfo Assistant</strong>
+    <div class="progress"><span id="bar"></span></div>
+    <span id="counter-top"></span>
+  </div>
+
+  <main class="stage" id="stage">
+
+    <!-- 1 -->
+    <section class="slide" aria-label="Slide 1: Title and project overview">
+      <p class="kicker">Medical Research &amp; Report Analysis · Multi-Agent GenAI</p>
+      <h1>MedInfo Assistant</h1>
+      <p class="lead">A safety-first medical information and research assistant: answers only from trusted, cited sources;
+      urgent symptoms first; never diagnoses or prescribes.</p>
+      <div class="grid3">
+        <div class="card"><h3>What it is</h3>Multi-agent RAG over a trusted corpus and private uploads, with research mode for clinicians.</div>
+        <div class="card"><h3>What it is not</h3>Not a diagnostic or treatment tool. Not clinically validated. No regulatory approval.</div>
+        <div class="card"><h3>Data</h3>All bundled data is <b>SYNTHETIC</b> (fictional publisher, drugs, doses and patients).</div>
+      </div>
+      <p style="margin-top:18px">Status labels in this deck:
+        <span class="badge impl">Implemented</span> built + offline tests ·
+        <span class="badge live">Verified live</span> run against real services ·
+        <span class="badge plan">Planned</span> designed, not built or not run</p>
+    </section>
+
+    <!-- 2 -->
+    <section class="slide" aria-label="Slide 2: Business problem">
+      <h2>Business problem and motivation</h2>
+      <div class="grid2">
+        <div>
+          <h3>Why this is hard</h3>
+          <ul>
+            <li>General chatbots answer from memory, without sources, and can be confidently wrong.</li>
+            <li>They may diagnose, suggest doses, or miss an emergency.</li>
+            <li>Guidelines change; versions conflict; evidence strength varies.</li>
+            <li>Questions and uploads contain personal health information (PHI).</li>
+            <li>Uploaded papers and web pages can hide prompt-injection instructions.</li>
+          </ul>
+        </div>
+        <div>
+          <h3>Objectives</h3>
+          <ul>
+            <li>Grounded, cited answers - or an honest "not covered".</li>
+            <li>Emergency escalation first, built in code.</li>
+            <li>No diagnosis, no prescribing, no dose changes.</li>
+            <li>Privacy by design and auditable behaviour.</li>
+            <li>Safety measured by release-blocking tests.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- 3 -->
+    <section class="slide" aria-label="Slide 3: Proposed solution and scope">
+      <h2>Proposed solution and scope</h2>
+      <table>
+        <tr><th>In scope</th><th>Status</th></tr>
+        <tr><td>Urgent-symptom triage (rules + LLM) with emergency notice first</td><td><span class="badge live">Verified live</span></td></tr>
+        <tr><td>Scope classes: info, research, diagnosis, dosing, emergency, out-of-scope, unsafe</td><td><span class="badge live">Verified live</span></td></tr>
+        <tr><td>Grounded, cited answers; post-answer verification; "not covered"</td><td><span class="badge live">Verified live</span></td></tr>
+        <tr><td>Trusted corpus with provenance; private uploads; OCR; incremental ingestion</td><td><span class="badge live">Verified live</span></td></tr>
+        <tr><td>Hybrid retrieval (pgvector + BM25), RRF, LLM re-ranking, version preference</td><td><span class="badge live">Verified live</span></td></tr>
+        <tr><td>Research mode (ReAct agent, allow-listed web)</td><td><span class="badge impl">Implemented</span> (fakes only)</td></tr>
+        <tr><td>Memory, evidence reports, clinician review, evaluation tooling</td><td><span class="badge impl">Implemented</span></td></tr>
+      </table>
+      <p class="note" style="margin-top:12px">Out of scope: diagnosis, prescribing, replacing clinicians, any clinical-accuracy claim.</p>
+    </section>
+
+    <!-- 4 -->
+    <section class="slide" aria-label="Slide 4: User journey">
+      <h2>User journey and major use cases</h2>
+      <div class="flow"><span>Sign in</span><b>→</b><span>Upload (optional)</span><b>→</b><span>Analyze</span><b>→</b><span>Review evidence</span><b>→</b><span>Generate report</span></div>
+      <div class="grid2">
+        <img class="diagram" src="assets/02-cited-answer-with-sources.png" alt="Screenshot: cited answer with source cards and limitations">
+        <div>
+          <ul>
+            <li><b>Analyze:</b> streamed phases - safety, searching, writing, verifying.</li>
+            <li><b>Review evidence:</b> citation chips → source cards (publisher, page, version, date), limitations, version-conflict notes.</li>
+            <li><b>Report:</b> Markdown evidence report per conversation <span class="badge impl">Implemented</span></li>
+            <li><b>Clinicians:</b> research mode, review queue. <b>Admins:</b> corpus management, evaluation view.</li>
+          </ul>
+          <p class="danger">Urgent symptoms: a pinned emergency banner appears before anything else.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 5 -->
+    <section class="slide" aria-label="Slide 5: High-level architecture">
+      <h2>High-level architecture</h2>
+      <img class="diagram" src="assets/architecture.png" alt="Architecture: browser, nginx frontend, FastAPI backend with safety layer, guardrails, LangGraph agents, hybrid retriever, Supabase Postgres, Redis, model chain, Tavily, Prometheus">
+    </section>
+
+    <!-- 6 -->
+    <section class="slide" aria-label="Slide 6: Frontend and backend design">
+      <h2>Frontend and backend design</h2>
+      <div class="grid2">
+        <div class="card">
+          <h3>Frontend (<code>frontend/</code>)</h3>
+          <ul>
+            <li>Plain HTML/CSS/JS - no build step, no runtime dependencies.</li>
+            <li>Strict CSP; model text only via <code>textContent</code> (ESLint-enforced).</li>
+            <li>Unprivileged nginx (uid 10001, read-only FS) proxies <code>/api</code> → same origin.</li>
+            <li>10 Playwright tests in installed Edge <span class="badge impl">Implemented</span></li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>Backend (<code>backend/</code>)</h3>
+          <ul>
+            <li>FastAPI, sync routes, RBAC on every route, SSE streaming.</li>
+            <li><code>ChatService</code> = the safety pipeline; LangGraph graphs.</li>
+            <li>Provider code only in <code>providers.py</code>; fakes for everything.</li>
+            <li>25 API routes; OpenAPI committed in <code>docs/api/</code>.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- 7 -->
+    <section class="slide" aria-label="Slide 7: Multi-agent workflow">
+      <h2>Multi-agent workflow and responsibilities</h2>
+      <svg viewBox="0 0 1100 170" width="100%" role="img" aria-label="Agent pipeline: guardrails, triage, scope, retriever and re-ranker, answer agent, verifier; research agent feeds the retriever slot">
+        <defs><marker id="a" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#566278"/></marker></defs>
+        <g font-size="15" text-anchor="middle">
+          <rect x="5" y="40" width="150" height="56" rx="10" fill="#e6eefb" stroke="#1557c0"/><text x="80" y="64" fill="#172031">Guardrails</text><text x="80" y="84" fill="#566278" font-size="12">redact / block</text>
+          <rect x="190" y="40" width="150" height="56" rx="10" fill="#fef0ee" stroke="#b42318"/><text x="265" y="64" fill="#172031">Triage</text><text x="265" y="84" fill="#566278" font-size="12">emergency first</text>
+          <rect x="375" y="40" width="150" height="56" rx="10" fill="#e6eefb" stroke="#1557c0"/><text x="450" y="64" fill="#172031">Scope</text><text x="450" y="84" fill="#566278" font-size="12">7 classes</text>
+          <rect x="560" y="40" width="160" height="56" rx="10" fill="#e6eefb" stroke="#1557c0"/><text x="640" y="64" fill="#172031">Retrieve + rerank</text><text x="640" y="84" fill="#566278" font-size="12">hybrid, RRF</text>
+          <rect x="755" y="40" width="150" height="56" rx="10" fill="#e6eefb" stroke="#1557c0"/><text x="830" y="64" fill="#172031">Answer agent</text><text x="830" y="84" fill="#566278" font-size="12">cite every sentence</text>
+          <rect x="940" y="40" width="150" height="56" rx="10" fill="#e7f6ee" stroke="#116c3c"/><text x="1015" y="64" fill="#172031">Verifier</text><text x="1015" y="84" fill="#566278" font-size="12">checks + judge</text>
+          <rect x="560" y="122" width="160" height="40" rx="10" fill="#fff5df" stroke="#7a4b00"/><text x="640" y="147" fill="#172031" font-size="13">Research agent (ReAct)</text>
+        </g>
+        <g stroke="#566278" stroke-width="2" marker-end="url(#a)">
+          <line x1="155" y1="68" x2="188" y2="68"/><line x1="340" y1="68" x2="373" y2="68"/><line x1="525" y1="68" x2="558" y2="68"/>
+          <line x1="720" y1="68" x2="753" y2="68"/><line x1="905" y1="68" x2="938" y2="68"/><line x1="640" y1="122" x2="640" y2="98"/>
+        </g>
+      </svg>
+      <table>
+        <tr><th>Agent</th><th>Does</th><th>Cannot</th></tr>
+        <tr><td>Triage</td><td>Rules + temperature-0 LLM</td><td>Write or soften the emergency text</td></tr>
+        <tr><td>Scope</td><td>Picks one of 7 classes; stricter wins</td><td>Relax a rules decision</td></tr>
+        <tr><td>Answer agent</td><td>Writes from numbered passages only</td><td>Run without passages</td></tr>
+        <tr><td>Verifier</td><td>Dose quotes, diagnosis, citations, numbers, judge</td><td>Pass what it cannot verify</td></tr>
+        <tr><td>Research (ReAct)</td><td>Chooses corpus/web tools, ≤ 3 calls</td><td>Write the answer; leave the allow-list</td></tr>
+      </table>
+      <p class="note" style="margin-top:12px">Every agent records a trace step (outcome, status, ms), shown under each answer as "How this answer was produced" - decisions and counts only, no user text. <span class="badge impl">Implemented</span></p>
+    </section>
+
+    <!-- 8 -->
+    <section class="slide" aria-label="Slide 8: RAG pipeline and evidence verification">
+      <h2>RAG pipeline and evidence verification</h2>
+      <div class="grid2">
+        <img class="diagram" src="assets/ingestion.png" alt="Ingestion: loaders and OCR, document guardrails, chunking, content hashing, embedding of changed chunks, pgvector upsert">
+        <div>
+          <h3>Retrieval</h3>
+          <ul><li>pgvector cosine + Postgres BM25-style keyword search</li><li>Reciprocal rank fusion → LLM re-ranker</li><li>Filters; newest guideline version preferred, conflicts stated</li></ul>
+          <h3>Verification (every answer)</h3>
+          <ul><li>Every sentence cites a provided passage</li><li>Numbers and drug names must appear in passages</li><li>Doses only as verbatim cited quotes</li><li>Faithfulness judge on high-risk topics - fails closed</li></ul>
+          <p><span class="badge live">Verified live</span> 11 synthetic documents → 25 chunks (2 via OCR); re-ingest skipped all 11.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 9 -->
+    <section class="slide" aria-label="Slide 9: LLM provider strategy and ADRs">
+      <h2>LLM provider strategy and ADR decisions</h2>
+      <table>
+        <tr><th>ADR</th><th>Decision</th><th>Status</th></tr>
+        <tr><td>001 Provider</td><td>OpenAI-compatible chain EURI → Gemini → Groq; EURI embeddings (1536); answers 0.1-0.3, classifiers 0</td><td><span class="badge live">EURI verified</span> <span class="badge plan">fallback not observed live</span></td></tr>
+        <tr><td>002 ReAct</td><td>Research agent gathers evidence only; tool round-trip check; Gemini excluded</td><td><span class="badge impl">Implemented</span></td></tr>
+        <tr><td>003 Reasoning format</td><td>No exposed chain-of-thought; JSON classifiers; cited sentences + LIMITATIONS</td><td><span class="badge live">Verified live</span></td></tr>
+        <tr><td>004 Web access</td><td>Clinician-only Tavily, medical allow-list re-checked locally, results untrusted</td><td><span class="badge impl">Implemented</span> (fakes)</td></tr>
+        <tr><td>005 Failure &amp; fallback</td><td>Circuit breakers; 429/502/503 mapping; classifiers fail open, judge fails closed</td><td><span class="badge impl">Implemented</span></td></tr>
+      </table>
+    </section>
+
+    <!-- 10 -->
+    <section class="slide" aria-label="Slide 10: Security, privacy and medical safety">
+      <h2>Security, privacy and medical safety</h2>
+      <div class="grid3">
+        <div class="card"><h3>Medical safety</h3><ul><li>Emergency notice first, code-built</li><li>No diagnosis / prescribing</li><li>Grounding + judge</li><li>Red-flag rules: <b>draft, clinician review pending</b></li></ul></div>
+        <div class="card"><h3>Privacy</h3><ul><li>Local PHI redaction before any egress</li><li>App-level encryption of messages</li><li>No PHI in logs, metrics, audit</li><li>Delete history; retention purge</li></ul></div>
+        <div class="card"><h3>Security</h3><ul><li>JWKS, ES256/RS256 only; RBAC</li><li>Injection defences: input, documents, web</li><li>Strict CSP; text-only rendering</li><li>Non-root, read-only containers</li></ul></div>
+      </div>
+      <p class="note">PHI leak probes in the safety suite check model prompts, logs, memory, embeddings and outputs: 0 leaks offline. Real PHI requires provider DPAs first.</p>
+    </section>
+
+    <!-- 11 -->
+    <section class="slide" aria-label="Slide 11: Local Docker development and demo">
+      <h2>Local Docker development and demo workflow</h2>
+      <div class="grid2">
+        <div>
+          <h3>Docker Compose <span class="badge plan">written, not built here</span></h3>
+<pre>docker compose up --build
+# open http://127.0.0.1:8080
+docker compose --profile monitoring up</pre>
+          <h3>Without Docker <span class="badge live">Verified</span></h3>
+<pre>cd backend
+python scripts/db_init.py
+python scripts/ingest_corpus.py data/synthetic/corpus
+python -m uvicorn app.main:app --port 8030</pre>
+        </div>
+        <div>
+          <h3>Demo script</h3>
+          <ol>
+            <li>"What is hypertension?" → cited answer, version note</li>
+            <li>"Crushing chest pain…" → pinned emergency banner</li>
+            <li>"Can I double my dose…?" → refusal / quote-only</li>
+            <li>"Ignore previous instructions…" → blocked</li>
+            <li>Download the evidence report; admin and clinician views</li>
+          </ol>
+          <img class="diagram" src="assets/03-emergency-first.png" alt="Screenshot: emergency banner pinned above the answer">
+        </div>
+      </div>
+    </section>
+
+    <!-- 12 -->
+    <section class="slide" aria-label="Slide 12: Testing, evaluation and observability">
+      <h2>Testing, evaluation and observability</h2>
+      <div class="grid2">
+        <div>
+          <table>
+            <tr><th>Suite</th><th>Result (2026-10-14)</th></tr>
+            <tr><td>Backend (offline)</td><td>419 passed</td></tr>
+            <tr><td>Safety suite (release blocker)</td><td>240 passed, incl. an adversarial fake model</td></tr>
+            <tr><td>Browser tests (Edge)</td><td>10 passed (incl. 2 agent-trace tests)</td></tr>
+            <tr><td>Live core path</td><td>Ingest, retrieval, emergency, not-covered verified; dosing → strict refusal</td></tr>
+            <tr><td>Live evaluation (synthetic set, 2026-10-15)</td><td>Safety suite 100% in every set; correctness 0.857; faithfulness 1.0; 2 over-refusals</td></tr>
+          </table>
+          <p class="note">Any evaluation number is an offline evaluation on a synthetic test set - not clinical performance.</p>
+        </div>
+        <div>
+          <h3>Observability <span class="badge impl">Implemented</span></h3>
+          <ul><li>Prometheus: p50/p95/p99 per route, model + retrieval latency, triage, refusals, guardrails, hallucination flags, cache, circuits, rate limits</li>
+              <li>Grafana dashboard + alert rules (as files; not yet running)</li>
+              <li>Audit: one line per request + per action, no PHI</li></ul>
+          <img class="diagram" src="assets/10-admin-evaluation.png" alt="Screenshot: admin evaluation view with score rings labelled synthetic offline evaluation">
+        </div>
+      </div>
+    </section>
+
+    <!-- 13 -->
+    <section class="slide" aria-label="Slide 13: Future AWS deployment">
+      <h2>Future AWS deployment architecture <span class="badge plan">Planned</span></h2>
+      <img class="diagram" src="assets/deployment.png" alt="Deployment: CI with safety suite and Trivy, CD via GitHub OIDC to ECR and EKS in ap-southeast-2, ALB, frontend and backend pods, Redis, Supabase">
+      <p>Terraform for VPC, EKS (KMS secrets, NetworkPolicy), ECR, GitHub OIDC - <b>validated, never applied</b>. Region ap-southeast-2, same as the database.</p>
+    </section>
+
+    <!-- 14 -->
+    <section class="slide" aria-label="Slide 14: Limitations, roadmap and conclusion">
+      <h2>Limitations, roadmap and conclusion</h2>
+      <div class="grid2">
+        <div>
+          <h3>Known limitations</h3>
+          <ul>
+            <li>Red-flag rules need clinician sign-off.</li>
+            <li>Synthetic corpus only; real sources need licences.</li>
+            <li>Research agent and provider fallback not yet run live.</li>
+            <li>Docker images and CI not yet built/run on this machine.</li>
+            <li>Strict checks refuse more often (seen live for dosing).</li>
+          </ul>
+        </div>
+        <div>
+          <h3>Roadmap</h3>
+          <ol>
+            <li>Fix dosing over-refusal, re-run the evaluation; clinician review of samples</li>
+            <li>Docker build, CI run, integration tests on the stack</li>
+            <li>Licensed sources, DPAs, region-specific emergency numbers</li>
+            <li>AWS deployment after approval</li>
+          </ol>
+        </div>
+      </div>
+      <p class="lead" style="margin-top:14px"><b>Conclusion:</b> safety is the architecture - a predictable pipeline of narrow agents,
+      verified evidence, and honest refusals, tested offline and verified live on the core path.</p>
+    </section>
+
+  </main>
+
+  <nav class="controls" aria-label="Slide navigation">
+    <button type="button" id="prev" aria-label="Previous slide">← Prev</button>
+    <span id="counter" aria-live="polite"></span>
+    <button type="button" id="next" aria-label="Next slide">Next →</button>
+    <span class="hint">Keys: ← → · Space · Home/End · P to print</span>
+  </nav>
+</div>
+
+<script>
+(function () {
+  "use strict";
+  var slides = Array.prototype.slice.call(document.querySelectorAll(".slide"));
+  var i = 0;
+  function fromHash() {
+    var n = parseInt((location.hash || "").replace("#", ""), 10);
+    return isNaN(n) ? 0 : Math.min(Math.max(n - 1, 0), slides.length - 1);
+  }
+  function show(n) {
+    i = Math.min(Math.max(n, 0), slides.length - 1);
+    slides.forEach(function (s, k) { s.classList.toggle("active", k === i); s.setAttribute("aria-hidden", k === i ? "false" : "true"); });
+    var label = "Slide " + (i + 1) + " / " + slides.length;
+    document.getElementById("counter").textContent = label;
+    document.getElementById("counter-top").textContent = label;
+    document.getElementById("bar").style.width = ((i + 1) / slides.length * 100) + "%";
+    document.getElementById("prev").disabled = i === 0;
+    document.getElementById("next").disabled = i === slides.length - 1;
+    if (location.hash !== "#" + (i + 1)) history.replaceState(null, "", "#" + (i + 1));
+  }
+  document.getElementById("prev").addEventListener("click", function () { show(i - 1); });
+  document.getElementById("next").addEventListener("click", function () { show(i + 1); });
+  document.addEventListener("keydown", function (e) {
+    if (e.target && /input|textarea|select/i.test(e.target.tagName)) return;
+    if (e.key === "ArrowRight" || e.key === "PageDown" || e.key === " ") { e.preventDefault(); show(i + 1); }
+    else if (e.key === "ArrowLeft" || e.key === "PageUp") { e.preventDefault(); show(i - 1); }
+    else if (e.key === "Home") { show(0); }
+    else if (e.key === "End") { show(slides.length - 1); }
+    else if (e.key === "p" || e.key === "P") { window.print(); }
+  });
+  var startX = null;
+  document.getElementById("stage").addEventListener("touchstart", function (e) { startX = e.touches[0].clientX; }, { passive: true });
+  document.getElementById("stage").addEventListener("touchend", function (e) {
+    if (startX === null) return;
+    var dx = e.changedTouches[0].clientX - startX;
+    if (Math.abs(dx) > 50) show(i + (dx < 0 ? 1 : -1));
+    startX = null;
+  });
+  window.addEventListener("hashchange", function () { show(fromHash()); });
+  show(fromHash());
+})();
+</script>
+</body>
+</html>

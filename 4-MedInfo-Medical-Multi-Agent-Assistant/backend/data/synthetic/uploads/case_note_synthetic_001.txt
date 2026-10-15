@@ -1,0 +1,5 @@
+SYNTHETIC CASE NOTE - fictional patient, no real data.
+Patient: Alex Example (SYNTHETIC)   MRN: SYN-000123   DOB: 01/02/1980
+Phone: 0000 000000   Email: alex.example@example.test
+Presenting complaint: tiredness and thirst for 3 weeks.
+Plan: HbA1c requested. Review in 2 weeks.

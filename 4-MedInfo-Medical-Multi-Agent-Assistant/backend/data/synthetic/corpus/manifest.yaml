@@ -1,0 +1,99 @@
+notice: SYNTHETIC dataset. Fictional publisher, drugs, doses and patients. Not medical guidance.
+documents:
+  guideline_hypertension_v3.pdf:
+    publisher: Synthetic Health Guidance Board (SYNTHETIC)
+    jurisdiction: SYNTHETIC
+    licence: CC0 (synthetic test data)
+    title: Adult Hypertension Guideline v3 (SYNTHETIC)
+    publication_date: '2024-03-01'
+    version: '3.0'
+    evidence_level: high
+    doc_type: guideline
+    series: adult-hypertension-guideline
+  guideline_hypertension_v2_2019.pdf:
+    publisher: Synthetic Health Guidance Board (SYNTHETIC)
+    jurisdiction: SYNTHETIC
+    licence: CC0 (synthetic test data)
+    title: Adult Hypertension Guideline v2 (SYNTHETIC)
+    publication_date: '2019-02-01'
+    version: '2.0'
+    evidence_level: moderate
+    doc_type: guideline
+    series: adult-hypertension-guideline
+  label_zentoril.docx:
+    publisher: Synthetic Health Guidance Board (SYNTHETIC)
+    jurisdiction: SYNTHETIC
+    licence: CC0 (synthetic test data)
+    title: Zentoril Tablets Product Label (SYNTHETIC)
+    publication_date: '2023-06-15'
+    version: '2.1'
+    evidence_level: label
+    doc_type: drug_label
+  label_fevadol.docx:
+    publisher: Synthetic Health Guidance Board (SYNTHETIC)
+    jurisdiction: SYNTHETIC
+    licence: CC0 (synthetic test data)
+    title: Fevadol Oral Suspension Product Label (SYNTHETIC)
+    publication_date: '2022-11-01'
+    version: '1.4'
+    evidence_level: label
+    doc_type: drug_label
+  lab_reference_ranges.xlsx:
+    publisher: Synthetic Health Guidance Board (SYNTHETIC)
+    jurisdiction: SYNTHETIC
+    licence: CC0 (synthetic test data)
+    title: Laboratory Reference Ranges (SYNTHETIC)
+    publication_date: '2025-04-01'
+    version: '1.0'
+    doc_type: lab_table
+  drug_interactions.csv:
+    publisher: Synthetic Health Guidance Board (SYNTHETIC)
+    jurisdiction: SYNTHETIC
+    licence: CC0 (synthetic test data)
+    title: Drug Interaction Table (SYNTHETIC)
+    publication_date: '2024-01-10'
+    version: '1.0'
+    doc_type: interaction_table
+  vaccine_schedule.tsv:
+    publisher: Synthetic Health Guidance Board (SYNTHETIC)
+    jurisdiction: SYNTHETIC
+    licence: CC0 (synthetic test data)
+    title: Vaccine Schedule (SYNTHETIC)
+    publication_date: '2023-09-01'
+    version: '1.0'
+    doc_type: schedule
+  asthma_education.pptx:
+    publisher: Synthetic Health Guidance Board (SYNTHETIC)
+    jurisdiction: SYNTHETIC
+    licence: CC0 (synthetic test data)
+    title: Asthma Education Slides (SYNTHETIC)
+    publication_date: '2014-05-01'
+    version: '1.0'
+    evidence_level: low
+    doc_type: patient_education
+  diabetes_overview.md:
+    publisher: Synthetic Health Guidance Board (SYNTHETIC)
+    jurisdiction: SYNTHETIC
+    licence: CC0 (synthetic test data)
+    title: Type 2 Diabetes Overview (SYNTHETIC)
+    publication_date: '2025-01-20'
+    version: '1.0'
+    evidence_level: moderate
+    doc_type: guideline
+  scanned_chest_pain_guidance.pdf:
+    publisher: Synthetic Health Guidance Board (SYNTHETIC)
+    jurisdiction: SYNTHETIC
+    licence: CC0 (synthetic test data)
+    title: Acute Chest Pain Guidance (SYNTHETIC, scanned)
+    publication_date: '2024-09-10'
+    version: '1.2'
+    evidence_level: high
+    doc_type: guideline
+  scanned_intake_form.png:
+    publisher: Synthetic Health Guidance Board (SYNTHETIC)
+    jurisdiction: SYNTHETIC
+    licence: CC0 (synthetic test data)
+    title: Clinic Intake Form Template (SYNTHETIC, scanned)
+    publication_date: '2024-02-01'
+    version: '1.0'
+    doc_type: form

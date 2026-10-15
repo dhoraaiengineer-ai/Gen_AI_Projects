@@ -1,0 +1,20 @@
+# Allow-list of trusted publishers for the TRUSTED corpus. Only documents whose publisher is listed here
+# can be ingested as trusted. Confirm each publisher's licence before adding it, and record it here.
+# Uploaded documents never go to the trusted corpus, whatever they claim to be.
+version: 1
+publishers:
+  - name: "Synthetic Health Guidance Board (SYNTHETIC)"
+    licence: "CC0 (synthetic test data)"
+    jurisdiction: SYNTHETIC
+    notes: Fictional publisher for the synthetic test corpus.
+
+  # Candidates - licence NOT yet confirmed; uncomment only after review:
+  # - name: World Health Organization
+  #   licence: "CC BY-NC-SA 3.0 IGO (check per document)"
+  #   jurisdiction: international
+  # - name: National Institute for Health and Care Excellence (NICE)
+  #   licence: "NICE UK Open Content Licence (check terms for reuse)"
+  #   jurisdiction: UK
+  # - name: MedlinePlus (U.S. National Library of Medicine)
+  #   licence: "Public domain (excluding licensed content)"
+  #   jurisdiction: US

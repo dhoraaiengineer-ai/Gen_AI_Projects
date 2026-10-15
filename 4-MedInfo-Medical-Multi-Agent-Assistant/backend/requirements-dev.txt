@@ -1,0 +1,5 @@
+-r requirements.txt
+pytest==9.1.1
+ruff==0.17.0
+# Synthetic dataset generator only (scripts/make_synthetic_dataset.py)
+fpdf2==2.8.9

@@ -1,0 +1,27 @@
+[project]
+name = "medinfo-assistant"
+version = "0.1.0"
+description = "Safety-first medical information and research assistant (information only, not medical advice)."
+requires-python = ">=3.11,<3.12"
+
+[tool.ruff]
+line-length = 110
+target-version = "py311"
+# Separate tool environments (.venv-eval, .venv-ui) and generated output are never linted or formatted.
+extend-exclude = [".venv-*", "**/.terraform", "evals/runs", "mlruns", "docs/screenshots"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "S", "SIM", "RUF"]
+# E501: line length is enforced by `ruff format`; long regexes and messages are allowed.
+ignore = ["E501", "S101", "RUF001", "RUF002", "RUF003", "B008"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S105", "S106", "S108"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+markers = [
+  "safety: release-blocking medical safety tests",
+  "slow: runs real offline OCR models (a few seconds)",
+]

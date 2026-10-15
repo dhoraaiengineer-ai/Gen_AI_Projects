@@ -1,0 +1,115 @@
+# Guardrail policy: what is checked at each stage and what happens on a match.
+# Actions: allow | flag (log + metric, continue) | redact (replace the match) | block (stop, safe reply).
+# When several rules match, the strongest action wins: block > redact > flag > allow.
+#
+# The medical-safety output rules (prescribing, diagnosis) are enforced in app/safety/answer_checks.py.
+# They are listed here for completeness and MUST stay "block": the engine refuses to load a policy that
+# weakens them. Bump `version` on every change.
+
+version: "1.0.0"
+
+limits:
+  max_input_chars: 4000
+
+stages:
+  input:          # the user's question, before any model call
+    jailbreak: block
+    prompt_injection: block
+    secrets: redact
+    pii: redact
+    unsafe_topic: flag     # refusal itself is decided by the scope classifier
+  document:       # uploaded files (and trusted files) before chunking/embedding
+    prompt_injection: redact   # instruction-like lines are neutralised and the chunk is flagged
+    jailbreak: redact
+    secrets: redact
+    pii: redact
+  output:         # the generated answer, before the user sees it
+    prompt_leak: block
+    secrets: redact
+    pii: redact
+    prescribing: block     # enforced by app/safety (dosing detector)
+    diagnosis: block       # enforced by app/safety (diagnosis detector)
+
+# Pattern rules (Python regex, matched case-insensitively unless the pattern sets its own flags).
+rules:
+  prompt_injection:
+    - "ignore (all |any |the |your )?(previous|prior|above|earlier|preceding|system) (instructions|prompts?|rules|messages|directions)"
+    - "disregard (all |any |the |your )?(previous|prior|above|earlier|system) (instructions|prompts?|rules|messages)"
+    - "forget (everything|all|your|the) (previous |prior )?(instructions|rules|training|guidelines)"
+    - "\\byou are now (a|an|in|the|my)\\b"
+    - "(act|pretend|roleplay|role-play|behave) (as|like) (a|an|my)? ?(doctor|physician|pharmacist|prescriber|unrestricted|different|new) "
+    - "\\b(new|updated|override) (system )?instructions?\\s*:"
+    - "(reveal|show|print|repeat|output|tell me|give me) (me )?(your|the) (system |hidden |initial )?(prompt|instructions|rules)"
+    - "</?\\s*(system|assistant|passage|question|instructions?)\\s*>"
+    - "do not (mention|include|add|show) (any |the )?(disclaimer|warning|citation)s?"
+    - "(from now on|henceforth),? (you|answer|respond) "
+  jailbreak:
+    - "\\bDAN\\b"
+    - "do anything now"
+    - "\\bjailbr(eak|oken)\\b"
+    - "developer mode"
+    - "without (any )?(restrictions|filters|safety|limits|rules|guardrails)"
+    - "\\b(no|zero) (restrictions|limits|rules|filters|guardrails)\\b"
+    - "bypass (your|the|all|any) (safety|filters?|rules|guardrails|restrictions)"
+    - "\\b(unfiltered|uncensored)\\b"
+  unsafe_topic:
+    - "(lethal|fatal|deadly) (dose|amount)"
+    - "how to (make|synthesi[sz]e|cook) .{0,30}(meth|fentanyl|heroin|poison|ricin)"
+    - "(kill|harm|poison) (someone|somebody|him|her|them)"
+  secrets:
+    - "\\bsk-[A-Za-z0-9_-]{20,}"
+    - "\\beuri-[0-9a-f]{20,}"
+    - "\\bgsk_[A-Za-z0-9]{20,}"
+    - "\\btvly-[A-Za-z0-9-]{20,}"
+    - "\\bsb_secret_[A-Za-z0-9_-]{10,}"
+    - "\\bAKIA[0-9A-Z]{16}\\b"
+    - "\\bAIza[0-9A-Za-z_-]{35}\\b"
+    - "-----BEGIN [A-Z ]*PRIVATE KEY-----[\\s\\S]*?-----END [A-Z ]*PRIVATE KEY-----"
+    - "\\beyJ[A-Za-z0-9_-]{10,}\\.[A-Za-z0-9_-]{10,}\\.[A-Za-z0-9_-]{10,}"
+    - "(password|passwd|api[_ -]?key|secret)\\s*[:=]\\s*\\S{6,}"
+  prompt_leak:
+    - "you are a medical information assistant"
+    - "rules \\(all mandatory\\)"
+    - "triage safety classifier"
+    - "<passage n="
+    - "\\bNOT_COVERED\\b"
+
+# PII / PHI entities. If a pattern has a capture group, only the group is replaced (the label stays).
+pii:
+  email:
+    label: "[EMAIL]"
+    patterns: ["[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}"]
+  mrn:
+    label: "[ID]"
+    patterns: ["\\b(?:MRN|UHID|NHI|medical record (?:number|no\\.?)|patient (?:id|number|no\\.?)|hospital (?:number|no\\.?))[\\s:#.-]*([A-Z0-9][A-Z0-9-]{3,})"]
+  dob:
+    label: "[DOB]"
+    patterns:
+      - "\\b(?:DOB|D\\.O\\.B\\.?|date of birth|born(?: on)?)[\\s:.-]*(\\d{1,2}[/.-]\\d{1,2}[/.-]\\d{2,4}|\\d{4}-\\d{2}-\\d{2}|\\d{1,2} [A-Za-z]{3,9},? \\d{4})"
+  national_id:
+    label: "[ID]"
+    patterns:
+      - "\\b\\d{3}-\\d{2}-\\d{4}\\b"                       # US SSN shape
+      - "\\b\\d{4}[ -]\\d{4}[ -]\\d{4}\\b"                  # Aadhaar shape
+      - "\\b\\d{3}[ -]\\d{3}[ -]\\d{4}\\b"                  # NHS number shape
+      - "\\b[A-CEGHJ-PR-TW-Z]{2} ?\\d{2} ?\\d{2} ?\\d{2} ?[A-D]\\b"   # UK NI number shape
+  phone:
+    label: "[PHONE]"
+    patterns:
+      - "\\b(?:phone|tel|telephone|mobile|cell|contact(?: number)?|call me on)[\\s:#.-]*(\\+?\\d[\\d\\s().-]{6,}\\d)"
+      - "\\+\\d{1,3}[\\s-]?\\(?\\d{2,5}\\)?[\\s-]?\\d{3,4}[\\s-]?\\d{3,4}\\b"
+      - "\\b[6-9]\\d{9}\\b"                                 # 10-digit mobile shape
+  address:
+    label: "[ADDRESS]"
+    patterns:
+      - "\\b\\d{1,5}\\s+(?:[A-Z][a-z]+\\s){1,3}(?:Street|St|Road|Rd|Avenue|Ave|Lane|Ln|Drive|Close|Way|Nagar|Marg|Crescent|Place)\\b\\.?"
+      - "\\b[A-Z]{1,2}\\d[A-Z\\d]? ?\\d[A-Z]{2}\\b"           # UK postcode shape
+      - "\\b(?:PIN|pincode|zip)[\\s:#-]*(\\d{5,6})\\b"
+  person_name:
+    label: "[NAME]"
+    flags: case_sensitive
+    patterns:
+      # "Patient:" / "Name:" need the colon, so "brand name Zentoril" or "Patient Information" are untouched.
+      - "(?i:\\b(?:patient|patient name|name|full name))\\s*:\\s*([A-Z][a-z]+(?:\\s[A-Z][a-z]+){0,2})"
+      - "(?i:\\bmy name is)\\s+([A-Z][a-z]+(?:\\s[A-Z][a-z]+){0,2})"
+      - "\\b(?:Mr|Mrs|Ms|Miss|Mx|Dr)\\.?\\s([A-Z][a-z]+(?:\\s[A-Z][a-z]+)?)"

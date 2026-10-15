@@ -1,0 +1,114 @@
+name: "Project 4 · CD"
+
+# Manual deploy to EKS through GitHub OIDC (no long-lived AWS keys).
+# Requires the infrastructure to exist (Terraform is NOT applied by any workflow) and a protected
+# GitHub environment "production" with these settings:
+#   vars:    AWS_CD_ROLE_ARN, ECR_REGISTRY (e.g. 123456789012.dkr.ecr.ap-southeast-2.amazonaws.com), EKS_CLUSTER_NAME, APP_HOST, ACM_CERTIFICATE_ARN, EMERGENCY_NUMBER
+#   secrets: DATABASE_URL, REDIS_PASSWORD, CONVERSATION_ENCRYPTION_KEY, METRICS_TOKEN, SUPABASE_URL,
+#            SUPABASE_PUBLISHABLE_KEY, EURI_API_KEY, GEMINI_API_KEY, GROQ_API_KEY, TAVILY_API_KEY
+
+on:
+  workflow_dispatch:  # manual only: in this monorepo a tag must never deploy another project
+
+permissions:
+  contents: read
+  id-token: write
+
+env:
+  AWS_REGION: ap-southeast-2  # same region as the database
+
+jobs:
+  gate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install -r requirements-dev.txt
+        working-directory: 4-MedInfo-Medical-Multi-Agent-Assistant/backend
+      - run: ruff check . && pytest -q  # includes the release-blocking safety suite
+        working-directory: 4-MedInfo-Medical-Multi-Agent-Assistant/backend
+
+  deploy:
+    needs: gate
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_CD_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+      - id: ecr
+        uses: aws-actions/amazon-ecr-login@v2
+      - uses: docker/setup-buildx-action@v3
+      - name: Build and push backend (immutable tag = commit SHA)
+        uses: docker/build-push-action@v6
+        with:
+          context: 4-MedInfo-Medical-Multi-Agent-Assistant/backend
+          push: true
+          tags: ${{ vars.ECR_REGISTRY }}/medinfo-backend:${{ github.sha }}
+      - name: Build and push frontend
+        uses: docker/build-push-action@v6
+        with:
+          context: 4-MedInfo-Medical-Multi-Agent-Assistant/frontend
+          push: true
+          tags: ${{ vars.ECR_REGISTRY }}/medinfo-frontend:${{ github.sha }}
+      - name: Trivy scan backend
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          image-ref: ${{ vars.ECR_REGISTRY }}/medinfo-backend:${{ github.sha }}
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          exit-code: "1"
+      - name: Trivy scan frontend
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          image-ref: ${{ vars.ECR_REGISTRY }}/medinfo-frontend:${{ github.sha }}
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          exit-code: "1"
+      - uses: azure/setup-kubectl@v4
+      - name: Kubeconfig
+        run: aws eks update-kubeconfig --name "${{ vars.EKS_CLUSTER_NAME }}" --region "$AWS_REGION"
+      - name: Secrets from GitHub environment (never stored in git)
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          REDIS_PASSWORD: ${{ secrets.REDIS_PASSWORD }}
+          CONVERSATION_ENCRYPTION_KEY: ${{ secrets.CONVERSATION_ENCRYPTION_KEY }}
+          METRICS_TOKEN: ${{ secrets.METRICS_TOKEN }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_PUBLISHABLE_KEY }}
+          EURI_API_KEY: ${{ secrets.EURI_API_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          TAVILY_API_KEY: ${{ secrets.TAVILY_API_KEY }}
+        run: |
+          kubectl apply -f 4-MedInfo-Medical-Multi-Agent-Assistant/deploy/k8s/namespace.yaml
+          kubectl -n medinfo create secret generic medinfo-redis \
+            --from-literal=password="$REDIS_PASSWORD" --dry-run=client -o yaml | kubectl apply -f -
+          kubectl -n medinfo create secret generic medinfo-metrics \
+            --from-literal=token="$METRICS_TOKEN" --dry-run=client -o yaml | kubectl apply -f -
+          kubectl -n medinfo create secret generic medinfo-secrets \
+            --from-literal=DATABASE_URL="$DATABASE_URL" \
+            --from-literal=REDIS_URL="redis://:${REDIS_PASSWORD}@medinfo-redis:6379/0" \
+            --from-literal=CONVERSATION_ENCRYPTION_KEY="$CONVERSATION_ENCRYPTION_KEY" \
+            --from-literal=METRICS_TOKEN="$METRICS_TOKEN" \
+            --from-literal=SUPABASE_URL="$SUPABASE_URL" \
+            --from-literal=SUPABASE_PUBLISHABLE_KEY="$SUPABASE_PUBLISHABLE_KEY" \
+            --from-literal=EURI_API_KEY="$EURI_API_KEY" \
+            --from-literal=GEMINI_API_KEY="$GEMINI_API_KEY" \
+            --from-literal=GROQ_API_KEY="$GROQ_API_KEY" \
+            --from-literal=TAVILY_API_KEY="$TAVILY_API_KEY" \
+            --dry-run=client -o yaml | kubectl apply -f -
+      - name: Apply manifests
+        run: |
+          cd 4-MedInfo-Medical-Multi-Agent-Assistant/deploy/k8s
+          sed -i "s#BACKEND_IMAGE_PLACEHOLDER#${{ vars.ECR_REGISTRY }}/medinfo-backend:${{ github.sha }}#" backend-deployment.yaml
+          sed -i "s#FRONTEND_IMAGE_PLACEHOLDER#${{ vars.ECR_REGISTRY }}/medinfo-frontend:${{ github.sha }}#" frontend.yaml
+          sed -i "s#CERTIFICATE_ARN_PLACEHOLDER#${{ vars.ACM_CERTIFICATE_ARN }}#; s#HOST_PLACEHOLDER#${{ vars.APP_HOST }}#" ingress.yaml
+          sed -i "s#EMERGENCY_NUMBER: \"112\"#EMERGENCY_NUMBER: \"${{ vars.EMERGENCY_NUMBER }}\"#" configmap.yaml
+          kubectl apply -k .
+          kubectl -n medinfo rollout status deployment/medinfo-backend --timeout=300s
+          kubectl -n medinfo rollout status deployment/medinfo-frontend --timeout=300s

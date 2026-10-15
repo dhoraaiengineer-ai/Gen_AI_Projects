@@ -1,0 +1,175 @@
+# CI: lint -> backend tests -> release-blocking safety suite -> frontend lint + browser tests ->
+# image build + smoke test + Trivy -> Terraform validate + kustomize render.
+# Offline by design: fakes only, no LLM keys, no Supabase, no AWS.
+name: "Project 4 · CI"
+
+on:
+  push:
+    branches: [main]
+    paths: ["4-MedInfo-Medical-Multi-Agent-Assistant/**", ".github/workflows/p4-*.yml"]
+  pull_request:
+    paths: ["4-MedInfo-Medical-Multi-Agent-Assistant/**", ".github/workflows/p4-*.yml"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: p4-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    defaults:
+      run: {working-directory: 4-MedInfo-Medical-Multi-Agent-Assistant/backend}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: 4-MedInfo-Medical-Multi-Agent-Assistant/backend/requirements-dev.txt
+      - run: pip install -r requirements-dev.txt
+      - name: Lint
+        run: |
+          ruff check .
+          ruff format --check .
+      - name: Unit and integration tests (offline, fakes only; no secrets)
+        run: pytest -m "not safety" -q
+
+  safety-suite:
+    # Release blocker: any regression in the medical safety suite fails the pipeline.
+    runs-on: ubuntu-latest
+    defaults:
+      run: {working-directory: 4-MedInfo-Medical-Multi-Agent-Assistant/backend}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: 4-MedInfo-Medical-Multi-Agent-Assistant/backend/requirements-dev.txt
+      - run: pip install -r requirements-dev.txt
+      - name: Safety suite (emergency, dosing, diagnosis, injection, PHI, out-of-corpus)
+        run: pytest -m safety -q
+
+  frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: 4-MedInfo-Medical-Multi-Agent-Assistant/backend/requirements-dev.txt
+      - run: pip install -r 4-MedInfo-Medical-Multi-Agent-Assistant/backend/requirements-dev.txt  # the browser tests start the backend demo server
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: 4-MedInfo-Medical-Multi-Agent-Assistant/frontend/package-lock.json
+      - name: Lint + browser tests (real app, fake model, synthetic data)
+        working-directory: 4-MedInfo-Medical-Multi-Agent-Assistant/frontend
+        env:
+          PW_CHANNEL: chromium
+          PYTHON: python
+        run: |
+          npm ci
+          npm run lint
+          npx playwright install --with-deps chromium
+          npm test
+
+  images:
+    needs: [backend, safety-suite, frontend]
+    runs-on: ubuntu-latest
+    services:
+      pgvector:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: medinfo
+          POSTGRES_PASSWORD: ci-only-password
+          POSTGRES_DB: medinfo
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U medinfo -d medinfo"
+          --health-interval 5s --health-timeout 3s --health-retries 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - name: Build backend image
+        uses: docker/build-push-action@v6
+        with:
+          context: 4-MedInfo-Medical-Multi-Agent-Assistant/backend
+          load: true
+          tags: medinfo-backend:ci
+          cache-from: type=gha,scope=p4-backend
+          cache-to: type=gha,mode=max,scope=p4-backend
+      - name: Build frontend image
+        uses: docker/build-push-action@v6
+        with:
+          context: 4-MedInfo-Medical-Multi-Agent-Assistant/frontend
+          load: true
+          tags: medinfo-frontend:ci
+          cache-from: type=gha,scope=p4-frontend
+          cache-to: type=gha,mode=max,scope=p4-frontend
+      - name: Smoke test (non-root, read-only root FS, production settings, real pgvector, via nginx)
+        run: |
+          KEY=$(python3 -c "import base64,os; print(base64.urlsafe_b64encode(os.urandom(32)).decode())")
+          docker run -d --name backend --network host --read-only --tmpfs /tmp:size=64m \
+            --user 10001:10001 --cap-drop ALL --security-opt no-new-privileges \
+            -e APP_ENV=production -e EMERGENCY_NUMBER=112 \
+            -e SUPABASE_URL=https://ci.invalid -e SUPABASE_PUBLISHABLE_KEY=ci \
+            -e DATABASE_URL=postgresql+psycopg://medinfo:ci-only-password@127.0.0.1:5432/medinfo \
+            -e CONVERSATION_ENCRYPTION_KEY="$KEY" \
+            medinfo-backend:ci
+          docker run -d --name frontend --network host --read-only --tmpfs /tmp:size=16m \
+            --user 10001:10001 --cap-drop ALL --security-opt no-new-privileges \
+            -e BACKEND_UPSTREAM=127.0.0.1:8000 -e SUPABASE_URL=https://ci.invalid \
+            medinfo-frontend:ci
+          for i in $(seq 1 60); do curl -fsS http://127.0.0.1:8000/healthz && curl -fsS http://127.0.0.1:8080/frontend-healthz && break; sleep 2; done
+          set -x
+          test "$(docker inspect -f '{{.Config.User}}' medinfo-backend:ci)" = "10001:10001"
+          test "$(docker inspect -f '{{.Config.User}}' medinfo-frontend:ci)" = "10001:10001"
+          curl -fsS http://127.0.0.1:8000/readyz | grep -q '"database":"ok"'
+          curl -fsS http://127.0.0.1:8080/ | grep -q "Information only, not medical advice"
+          curl -fsS -D - -o /dev/null http://127.0.0.1:8080/ | grep -qi "content-security-policy: default-src 'self'"
+          curl -fsS http://127.0.0.1:8080/static/app.js | grep -q "textContent"
+          curl -fsS http://127.0.0.1:8080/api/config | grep -q emergency_number
+          test "$(curl -s -o /dev/null -w '%{http_code}' -X POST http://127.0.0.1:8080/api/chat -H 'Content-Type: application/json' -d '{"question":"x"}')" = "401"
+          test "$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8080/metrics)" = "404"
+          curl -fsS http://127.0.0.1:8000/metrics | grep -q medinfo_http_requests_total
+      - name: Container logs on failure
+        if: failure()
+        run: docker logs backend || true; docker logs frontend || true
+      - name: Trivy scan backend (fail on fixable HIGH/CRITICAL)
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          image-ref: medinfo-backend:ci
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          vuln-type: os,library
+          exit-code: "1"
+      - name: Trivy scan frontend (fail on fixable HIGH/CRITICAL)
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          image-ref: medinfo-frontend:ci
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          vuln-type: os,library
+          exit-code: "1"
+
+  infra:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hashicorp/setup-terraform@v3
+      - name: Terraform fmt + validate (no apply, no credentials)
+        working-directory: 4-MedInfo-Medical-Multi-Agent-Assistant/infra/terraform
+        run: |
+          terraform fmt -check -recursive
+          terraform init -backend=false -input=false
+          terraform validate
+      - uses: azure/setup-kubectl@v4
+      - name: Kubernetes manifests render
+        run: kubectl kustomize 4-MedInfo-Medical-Multi-Agent-Assistant/deploy/k8s > /dev/null

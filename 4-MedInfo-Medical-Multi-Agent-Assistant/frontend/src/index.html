@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <title>MedInfo Assistant</title>
+  <link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/static/app.css">
+  <script src="/static/app.js" defer></script>
+</head>
+<body>
+  <a class="skip" href="#main">Skip to content</a>
+
+  <!-- Always visible: never hidden, never dismissible. -->
+  <div class="disclaimer" role="note" aria-label="Disclaimer">
+    <strong>Information only, not medical advice.</strong>
+    In an emergency call <span class="js-emergency-number">112</span>.
+  </div>
+  <!-- Pinned when an answer triggers urgent-symptom triage. -->
+  <div id="emergency-pin" class="emergency-pin" role="alert" hidden></div>
+
+  <!-- Visible until the app script starts; explains the usual cause if it never does. -->
+  <p id="boot-msg" class="boot-msg" role="status">
+    Loading MedInfo Assistant… If this message stays, the app script could not load. Open the app through
+    its server (for example http://127.0.0.1:8030), not the index.html file directly, then press Ctrl+F5.
+  </p>
+
+  <!-- ================= Sign in ================= -->
+  <main id="signin-view" class="signin" hidden>
+    <section class="signin-hero" aria-labelledby="hero-title">
+      <div class="brand-mark" aria-hidden="true">+</div>
+      <h1 id="hero-title">MedInfo Assistant</h1>
+      <p class="lead">Medical information from trusted sources, with every statement cited.</p>
+      <ul class="promises">
+        <li><span class="dot" aria-hidden="true"></span>Answers come only from trusted documents, with citations and dates.</li>
+        <li><span class="dot" aria-hidden="true"></span>It never diagnoses, prescribes or changes doses.</li>
+        <li><span class="dot" aria-hidden="true"></span>Urgent symptoms get emergency advice first.</li>
+        <li><span class="dot" aria-hidden="true"></span>When the sources don't cover something, it says so.</li>
+      </ul>
+      <p class="fineprint">Not a substitute for a clinician. Not clinically validated.</p>
+    </section>
+    <section class="signin-panel" aria-labelledby="signin-title">
+      <form id="signin-form" class="card" novalidate>
+        <h2 id="signin-title">Sign in</h2>
+        <label for="email">Email</label>
+        <input id="email" name="email" type="email" autocomplete="username" required>
+        <label for="password">Password</label>
+        <input id="password" name="password" type="password" autocomplete="current-password" required>
+        <button type="submit" class="primary">Sign in</button>
+        <p class="error" id="signin-error" role="alert"></p>
+      </form>
+    </section>
+  </main>
+
+  <!-- ================= App ================= -->
+  <div id="app-view" class="app" hidden>
+    <header class="topbar">
+      <button type="button" class="icon-btn" id="sidebar-toggle" aria-controls="sidebar" aria-expanded="false" aria-label="Show conversations">☰</button>
+      <span class="brand"><span class="brand-mark small" aria-hidden="true">+</span><span class="brand-text">MedInfo</span></span>
+      <nav class="tabs" aria-label="Views">
+        <button type="button" class="tab" data-view="chat" aria-current="page">Chat</button>
+        <button type="button" class="tab" data-view="documents" data-role="admin" hidden>Documents</button>
+        <button type="button" class="tab" data-view="evaluation" data-role="admin" hidden>Evaluation</button>
+        <button type="button" class="tab" data-view="review" data-role="clinician" hidden>Review</button>
+      </nav>
+      <span class="spacer"></span>
+      <button type="button" class="icon-btn" id="theme-toggle" aria-label="Switch colour theme">◐</button>
+      <span class="who" id="who"></span>
+      <button type="button" class="link" id="signout">Sign out</button>
+    </header>
+
+    <aside id="sidebar" class="sidebar" aria-label="Conversations">
+      <button type="button" class="primary block" id="new-chat">+ New conversation</button>
+      <h2 class="side-title">History</h2>
+      <ul id="history" class="history"></ul>
+      <button type="button" class="link danger" id="delete-history">Delete all my history</button>
+    </aside>
+
+    <main id="main" class="main" tabindex="-1">
+      <!-- Chat -->
+      <section id="view-chat" class="view" aria-label="Chat">
+        <div id="messages" class="messages" aria-live="polite" aria-relevant="additions">
+          <div class="empty" id="empty-state">
+            <h2>Ask a medical information question</h2>
+            <p>Examples: “What is hypertension?” · “What does the Zentoril label say about pregnancy?”</p>
+          </div>
+        </div>
+        <form id="ask-form" class="composer">
+          <div class="composer-tools">
+            <button type="button" class="link" id="report-btn" hidden>Download evidence report (.md)</button>
+          </div>
+          <details class="filters" id="filters">
+            <summary>Search in</summary>
+            <div class="filter-grid">
+              <label class="check"><input type="checkbox" id="f-trusted"> Trusted sources only</label>
+              <label>Publisher <select id="f-publisher"><option value="">Any</option></select></label>
+              <label>Document <select id="f-doc"><option value="">Any</option></select></label>
+              <label>Published from <input type="date" id="f-from"></label>
+              <label>Published to <input type="date" id="f-to"></label>
+              <label class="check" id="research-wrap" hidden><input type="checkbox" id="f-research"> Research mode (includes allow-listed medical websites)</label>
+            </div>
+          </details>
+          <div class="ask-row">
+            <label for="question" class="sr-only">Your question</label>
+            <textarea id="question" rows="2" maxlength="2000" placeholder="Ask a medical information question…" required></textarea>
+            <button type="submit" class="primary" id="ask-btn">Ask</button>
+          </div>
+          <p class="footnote">This is general information, not medical advice. Consult a qualified healthcare professional.</p>
+        </form>
+      </section>
+
+      <!-- Admin: documents -->
+      <section id="view-documents" class="view" aria-label="Documents" hidden>
+        <h2>Trusted corpus</h2>
+        <p class="muted">Only publishers on the allow-list can be ingested. Uploads are checked for hidden instructions and personal data.</p>
+        <form id="upload-form" class="card upload">
+          <div id="dropzone" class="dropzone" tabindex="0" role="button" aria-describedby="drop-help">
+            <strong>Drop a file here</strong> or press Enter to choose
+            <span id="drop-help" class="muted">PDF, Word, PowerPoint, Excel, CSV/TSV, text, PNG/JPG (scanned pages use OCR)</span>
+            <input type="file" id="file-input" class="sr-only" accept=".pdf,.docx,.pptx,.xlsx,.csv,.tsv,.txt,.md,.png,.jpg,.jpeg">
+          </div>
+          <p id="file-name" class="muted"></p>
+          <div class="form-grid">
+            <label>Title <input id="d-title" required></label>
+            <label>Publisher <input id="d-publisher" list="publisher-list" required></label>
+            <datalist id="publisher-list"></datalist>
+            <label>Publication date <input id="d-date" type="date"></label>
+            <label>Version <input id="d-version"></label>
+            <label>Evidence level <input id="d-evidence"></label>
+            <label>Document type
+              <select id="d-type"><option>guideline</option><option>drug_label</option><option>lab_table</option><option>patient_education</option><option>form</option></select>
+            </label>
+          </div>
+          <button type="submit" class="primary" id="upload-btn">Ingest document</button>
+          <p id="upload-status" role="status"></p>
+        </form>
+        <div class="table-wrap">
+          <table class="docs">
+            <caption class="sr-only">Ingested trusted documents</caption>
+            <thead><tr><th scope="col">Title</th><th scope="col">Publisher</th><th scope="col">Date</th><th scope="col">Version</th><th scope="col">Chunks</th><th scope="col"><span class="sr-only">Actions</span></th></tr></thead>
+            <tbody id="docs-body"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- Admin: evaluation -->
+      <section id="view-evaluation" class="view" aria-label="Evaluation" hidden>
+        <h2>Evaluation</h2>
+        <p class="label-banner" id="eval-label">Offline evaluation on a synthetic test set — not a measure of clinical performance.</p>
+        <h3>Quality</h3>
+        <div class="rings" id="rings-quality"></div>
+        <h3>Safety (release gates: 100%)</h3>
+        <div class="rings" id="rings-safety"></div>
+        <h3>Clinician review</h3>
+        <div class="rings" id="rings-review"></div>
+        <p class="muted" id="eval-meta"></p>
+      </section>
+
+      <!-- Clinician: review -->
+      <section id="view-review" class="view" aria-label="Review queue" hidden>
+        <h2>Clinician review queue</h2>
+        <p class="muted">Sampled answers (personal data removed). Your verdicts are recorded with your user id.</p>
+        <div id="review-list"></div>
+      </section>
+    </main>
+  </div>
+</body>
+</html>

@@ -1,0 +1,76 @@
+# Redis for caches, short-term memory and rate limits only (no persistence: nothing durable lives here).
+# Password comes from Secret "medinfo-redis" (key: password), created by CD - never in git.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: medinfo-redis
+  namespace: medinfo
+  labels: {app.kubernetes.io/name: medinfo-redis}
+spec:
+  replicas: 1
+  selector:
+    matchLabels: {app.kubernetes.io/name: medinfo-redis}
+  template:
+    metadata:
+      labels: {app.kubernetes.io/name: medinfo-redis}
+    spec:
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 999
+        runAsGroup: 1000
+        seccompProfile: {type: RuntimeDefault}
+      containers:
+        - name: redis
+          image: redis:7.4-alpine
+          args:
+            - redis-server
+            - --requirepass
+            - $(REDIS_PASSWORD)
+            - --save
+            - ""
+            - --appendonly
+            - "no"
+            - --protected-mode
+            - "yes"
+            - --rename-command
+            - FLUSHALL
+            - ""
+            - --rename-command
+            - CONFIG
+            - ""
+            - --maxmemory
+            - 256mb
+            - --maxmemory-policy
+            - allkeys-lru
+          env:
+            - name: REDIS_PASSWORD
+              valueFrom: {secretKeyRef: {name: medinfo-redis, key: password}}
+          ports:
+            - {name: redis, containerPort: 6379}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: {drop: ["ALL"]}
+          resources:
+            requests: {cpu: 50m, memory: 128Mi}
+            limits: {memory: 320Mi}
+          readinessProbe:
+            tcpSocket: {port: redis}
+            periodSeconds: 10
+          volumeMounts:
+            - {name: data, mountPath: /data}
+      volumes:
+        - name: data
+          emptyDir: {medium: Memory, sizeLimit: 16Mi}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: medinfo-redis
+  namespace: medinfo
+spec:
+  type: ClusterIP
+  selector: {app.kubernetes.io/name: medinfo-redis}
+  ports:
+    - {name: redis, port: 6379, targetPort: redis}

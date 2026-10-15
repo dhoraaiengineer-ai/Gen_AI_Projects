@@ -1,0 +1,5 @@
+# Allow-list: only the static UI and the nginx config go into the image.
+*
+!src/
+!nginx.conf
+!default.conf.template

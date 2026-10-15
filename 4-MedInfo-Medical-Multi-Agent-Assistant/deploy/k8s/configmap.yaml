@@ -1,0 +1,18 @@
+# Non-secret settings. Secrets (keys, DATABASE_URL, REDIS_URL, CONVERSATION_ENCRYPTION_KEY, METRICS_TOKEN)
+# are created by the CD workflow from GitHub environment secrets as Secret "medinfo-secrets" -
+# they are never stored in git.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: medinfo-config
+  namespace: medinfo
+data:
+  APP_ENV: production
+  LOG_FORMAT: json
+  LOG_LEVEL: INFO
+  RETRIEVAL_BACKEND: pgvector
+  AUDIT_LOG_ENABLED: "true"
+  # Region-specific: set deliberately (production refuses to start without EMERGENCY_NUMBER).
+  EMERGENCY_NUMBER: "112"
+  STALE_SOURCE_YEARS: "5"
+  REVIEW_SAMPLE_RATE: "0.05"
