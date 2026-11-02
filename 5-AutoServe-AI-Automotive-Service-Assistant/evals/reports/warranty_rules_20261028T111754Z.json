@@ -1,0 +1,115 @@
+{
+  "suite": "warranty_rules",
+  "metrics": {
+    "cases": 14,
+    "warranty_rules_agreement": 1.0
+  },
+  "results": [
+    {
+      "id": "wr-01",
+      "question": "A/C relay, 2.5 years, 24k km",
+      "passed": true,
+      "failures": [],
+      "error": null
+    },
+    {
+      "id": "wr-02",
+      "question": "basic expired by age (on the anniversary)",
+      "passed": true,
+      "failures": [],
+      "error": null
+    },
+    {
+      "id": "wr-03",
+      "question": "basic expired by km at exactly the limit",
+      "passed": true,
+      "failures": [],
+      "error": null
+    },
+    {
+      "id": "wr-04",
+      "question": "engine part: basic expired, powertrain covers",
+      "passed": true,
+      "failures": [],
+      "error": null
+    },
+    {
+      "id": "wr-05",
+      "question": "wear item",
+      "passed": true,
+      "failures": [],
+      "error": null
+    },
+    {
+      "id": "wr-06",
+      "question": "accident damage noted at check-in",
+      "passed": true,
+      "failures": [],
+      "error": null
+    },
+    {
+      "id": "wr-07",
+      "question": "non-genuine part",
+      "passed": true,
+      "failures": [],
+      "error": null
+    },
+    {
+      "id": "wr-08",
+      "question": "engine part, first service missed beyond tolerance",
+      "passed": true,
+      "failures": [],
+      "error": null
+    },
+    {
+      "id": "wr-09",
+      "question": "no in-service date",
+      "passed": true,
+      "failures": [],
+      "error": null
+    },
+    {
+      "id": "wr-10",
+      "question": "no check-in record (accident unknown)",
+      "passed": true,
+      "failures": [],
+      "error": null
+    },
+    {
+      "id": "wr-11",
+      "question": "recall covers the part",
+      "passed": true,
+      "failures": [],
+      "error": null
+    },
+    {
+      "id": "wr-12",
+      "question": "Volt HV battery capacity below threshold",
+      "passed": true,
+      "failures": [],
+      "error": null
+    },
+    {
+      "id": "wr-13",
+      "question": "Volt HV battery capacity above threshold",
+      "passed": true,
+      "failures": [],
+      "error": null
+    },
+    {
+      "id": "wr-14",
+      "question": "Volt HV battery capacity, SoH report missing",
+      "passed": true,
+      "failures": [],
+      "error": null
+    }
+  ],
+  "generated_at": "20261028T111754Z",
+  "gates": {
+    "warranty_rules_agreement": {
+      "value": 1.0,
+      "threshold": 1.0,
+      "pass": true
+    }
+  }
+}

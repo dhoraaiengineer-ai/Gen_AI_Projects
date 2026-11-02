@@ -1,0 +1,16 @@
+{
+  "name": "service_record_vin_mismatch",
+  "ext": "pdf",
+  "doc_class": "service_record",
+  "fields": {
+    "document_date": "2026-04-02",
+    "vin": "VLXTR2D06NK100099",
+    "odometer_km": "45100",
+    "op_codes": "OP-SVC-STD"
+  },
+  "expect_issues": [
+    "vin_mismatch"
+  ],
+  "expect_injection": false,
+  "file": "data/samples/generated/service_record_vin_mismatch.pdf"
+}

@@ -1,0 +1,14 @@
+{
+  "name": "invoice_scanned",
+  "ext": "png",
+  "doc_class": "parts_invoice",
+  "requires_ocr": true,
+  "fields": {
+    "document_number": "INV-77120",
+    "vin": "VLXTR2D00NK100003",
+    "total": "5640.00"
+  },
+  "expect_issues": [],
+  "expect_injection": false,
+  "file": "data/samples/generated/invoice_scanned.png"
+}

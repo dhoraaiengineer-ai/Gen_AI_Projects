@@ -1,0 +1,156 @@
+# CI: lint -> types -> unit -> integration (pgvector service) + security scans -> image build.
+# Offline by design: fakes only, no LLM keys, no Supabase.
+name: "Project 5 · CI"
+
+on:
+  push:
+    branches: [main]
+    paths: ["5-AutoServe-AI-Automotive-Service-Assistant/**", ".github/workflows/p5-*.yml"]
+  pull_request:
+    paths: ["5-AutoServe-AI-Automotive-Service-Assistant/**", ".github/workflows/p5-*.yml"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: p5-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  APP_ENV: ci
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v4
+        with:
+          python-version: "3.12"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: 5-AutoServe-AI-Automotive-Service-Assistant/autoserve-client/package-lock.json
+      - name: Backend lint
+        working-directory: 5-AutoServe-AI-Automotive-Service-Assistant/autoserve-server
+        run: |
+          uv sync --frozen
+          uv run ruff check .
+          uv run ruff format --check .
+      - name: Frontend lint
+        working-directory: 5-AutoServe-AI-Automotive-Service-Assistant/autoserve-client
+        run: |
+          npm ci
+          npm run lint
+
+  typecheck:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v4
+        with:
+          python-version: "3.12"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: 5-AutoServe-AI-Automotive-Service-Assistant/autoserve-client/package-lock.json
+      - name: mypy
+        working-directory: 5-AutoServe-AI-Automotive-Service-Assistant/autoserve-server
+        run: |
+          uv sync --frozen
+          uv run mypy
+      - name: tsc
+        working-directory: 5-AutoServe-AI-Automotive-Service-Assistant/autoserve-client
+        run: |
+          npm ci
+          npm run typecheck
+
+  unit:
+    needs: [lint, typecheck]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v4
+        with:
+          python-version: "3.12"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: 5-AutoServe-AI-Automotive-Service-Assistant/autoserve-client/package-lock.json
+      - name: Backend unit tests
+        working-directory: 5-AutoServe-AI-Automotive-Service-Assistant/autoserve-server
+        run: |
+          uv sync --frozen
+          uv run pytest tests/unit -q
+      - name: Frontend unit tests
+        working-directory: 5-AutoServe-AI-Automotive-Service-Assistant/autoserve-client
+        run: |
+          npm ci
+          npm run test
+
+  integration:
+    needs: [unit]
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: autoserve
+          POSTGRES_PASSWORD: autoserve
+          POSTGRES_DB: autoserve
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U autoserve -d autoserve"
+          --health-interval 5s --health-timeout 3s --health-retries 20
+    env:
+      TEST_DATABASE_URL: postgresql://autoserve:autoserve@localhost:5432/autoserve_test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v4
+        with:
+          python-version: "3.12"
+      - name: Integration + security tests (real Postgres)
+        working-directory: 5-AutoServe-AI-Automotive-Service-Assistant/autoserve-server
+        run: |
+          uv sync --frozen
+          uv run pytest tests/integration tests/security -q -m integration
+
+  security:
+    needs: [unit]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v4
+        with:
+          python-version: "3.12"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: 5-AutoServe-AI-Automotive-Service-Assistant/autoserve-client/package-lock.json
+      - name: bandit + pip-audit
+        working-directory: 5-AutoServe-AI-Automotive-Service-Assistant/autoserve-server
+        run: |
+          uv sync --frozen
+          uv run bandit -q -r app scripts -c pyproject.toml
+          uv export --frozen --no-dev --no-hashes -o /tmp/requirements.txt
+          uv run pip-audit -r /tmp/requirements.txt --strict
+      - name: npm audit
+        working-directory: 5-AutoServe-AI-Automotive-Service-Assistant/autoserve-client
+        run: |
+          npm ci
+          npm audit --audit-level=high
+
+  docker-build:
+    needs: [integration, security]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build backend image
+        run: docker build -t autoserve-server:ci 5-AutoServe-AI-Automotive-Service-Assistant/autoserve-server
+      - name: Build frontend image
+        run: docker build -t autoserve-client:ci 5-AutoServe-AI-Automotive-Service-Assistant/autoserve-client

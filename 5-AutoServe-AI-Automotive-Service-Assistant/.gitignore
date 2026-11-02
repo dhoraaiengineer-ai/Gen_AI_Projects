@@ -1,0 +1,54 @@
+# ── Secrets (never commit) ──
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+secrets/
+
+# ── Python ──
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+coverage.xml
+htmlcov/
+*.egg-info/
+
+# ── Node ──
+node_modules/
+dist/
+*.tsbuildinfo
+playwright-report/
+test-results/
+
+# ── Generated / local data ──
+# Corpus build output (regenerate with `make ingest`); sources live in data/knowledge/src/
+data/knowledge/*.pdf
+data/knowledge/tsb/
+data/knowledge/recalls/
+data/knowledge/manifest.json
+data/knowledge/*.csv
+data/samples/generated/
+data/telematics/*.csv
+
+# ── Terraform ──
+infra/**/.terraform/
+infra/**/*.tfstate*
+infra/**/*.tfvars
+!infra/**/*.tfvars.example
+
+# ── OS / editors ──
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/extensions.json
+.local-storage/
+
+# DEMO OEM adapter outbox (synthetic claim files)
+autoserve-server/var/
+autoserve-client/e2e/.data.json

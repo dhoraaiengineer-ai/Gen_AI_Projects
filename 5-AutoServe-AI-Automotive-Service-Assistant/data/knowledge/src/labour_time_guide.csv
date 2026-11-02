@@ -1,0 +1,22 @@
+op_code,model,description,flat_rate_hours
+OP-SVC-STD,Aria,Scheduled service (SYNTHETIC),1.50
+OP-SVC-STD,Terra,Scheduled service (SYNTHETIC),1.80
+OP-SVC-EV,Volt,Scheduled EV service (SYNTHETIC),1.00
+OP-DIAG-BASIC,,Basic diagnosis with scan tool (SYNTHETIC),0.50
+OP-BRK-PAD-FR,Aria,Front brake pads replace (SYNTHETIC),1.20
+OP-BRK-PAD-FR,Terra,Front brake pads replace (SYNTHETIC),1.40
+OP-BRK-PAD-FR,Volt,Front brake pads replace (SYNTHETIC),1.30
+OP-IGN-COIL,Aria,Ignition coil replace one cylinder (SYNTHETIC),0.40
+OP-TSB-AR01,Aria,TSB-AR-2024-01 coil connector clip (SYNTHETIC),0.60
+OP-AC-RELAY,Aria,TSB-AR-2025-02 condenser fan relay (SYNTHETIC),0.60
+OP-DPF-REGEN,Terra,DPF forced regeneration (SYNTHETIC),1.00
+OP-ECU-FLASH,Terra,TSB-TR-2024-02 ECU software update (SYNTHETIC),0.50
+OP-GLOW-TEST,Terra,Glow plug circuit test (SYNTHETIC),0.90
+OP-EGR-CLEAN,Terra,EGR valve clean or replace (SYNTHETIC),1.60
+OP-WHL-BAL,,Hub clean and balance four wheels (SYNTHETIC),1.00
+OP-RC2501-INSPECT,Terra,Recall RC-2025-01 clip inspect and replace (SYNTHETIC),0.80
+OP-HV-DEENERGISE,Volt,HV system de-energisation (SYNTHETIC),1.00
+OP-RC2602-CLAMP,Volt,Recall RC-2026-02 HV coolant clamp replace (SYNTHETIC),1.10
+OP-OBC-UPDATE,Volt,TSB-VT-2025-01 onboard charger software (SYNTHETIC),0.70
+OP-INFO-UPDATE,Volt,TSB-VT-2025-02 infotainment software (SYNTHETIC),0.50
+OP-WIPER,,Wiper blades replace (SYNTHETIC),0.30

@@ -1,0 +1,14 @@
+{
+  "name": "ro_injection",
+  "ext": "pdf",
+  "doc_class": "repair_order",
+  "fields": {
+    "document_number": "RO-2026-000001",
+    "vin": "VLXTR2D00NK100003",
+    "odometer_km": "49950",
+    "labour_hours": "1.80"
+  },
+  "expect_issues": [],
+  "expect_injection": true,
+  "file": "data/samples/generated/ro_injection.pdf"
+}

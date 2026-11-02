@@ -1,0 +1,117 @@
+{
+  "suite": "risk",
+  "metrics": {
+    "cases": 14,
+    "risk_precision": 1.0,
+    "risk_recall": 1.0,
+    "risk_wording_ok": 1.0
+  },
+  "results": [
+    {
+      "id": "rk-01",
+      "question": "clean",
+      "passed": true,
+      "failures": [],
+      "error": null
+    },
+    {
+      "id": "rk-02",
+      "question": "rollback at check-in",
+      "passed": true,
+      "failures": [],
+      "error": null
+    },
+    {
+      "id": "rk-03",
+      "question": "rollback in history",
+      "passed": true,
+      "failures": [],
+      "error": null
+    },
+    {
+      "id": "rk-04",
+      "question": "duplicate claim within window",
+      "passed": true,
+      "failures": [],
+      "error": null
+    },
+    {
+      "id": "rk-05",
+      "question": "duplicate claim outside window",
+      "passed": true,
+      "failures": [],
+      "error": null
+    },
+    {
+      "id": "rk-06",
+      "question": "repeat repair within 30 days",
+      "passed": true,
+      "failures": [],
+      "error": null
+    },
+    {
+      "id": "rk-07",
+      "question": "labour over flat rate + 10%",
+      "passed": true,
+      "failures": [],
+      "error": null
+    },
+    {
+      "id": "rk-08",
+      "question": "labour at exactly flat rate + 10%",
+      "passed": true,
+      "failures": [],
+      "error": null
+    },
+    {
+      "id": "rk-09",
+      "question": "part not on invoice",
+      "passed": true,
+      "failures": [],
+      "error": null
+    },
+    {
+      "id": "rk-10",
+      "question": "invoice total mismatch raised at upload",
+      "passed": true,
+      "failures": [],
+      "error": null
+    },
+    {
+      "id": "rk-11",
+      "question": "repair before in-service",
+      "passed": true,
+      "failures": [],
+      "error": null
+    },
+    {
+      "id": "rk-12",
+      "question": "recall-covered part claimed",
+      "passed": true,
+      "failures": [],
+      "error": null
+    },
+    {
+      "id": "rk-13",
+      "question": "injection-like document",
+      "passed": true,
+      "failures": [],
+      "error": null
+    },
+    {
+      "id": "rk-14",
+      "question": "rollback + labour over flat rate (P3-8 high-risk scenario)",
+      "passed": true,
+      "failures": [],
+      "error": null
+    }
+  ],
+  "generated_at": "20261028T111813Z",
+  "gates": {
+    "risk_wording_ok": {
+      "value": 1.0,
+      "threshold": 1.0,
+      "pass": true
+    }
+  }
+}

@@ -1,0 +1,20 @@
+# Required documents per claim type / component group (P2-6). Sourced from the warranty booklet
+# "Claim documents required" section; tests/unit/test_checklist.py checks each phrase appears in that section.
+source: "warranty_booklet#4.1"
+
+# Each document class ↔ the phrase the booklet uses for it.
+phrases:
+  repair_order: "repair order"
+  parts_invoice: "parts invoice"
+  diagnostic_report: "diagnostic report"
+  odometer_photo: "odometer photo"
+
+claim_types:
+  warranty:
+    default: [repair_order, parts_invoice, diagnostic_report, odometer_photo]
+    # HV battery capacity claims additionally need the state-of-health report; it is carried as a diagnostic_report.
+    ev_hv_battery: [repair_order, parts_invoice, diagnostic_report, odometer_photo]
+  recall:
+    default: [repair_order]   # booklet: reference the recall campaign code instead of a warranty claim
+  goodwill:
+    default: [repair_order, parts_invoice]   # not in the booklet — dealer policy (adr: DEMO convention, PRD open item)

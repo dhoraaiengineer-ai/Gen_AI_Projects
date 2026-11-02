@@ -1,0 +1,10 @@
+# Retrieval tuning parameters — NOT domain facts (no source_chunk_id needed). Tuned against evals/manual_qa.jsonl;
+# change only with an eval report showing the effect (rules/80: never lower a threshold without evidence).
+top_k_vector: 12        # candidates from pgvector cosine search
+top_k_fts: 12           # candidates from Postgres full-text search
+rrf_k: 60               # reciprocal-rank-fusion constant
+final_k: 6              # chunks passed to the LLM
+min_similarity: 0.30    # below this cosine similarity a chunk is not evidence (unless an exact code matches).
+                        # 0.35 → 0.30 on 2026-10-27: 4/43 answerable cases had no evidence (evals/reports/manual_qa_20261027*).
+max_chunk_chars: 3200   # ~800 tokens; longer sections are split with overlap
+overlap_chars: 400      # ~100 tokens

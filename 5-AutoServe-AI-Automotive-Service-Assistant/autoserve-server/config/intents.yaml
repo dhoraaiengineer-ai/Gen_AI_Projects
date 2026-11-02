@@ -1,0 +1,28 @@
+# Owner chat intents (P1-8). Low confidence → out_of_scope. Examples are synthetic.
+confidence_threshold: 0.6   # tuning parameter; validated by evals/routing.jsonl
+
+intents:
+  manual_question:
+    description: Questions about how the vehicle works, warning lights, maintenance, tyres, EV charging, what to do.
+    examples: ["What does the orange engine light mean?", "How often do I need a service?", "Why does charging stop at 80%?"]
+  book_service:
+    description: The owner wants to book, schedule, or arrange a service or repair visit, or reports a problem to fix.
+    examples: ["I need to book a service", "Can I bring my car in next week? There's a grinding noise", "Book a repair"]
+  ro_status:
+    description: The owner asks about the progress or status of an existing repair order or booking.
+    examples: ["Is my car ready?", "What's the status of RO-2026-000001?", "Where is my repair at?"]
+  recall_check:
+    description: The owner asks whether their vehicle has a recall or safety campaign.
+    examples: ["Does my car have any recalls?", "Is there a recall on my Terra?"]
+  warranty_question:
+    description: Questions about warranty coverage, periods, exclusions, or what is covered.
+    examples: ["Is my battery still under warranty?", "Are brake pads covered?"]
+  upload_help:
+    description: The owner asks how to upload or send documents or photos (invoices, service records, odometer photo).
+    examples: ["How do I upload my service record?", "Where do I send the odometer photo?"]
+  smalltalk:
+    description: Greetings, thanks, or chit-chat with no request.
+    examples: ["Hi", "Thanks!", "Good morning"]
+  out_of_scope:
+    description: Anything unrelated to the owner's Veloxa vehicle or its service.
+    examples: ["What's the weather?", "Write me a poem", "Best pizza nearby?"]

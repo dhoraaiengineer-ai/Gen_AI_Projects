@@ -1,0 +1,69 @@
+# AutoServe AI — local stack. Synthetic data only.
+# Backend reads secrets from autoserve-server/.env (git-ignored). By default the backend uses the LOCAL Postgres below;
+# set COMPOSE_DATABASE_URL / COMPOSE_DATABASE_POOLER_MODE to point it at Supabase instead (ADR-007).
+name: autoserve
+
+services:
+  db:
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_USER: autoserve
+      POSTGRES_PASSWORD: autoserve  # local-only throwaway credential
+      POSTGRES_DB: autoserve
+    ports: ["${AUTOSERVE_DB_PORT:-5432}:5432"]
+    volumes: [db-data:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U autoserve -d autoserve"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  # MinIO's own Docker Hub / quay.io images are no longer pullable (checked 2026-10-26); Chainguard's MinIO build,
+  # pinned by digest. It has no shell/curl, so there is no container healthcheck; the backend /ready probe checks it.
+  minio:
+    image: cgr.dev/chainguard/minio@sha256:268d68a2a3b6fc65f905a61f84d7eab6345ce6bff14f551e2b028ec31e6a1341
+    command: ["server", "/data", "--console-address", ":9001"]
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-autoserve}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-autoserve-local-only}
+    ports: ["${AUTOSERVE_S3_PORT:-9000}:9000", "${AUTOSERVE_S3_CONSOLE_PORT:-9001}:9001"]
+    volumes: [minio-data:/data]
+
+  # Creates the private documents bucket; retries until MinIO accepts connections.
+  minio-init:
+    image: cgr.dev/chainguard/minio-client@sha256:59f1924e417b6fcfdc0aca321e3bdebe8a56fd0efa7da80037d5eb65a203d687
+    depends_on: [minio]
+    command: ["mb", "--ignore-existing", "local/autoserve-documents"]
+    environment:
+      MC_HOST_local: http://${MINIO_ROOT_USER:-autoserve}:${MINIO_ROOT_PASSWORD:-autoserve-local-only}@minio:9000
+    restart: on-failure:20
+
+  backend:
+    build: ./autoserve-server
+    env_file:
+      - path: ./autoserve-server/.env
+        required: false
+    environment:
+      APP_ENV: local
+      DATABASE_URL: ${COMPOSE_DATABASE_URL:-postgresql+asyncpg://autoserve:autoserve@db:5432/autoserve}
+      DATABASE_POOLER_MODE: ${COMPOSE_DATABASE_POOLER_MODE:-direct}
+      S3_ENDPOINT_URL: http://minio:9000
+      S3_BUCKET: autoserve-documents
+      S3_ACCESS_KEY: ${MINIO_ROOT_USER:-autoserve}
+      S3_SECRET_KEY: ${MINIO_ROOT_PASSWORD:-autoserve-local-only}
+      CORS_ORIGINS: http://localhost:5173
+    ports: ["${AUTOSERVE_API_PORT:-8000}:8000"]
+    depends_on:
+      db: { condition: service_healthy }
+      minio: { condition: service_started }
+
+  frontend:
+    build: ./autoserve-client
+    environment:
+      VITE_API_PROXY_TARGET: http://backend:8000
+    ports: ["${AUTOSERVE_WEB_PORT:-5173}:5173"]
+    depends_on: [backend]
+
+volumes:
+  db-data:
+  minio-data:

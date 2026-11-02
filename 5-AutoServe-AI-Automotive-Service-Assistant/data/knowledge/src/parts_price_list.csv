@@ -1,0 +1,19 @@
+part_number,description,unit_price,component_group
+VLX-OIL-02-4L,Engine oil VS-OIL-02 0W-20 4 L (SYNTHETIC),3200.00,engine
+VLX-OIL-05-6L,Engine oil VS-OIL-05 5W-30 6 L (SYNTHETIC),5400.00,engine
+VLX-FLT-OIL-AR,Oil filter Aria (SYNTHETIC),650.00,engine
+VLX-FLT-OIL-TR,Oil filter Terra (SYNTHETIC),780.00,engine
+VLX-FLT-CABIN,Cabin air filter (SYNTHETIC),900.00,wear
+VLX-BRK-PAD-AR,Front brake pad set Aria (SYNTHETIC),4200.00,wear
+VLX-BRK-PAD-TR,Front brake pad set Terra (SYNTHETIC),5600.00,wear
+VLX-BRK-PAD-VT,Front brake pad set Volt (SYNTHETIC),5100.00,wear
+VLX-IGN-COIL-AR,Ignition coil Aria (SYNTHETIC),3800.00,engine
+VLX-IGN-CLIP-01,Ignition coil connector clip (SYNTHETIC),120.00,engine
+VLX-AC-RLY-03,Condenser fan relay updated (SYNTHETIC),950.00,hvac
+VLX-GLOW-PLUG,Glow plug Terra (SYNTHETIC),1450.00,engine
+VLX-EGR-VALVE,EGR valve Terra (SYNTHETIC),18500.00,engine
+VLX-DPF-TR,Diesel particulate filter Terra (SYNTHETIC),68000.00,exhaust
+VLX-FL-CLIP-02,Fuel return line retaining clip (SYNTHETIC),240.00,fuel_system
+VLX-HV-CLAMP-11,HV battery coolant hose clamp (SYNTHETIC),680.00,ev_hv_battery
+VLX-COOL-EV1-5L,HV battery coolant VS-COOL-EV1 5 L (SYNTHETIC),4100.00,ev_hv_battery
+VLX-WIPER-SET,Wiper blade set (SYNTHETIC),1300.00,wear

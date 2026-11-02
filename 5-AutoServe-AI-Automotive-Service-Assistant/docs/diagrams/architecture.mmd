@@ -1,0 +1,43 @@
+flowchart TB
+  subgraph Users["Users (DEMO accounts)"]
+    O["Vehicle owner"]
+    A["Service advisor"]
+    T["Technician"]
+    W["Warranty admin"]
+    AD["Admin"]
+  end
+  subgraph FE["autoserve-client (React + Vite + TanStack Query)"]
+    UI["Chat · My vehicles · RO / estimate · Advisor board · /tech · /warranty · /admin"]
+  end
+  subgraph BE["autoserve-server (FastAPI, async)"]
+    API["REST + SSE API<br/>JWT · role + dealer scope · idempotency"]
+    CHAT["Chat router<br/>intent → intake / status / recall / manual Q&A"]
+    RAG["Grounded RAG<br/>hybrid pgvector + FTS + RRF<br/>verbatim-quote check"]
+    SAFE["Deterministic safety layer<br/>banners · bypass / HV-DIY refusals"]
+    DX["Diagnosis copilot<br/>exact DTC · TSB match · cited hypotheses"]
+    DOC["Document pipeline<br/>OCR · classify · extract · validate"]
+    G["LangGraph service graph<br/>warranty rules · estimate · risk D-01..D-09<br/>human_review interrupts"]
+    LLM["LLM service<br/>AGENT + ANSWER fallback chains"]
+  end
+  subgraph Data["Data"]
+    PG[("PostgreSQL 16 + pgvector<br/>(local Docker or Supabase)<br/>RLS on every table")]
+    S3[("MinIO / S3<br/>uploaded documents")]
+    AUD[("Hash-chained audit log")]
+  end
+  subgraph Prov["Model providers"]
+    EURI["EURI"]
+    GEM["Gemini"]
+    GROQ["Groq"]
+  end
+  Users --> UI --> API
+  API --> CHAT --> RAG --> SAFE
+  API --> DX --> RAG
+  API --> DOC --> S3
+  API --> G
+  RAG --> PG
+  G --> PG
+  API --> AUD
+  RAG --> LLM
+  DX --> LLM
+  G --> LLM
+  LLM --> EURI & GEM & GROQ

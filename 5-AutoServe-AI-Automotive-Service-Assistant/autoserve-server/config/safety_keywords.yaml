@@ -1,0 +1,67 @@
+# Safety detection lists (rules/55-automotive-safety.md). Keep in sync with the canonical safety-critical system list.
+# Matching is case-insensitive on word boundaries. Phrases, not regexes, unless listed under *_patterns.
+
+safety_systems:
+  brakes: [brake, brakes, braking, brake fluid, brake pedal, abs, anti-lock, handbrake, parking brake]
+  steering: [steering, steering wheel, power steering, pulls to one side]
+  airbags_srs: [airbag, airbags, srs, pretensioner]
+  tyres_wheels: [tyre, tyres, tire, tires, wheel nut, puncture, flat tyre, blowout, tpms, tyre pressure]
+  seat_belts: [seat belt, seatbelt, seat belts]
+  fuel_leaks: [fuel smell, smell fuel, smell of fuel, fuel leak, leaking fuel, petrol smell, diesel smell]
+  ev_hv: [high voltage, high-voltage, hv battery, battery pack, orange cable, hv system, thermal, battery fire]
+  adas: [adas, lane keeping, emergency braking, front camera, radar, calibration]
+  # Thermal events / fire risk (rules/55 'EV high-voltage battery/thermal events' + fuel leaks): any vehicle.
+  fire_thermal: [smoke, smoking, burning smell, smell of burning, fire, flames, on fire, overheating battery, hissing, popping sound]
+
+# Owner reports an active warning or symptom → stop-tier banner (rules/55 tier table).
+active_symptoms:
+  - light is on
+  - light came on
+  - light has come on
+  - warning came on
+  - is flashing
+  - smoke
+  - burning smell
+  - smell fuel
+  - fuel smell
+  - fuel leak
+  - hissing
+  - brakes feel
+  - brake pedal goes
+  - can't steer
+  - cannot steer
+  - steering is heavy
+  - tyre is flat
+  - flat tyre
+  - blowout
+  - battery is hot
+  - keep driving
+  - continue driving
+  - safe to drive
+
+# Requests to disable / bypass / delete safety or emissions systems → fixed refusal, no LLM call.
+bypass_patterns:
+  - '\b(disable|deactivate|turn off|switch off|bypass|defeat|delete|remove|unplug|disconnect|reset|clear|hide|silence|get rid of|stop)\b.{0,40}\b(airbag|srs|abs|esc|stability control|traction control|adas|lane keep|emergency brak|immobili[sz]er|seat ?belt (reminder|chime|warning)|dpf|egr|scr|adblue|catalytic|cat converter|o2 sensor|lambda|speed limiter|hv interlock|emissions?)'
+  - '\b(dpf|egr|adblue|scr|cat)\s*(delete|removal|off|bypass|emulator)\b'
+  - '\b(delete|remove|gut|hollow out|straight pipe|defeat|bypass)\b.{0,20}\b(the )?(cat|catalyst)\b'
+  - '\b(airbag|srs)\s*(light|warning)\b.{0,30}\b(off|disable|delete|remove|hide|without (fixing|repair))'
+
+# Owner asking for DIY high-voltage work → fixed HV text + escalation.
+hv_diy_patterns:
+  - '\b(open|opening|dismantle|take apart|repair|fix|probe|cut|replace|remove)\b.{0,40}\b(hv|high[- ]voltage|battery pack|traction battery|ev battery|orange cable)'
+  - '\b(hv|high[- ]voltage|battery pack|traction battery)\b.{0,40}\b(myself|diy|at home|by hand)\b'
+
+# Never allowed in any AI output (rules/55, SR-003/SR-008/SR-009).
+forbidden_phrases:
+  - safe to drive
+  - fine to drive
+  - ok to drive
+  - okay to drive
+  - keep driving
+  - continue driving as normal
+  - probably fine
+  - nothing to worry about
+  - fraud
+  - fraudulent
+  - claim approved
+  - warranty approved

@@ -1,0 +1,87 @@
+[project]
+name = "autoserve-server"
+version = "0.1.0"
+description = "AutoServe AI backend — GenAI copilot for automotive after-sales service (synthetic Veloxa Motors data only)"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.32",
+    "pydantic>=2.9",
+    "pydantic-settings>=2.6",
+    "sqlalchemy[asyncio]>=2.0.36",
+    "asyncpg>=0.30",
+    "alembic>=1.14",
+    "psycopg[binary]>=3.2",
+    "pgvector>=0.3.6",
+    "langchain>=0.3",
+    "langchain-openai>=0.2",
+    "langgraph>=0.2.50",
+    "langgraph-checkpoint-postgres>=2.0",
+    "structlog>=24.4",
+    "httpx>=0.28",
+    "pyyaml>=6.0",
+    "python-multipart>=0.0.18",
+    "pyjwt[crypto]>=2.10",
+    "reportlab>=4.2",
+    "pypdf>=5.1",
+    "pillow>=11",
+    "pytesseract>=0.3.13",
+    "boto3>=1.35",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.3",
+    "pytest-asyncio>=0.24",
+    "pytest-cov>=6.0",
+    "hypothesis>=6.120",
+    "ruff>=0.8",
+    "mypy>=1.13",
+    "types-pyyaml>=6.0",
+    "bandit>=1.8",
+    "pip-audit>=2.7",
+    "boto3-stubs[s3]>=1.35",
+]
+
+[tool.uv]
+package = false
+
+[tool.ruff]
+line-length = 120
+target-version = "py312"
+extend-exclude = ["migrations/versions"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "S", "ASYNC", "RUF"]
+ignore = ["S101"]  # asserts are fine in tests
+
+[tool.ruff.lint.flake8-bugbear]
+extend-immutable-calls = ["fastapi.Depends", "fastapi.Query", "fastapi.File", "fastapi.Form", "fastapi.Header", "app.core.security.require_role"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S105", "S106"]
+
+[tool.mypy]
+python_version = "3.12"
+plugins = ["pydantic.mypy"]
+strict = true
+ignore_missing_imports = true
+files = ["app", "scripts"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+testpaths = ["tests"]
+markers = [
+    "integration: needs a real Postgres (compose or CI service container)",
+    "live: calls real external APIs (never in CI unit runs)",
+]
+addopts = "-ra"
+
+[tool.coverage.run]
+concurrency = ["greenlet", "thread"]
+source = ["app"]
+branch = true
+
+[tool.bandit]
+exclude_dirs = ["tests", ".venv"]

@@ -1,0 +1,16 @@
+{
+  "name": "invoice_total_mismatch",
+  "ext": "pdf",
+  "doc_class": "parts_invoice",
+  "fields": {
+    "document_number": "INV-77121",
+    "document_date": "2026-10-21",
+    "vin": "VLXTR2D00NK100003",
+    "total": "5940.00"
+  },
+  "expect_issues": [
+    "total_mismatch"
+  ],
+  "expect_injection": false,
+  "file": "data/samples/generated/invoice_total_mismatch.pdf"
+}

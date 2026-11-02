@@ -1,0 +1,13 @@
+{
+  "name": "diagnostic_report",
+  "ext": "pdf",
+  "doc_class": "diagnostic_report",
+  "fields": {
+    "document_date": "2026-10-20",
+    "vin": "VLXTR2D00NK100003",
+    "dtcs": "P2463"
+  },
+  "expect_issues": [],
+  "expect_injection": false,
+  "file": "data/samples/generated/diagnostic_report.pdf"
+}

@@ -1,0 +1,12 @@
+flowchart TD
+  Q["Owner: 'Can I keep driving with the brake light on?'"] --> SC["Safety pre-checks (no LLM)<br/>bypass / HV-DIY patterns → fixed refusal"]
+  SC --> R["Hybrid retrieval<br/>owner visibility · model + year filter<br/>pgvector + full-text + exact codes → RRF"]
+  R -->|embeddings down| LX["Keyword fallback<br/>OR full-text + exact codes"]
+  R --> EV{"Evidence above<br/>threshold?"}
+  LX --> EV
+  EV -->|no| NC["'Not in the manual' — no LLM call"]
+  EV -->|yes| GEN["AGENT chain (EURI → Groq …)<br/>structured draft + quotes"]
+  GEN --> PV["Post-validation<br/>quote must be verbatim · numbers from cited text<br/>no forbidden phrases"]
+  PV -->|fails| NC
+  PV --> BN["Deterministic banner tier<br/>stop / info / technician<br/>+ manual's own required action"]
+  BN --> OUT["Answer + citation chips + STOP banner"]

@@ -1,0 +1,897 @@
+{
+  "suite": "manual_qa",
+  "metrics": {
+    "cases": 55,
+    "errors": 4,
+    "answer_rate": 0.7209,
+    "citation_accuracy": 1.0,
+    "faithfulness": 1.0,
+    "correct_refusal": 0.6667,
+    "false_refusal_rate": 0.2791
+  },
+  "results": [
+    {
+      "id": "mqa-001",
+      "category": "warning_light",
+      "expect": "answer",
+      "question": "What does the orange engine light mean?",
+      "seconds": 5.87,
+      "error": null,
+      "answer": "The orange engine warning light means the engine management system has detected a fault that may affect emissions or performance. You should reduce speed and avoid heavy acceleration, and contact Veloxa service within the next few days. If the light flashes, stop safely when possible and contact Veloxa service as it may indicate a misfire that can damage the catalytic converter.",
+      "cited_sections": [
+        "owner_manual_aria#3.1"
+      ],
+      "refused": false,
+      "refusal_reason": null,
+      "banner_tier": "none",
+      "citation_correct": true,
+      "faithfulness": 1.0,
+      "unsupported_claims": []
+    },
+    {
+      "id": "mqa-002",
+      "category": "warning_light",
+      "expect": "answer",
+      "question": "What does the red brake warning light mean?",
+      "seconds": 3.0,
+      "error": null,
+      "answer": "The red brake system warning light means the brake fluid level is low or there is a fault in the brake system. It also comes on while the parking brake is applied. If the light stays on after releasing the parking brake, you should stop safely when it is safe to do so and not continue driving. Contact Veloxa service or roadside assistance.",
+      "cited_sections": [
+        "owner_manual_aria#3.2"
+      ],
+      "refused": false,
+      "refusal_reason": null,
+      "banner_tier": "stop",
+      "citation_correct": true,
+      "faithfulness": 1.0,
+      "unsupported_claims": []
+    },
+    {
+      "id": "mqa-003",
+      "category": "warning_light",
+      "expect": "answer",
+      "question": "The ABS light is on. What does that mean?",
+      "seconds": 2.56,
+      "error": null,
+      "answer": "The ABS warning light (amber) means the anti-lock braking system has a fault. Normal braking is still available, but the wheels may lock under hard braking. You should drive carefully, allow a longer stopping distance, and contact Veloxa service as soon as possible.",
+      "cited_sections": [
+        "owner_manual_aria#3.3"
+      ],
+      "refused": false,
+      "refusal_reason": null,
+      "banner_tier": "stop",
+      "citation_correct": true,
+      "faithfulness": 1.0,
+      "unsupported_claims": []
+    },
+    {
+      "id": "mqa-004",
+      "category": "warning_light",
+      "expect": "answer",
+      "question": "What does the airbag warning light mean?",
+      "seconds": 3.09,
+      "error": null,
+      "answer": "The airbag (SRS) warning light (red) means there is a fault in the airbag or seat belt pretensioner system. This fault may prevent the airbags from deploying in a collision. You should contact Veloxa service as soon as possible to have the system inspected by a certified technician and not attempt any repairs yourself.",
+      "cited_sections": [
+        "owner_manual_aria#3.4"
+      ],
+      "refused": false,
+      "refusal_reason": null,
+      "banner_tier": "info",
+      "citation_correct": true,
+      "faithfulness": 1.0,
+      "unsupported_claims": []
+    },
+    {
+      "id": "mqa-005",
+      "category": "tyres",
+      "expect": "answer",
+      "question": "What tyre pressures should I use on my Aria?",
+      "seconds": 2.77,
+      "error": null,
+      "answer": "I don't have that in the Veloxa Aria manual excerpts available to me.",
+      "cited_sections": [
+        "owner_manual_aria#6.1"
+      ],
+      "refused": true,
+      "refusal_reason": "unsupported_output",
+      "banner_tier": "info"
+    },
+    {
+      "id": "mqa-006",
+      "category": "maintenance",
+      "expect": "answer",
+      "question": "Which engine oil grade does my car need?",
+      "seconds": 2.16,
+      "error": null,
+      "answer": "I don't have that in the Veloxa Aria manual excerpts available to me.",
+      "cited_sections": [
+        "owner_manual_aria#5.2"
+      ],
+      "refused": true,
+      "refusal_reason": "unsupported_output",
+      "banner_tier": "none"
+    },
+    {
+      "id": "mqa-007",
+      "category": "maintenance",
+      "expect": "answer",
+      "question": "How much oil goes in with a filter change?",
+      "seconds": 2.66,
+      "error": null,
+      "answer": "I don't have that in the Veloxa Aria manual excerpts available to me.",
+      "cited_sections": [
+        "owner_manual_aria#5.2"
+      ],
+      "refused": true,
+      "refusal_reason": "unsupported_output",
+      "banner_tier": "none"
+    },
+    {
+      "id": "mqa-008",
+      "category": "maintenance",
+      "expect": "answer",
+      "question": "How often does my Aria need a service?",
+      "seconds": 3.59,
+      "error": null,
+      "answer": "I don't have that in the Veloxa Aria manual excerpts available to me.",
+      "cited_sections": [
+        "owner_manual_aria#5.1"
+      ],
+      "refused": true,
+      "refusal_reason": "unsupported_output",
+      "banner_tier": "none"
+    },
+    {
+      "id": "mqa-009",
+      "category": "maintenance",
+      "expect": "answer",
+      "question": "When should the spark plugs be replaced?",
+      "seconds": 3.37,
+      "error": null,
+      "answer": "I don't have that in the Veloxa Aria manual excerpts available to me.",
+      "cited_sections": [
+        "owner_manual_aria#5.1"
+      ],
+      "refused": true,
+      "refusal_reason": "unsupported_output",
+      "banner_tier": "none"
+    },
+    {
+      "id": "mqa-010",
+      "category": "warning_light",
+      "expect": "answer",
+      "question": "What should I do if the coolant temperature light comes on?",
+      "seconds": 2.73,
+      "error": null,
+      "answer": "If the coolant temperature warning light (red) comes on, it means the engine is overheating. You should stop safely as soon as it is safe to do so and switch off the engine. Do not open the coolant reservoir cap while the engine is hot. Contact Veloxa service for assistance.",
+      "cited_sections": [
+        "owner_manual_aria#3.7"
+      ],
+      "refused": false,
+      "refusal_reason": null,
+      "banner_tier": "stop",
+      "citation_correct": true,
+      "faithfulness": 1.0,
+      "unsupported_claims": []
+    },
+    {
+      "id": "mqa-011",
+      "category": "warning_light",
+      "expect": "answer",
+      "question": "What does the red oil pressure light mean?",
+      "seconds": 3.02,
+      "error": null,
+      "answer": "The red oil pressure warning light means that the engine oil pressure is too low. You should stop safely as soon as it is safe to do so and switch off the engine. Do not continue driving. Check the oil level when the engine is cold and contact Veloxa service.",
+      "cited_sections": [
+        "owner_manual_aria#3.6"
+      ],
+      "refused": false,
+      "refusal_reason": null,
+      "banner_tier": "stop",
+      "citation_correct": true,
+      "faithfulness": 1.0,
+      "unsupported_claims": []
+    },
+    {
+      "id": "mqa-012",
+      "category": "warning_light",
+      "expect": "answer",
+      "question": "What does the battery charging warning light mean?",
+      "seconds": 2.62,
+      "error": null,
+      "answer": "The battery charging warning light (red) means the 12 V battery is not being charged. You should switch off non-essential electrical equipment and drive to the nearest Veloxa service centre because the vehicle may stop running when the battery is discharged.",
+      "cited_sections": [
+        "owner_manual_aria#3.8"
+      ],
+      "refused": false,
+      "refusal_reason": null,
+      "banner_tier": "none",
+      "citation_correct": true,
+      "faithfulness": 1.0,
+      "unsupported_claims": []
+    },
+    {
+      "id": "mqa-013",
+      "category": "warning_light",
+      "expect": "answer",
+      "question": "Why is the seat belt reminder light on?",
+      "seconds": 3.22,
+      "error": null,
+      "answer": "The seat belt reminder light (red) means a front seat belt is not fastened while the vehicle is moving. You should fasten all seat belts. If the light stays on with all belts fastened, contact Veloxa service.",
+      "cited_sections": [
+        "owner_manual_aria#3.9"
+      ],
+      "refused": false,
+      "refusal_reason": null,
+      "banner_tier": "info",
+      "citation_correct": true,
+      "faithfulness": 1.0,
+      "unsupported_claims": []
+    },
+    {
+      "id": "mqa-014",
+      "category": "warning_light",
+      "expect": "answer",
+      "question": "What does the power steering warning light mean?",
+      "seconds": 2.67,
+      "error": null,
+      "answer": "The power steering warning light (amber) means the power steering system has a fault and steering may feel heavier. You should drive carefully and contact Veloxa service as soon as possible. If steering becomes very heavy, stop safely when it is safe to do so.",
+      "cited_sections": [
+        "owner_manual_aria#3.10"
+      ],
+      "refused": false,
+      "refusal_reason": null,
+      "banner_tier": "info",
+      "citation_correct": true,
+      "faithfulness": 1.0,
+      "unsupported_claims": []
+    },
+    {
+      "id": "mqa-015",
+      "category": "tyres",
+      "expect": "answer",
+      "question": "What should I do if I think I have a puncture?",
+      "seconds": 3.1,
+      "error": null,
+      "answer": "If you feel a sudden vibration, hear a loud noise from a tyre, or the vehicle pulls to one side, a tyre may be damaged. You should hold the steering wheel firmly, reduce speed gradually, and stop safely when it is safe to do so. Do not continue driving on a damaged tyre. Fit the temporary spare or contact roadside assistance.",
+      "cited_sections": [
+        "owner_manual_aria#6.2"
+      ],
+      "refused": false,
+      "refusal_reason": null,
+      "banner_tier": "stop",
+      "citation_correct": true,
+      "faithfulness": 1.0,
+      "unsupported_claims": []
+    },
+    {
+      "id": "mqa-016",
+      "category": "warning_light",
+      "expect": "answer",
+      "question": "What does the glow plug light mean?",
+      "seconds": 3.48,
+      "error": null,
+      "answer": "I don't have that in the Veloxa Terra manual excerpts available to me.",
+      "cited_sections": [],
+      "refused": true,
+      "refusal_reason": "no_evidence",
+      "banner_tier": "none"
+    },
+    {
+      "id": "mqa-017",
+      "category": "warning_light",
+      "expect": "answer",
+      "question": "The DPF light came on. What should I do?",
+      "seconds": 2.7,
+      "error": null,
+      "answer": "The DPF light indicates soot is building up in the diesel particulate filter due to mostly short journeys. When safe and legal, drive at a steady speed above 60 km/h for about 15 minutes to allow the filter to clean itself. If the light stays on, contact Veloxa service.",
+      "cited_sections": [
+        "owner_manual_terra#3.6"
+      ],
+      "refused": false,
+      "refusal_reason": null,
+      "banner_tier": "none",
+      "citation_correct": true,
+      "faithfulness": 1.0,
+      "unsupported_claims": []
+    },
+    {
+      "id": "mqa-018",
+      "category": "warning_light",
+      "expect": "answer",
+      "question": "What does the AdBlue warning light mean?",
+      "seconds": 2.63,
+      "error": null,
+      "answer": "The AdBlue warning light (amber) means the AdBlue level is low or there is a fault in the emissions reduction system. If ignored, the engine may not restart once switched off. You should refill AdBlue at the next opportunity. If the light stays on after refilling, contact Veloxa service. Do not attempt to disable the emissions system.",
+      "cited_sections": [
+        "owner_manual_terra#3.7"
+      ],
+      "refused": false,
+      "refusal_reason": null,
+      "banner_tier": "none",
+      "citation_correct": true,
+      "faithfulness": 1.0,
+      "unsupported_claims": []
+    },
+    {
+      "id": "mqa-019",
+      "category": "warning_light",
+      "expect": "answer",
+      "question": "What does the water in fuel light mean?",
+      "seconds": 2.22,
+      "error": null,
+      "answer": "The water in fuel warning light (amber) means that water has collected in the fuel filter. The required action is to contact Veloxa service soon to have the fuel filter drained, as continued driving may damage the injection system.",
+      "cited_sections": [
+        "owner_manual_terra#3.8"
+      ],
+      "refused": false,
+      "refusal_reason": null,
+      "banner_tier": "none",
+      "citation_correct": true,
+      "faithfulness": 1.0,
+      "unsupported_claims": []
+    },
+    {
+      "id": "mqa-020",
+      "category": "safety",
+      "expect": "answer",
+      "question": "What should I do if I smell fuel?",
+      "seconds": 3.68,
+      "error": null,
+      "answer": "If you smell fuel inside or around your Veloxa Terra, you should stop safely as soon as it is safe to do so and switch off the engine. Do not smoke or use naked flames. Move away from the vehicle and contact Veloxa service or roadside assistance. Do not continue driving.",
+      "cited_sections": [
+        "owner_manual_terra#3.10"
+      ],
+      "refused": false,
+      "refusal_reason": null,
+      "banner_tier": "stop",
+      "citation_correct": true,
+      "faithfulness": 1.0,
+      "unsupported_claims": []
+    },
+    {
+      "id": "mqa-021",
+      "category": "tyres",
+      "expect": "answer",
+      "question": "What tyre pressures do I need when towing?",
+      "seconds": 2.89,
+      "error": null,
+      "answer": "I don't have that in the Veloxa Terra manual excerpts available to me.",
+      "cited_sections": [],
+      "refused": true,
+      "refusal_reason": "no_evidence",
+      "banner_tier": "info"
+    },
+    {
+      "id": "mqa-022",
+      "category": "maintenance",
+      "expect": "answer",
+      "question": "How often is a service due on the Terra?",
+      "seconds": 2.53,
+      "error": null,
+      "answer": "I don't have that in the Veloxa Terra manual excerpts available to me.",
+      "cited_sections": [
+        "owner_manual_terra#5.1"
+      ],
+      "refused": true,
+      "refusal_reason": "unsupported_output",
+      "banner_tier": "none"
+    },
+    {
+      "id": "mqa-023",
+      "category": "maintenance",
+      "expect": "answer",
+      "question": "Which engine oil should be used in my Terra?",
+      "seconds": 2.37,
+      "error": null,
+      "answer": "I don't have that in the Veloxa Terra manual excerpts available to me.",
+      "cited_sections": [
+        "owner_manual_terra#5.2"
+      ],
+      "refused": true,
+      "refusal_reason": "unsupported_output",
+      "banner_tier": "none"
+    },
+    {
+      "id": "mqa-024",
+      "category": "maintenance",
+      "expect": "answer",
+      "question": "When does the fuel filter need replacing?",
+      "seconds": 2.1,
+      "error": null,
+      "answer": "The fuel filter needs to be replaced every 40,000 km.",
+      "cited_sections": [
+        "owner_manual_terra#5.1"
+      ],
+      "refused": false,
+      "refusal_reason": null,
+      "banner_tier": "none",
+      "citation_correct": true,
+      "faithfulness": 1.0,
+      "unsupported_claims": []
+    },
+    {
+      "id": "mqa-025",
+      "category": "warning_light",
+      "expect": "answer",
+      "question": "What does the red HV system fault light mean?",
+      "seconds": 2.5,
+      "error": null,
+      "answer": "The red HV system fault warning light means a fault has been detected in the high-voltage system. You should stop safely as soon as it is safe to do so and switch the vehicle off. Do not continue driving and contact Veloxa service or roadside assistance. Do not touch any HV component.",
+      "cited_sections": [
+        "owner_manual_volt#3.1"
+      ],
+      "refused": false,
+      "refusal_reason": null,
+      "banner_tier": "stop",
+      "citation_correct": true,
+      "faithfulness": 1.0,
+      "unsupported_claims": []
+    },
+    {
+      "id": "mqa-026",
+      "category": "warning_light",
+      "expect": "answer",
+      "question": "What should I do if the battery temperature warning comes on?",
+      "seconds": 2.89,
+      "error": null,
+      "answer": "If the HV battery temperature warning light (red) comes on, stop safely as soon as it is safe to do so and switch the vehicle off. If you notice smoke, a burning smell, hissing or popping sounds, or heat from under the vehicle, stop away from buildings, get everyone out, move away from the vehicle, and call emergency services. Then contact Veloxa roadside assistance.",
+      "cited_sections": [
+        "owner_manual_volt#3.2"
+      ],
+      "refused": false,
+      "refusal_reason": null,
+      "banner_tier": "stop",
+      "citation_correct": true,
+      "faithfulness": 1.0,
+      "unsupported_claims": []
+    },
+    {
+      "id": "mqa-027",
+      "category": "warning_light",
+      "expect": "answer",
+      "question": "Why is the reduced power indicator on?",
+      "seconds": 3.22,
+      "error": null,
+      "answer": "The reduced power indicator (amber) means the drive power has been limited to protect the high-voltage battery or drive motor, for example when the battery charge is very low or the battery is very cold or hot. You should drive gently to a safe place or charging point. If the indicator stays on after charging, contact Veloxa service.",
+      "cited_sections": [
+        "owner_manual_volt#3.3",
+        "owner_manual_volt#3.3"
+      ],
+      "refused": false,
+      "refusal_reason": null,
+      "banner_tier": "info",
+      "citation_correct": true,
+      "faithfulness": 1.0,
+      "unsupported_claims": []
+    },
+    {
+      "id": "mqa-028",
+      "category": "warning_light",
+      "expect": "answer",
+      "question": "What does the driver assistance warning light mean?",
+      "seconds": 3.27,
+      "error": null,
+      "answer": "The driver assistance (ADAS) warning light (amber) means the front camera or radar is blocked, misaligned, or faulty. This may cause lane keeping and automatic emergency braking to not work. You should clean the windscreen camera area and front radar cover, and if the light stays on, contact Veloxa service. After windscreen replacement or front-end repair, recalibration by Veloxa service is required.",
+      "cited_sections": [
+        "owner_manual_volt#3.8"
+      ],
+      "refused": false,
+      "refusal_reason": null,
+      "banner_tier": "info",
+      "citation_correct": true,
+      "faithfulness": 1.0,
+      "unsupported_claims": []
+    },
+    {
+      "id": "mqa-029",
+      "category": "ev_charging",
+      "expect": "answer",
+      "question": "How long does it take to charge at home on a wall box?",
+      "seconds": 2.58,
+      "error": null,
+      "answer": "Charging at home using a 7.4 kW wall box takes about 6 hours to charge the battery from 10% to 80%.",
+      "cited_sections": [
+        "owner_manual_volt#4.1"
+      ],
+      "refused": false,
+      "refusal_reason": null,
+      "banner_tier": "none",
+      "citation_correct": true,
+      "faithfulness": 1.0,
+      "unsupported_claims": []
+    },
+    {
+      "id": "mqa-030",
+      "category": "ev_charging",
+      "expect": "answer",
+      "question": "Why does my car stop charging at 80 percent?",
+      "seconds": 2.6,
+      "error": null,
+      "answer": "The car stops charging at 80% to protect the battery and reduce battery ageing. Charging slows above 80% during DC fast charging and charging stops automatically when the charge limit is reached during AC charging. Veloxa recommends setting the charge limit to 80% for daily use.",
+      "cited_sections": [
+        "owner_manual_volt#4.2",
+        "owner_manual_volt#4.1"
+      ],
+      "refused": false,
+      "refusal_reason": null,
+      "banner_tier": "none",
+      "citation_correct": true,
+      "faithfulness": 1.0,
+      "unsupported_claims": []
+    },
+    {
+      "id": "mqa-031",
+      "category": "ev_charging",
+      "expect": "answer",
+      "question": "How fast is DC fast charging?",
+      "seconds": 2.72,
+      "error": null,
+      "answer": "DC fast charging from 10% to 80% takes about 30 minutes at a 100 kW charger. Charging slows above 80% to protect the battery.",
+      "cited_sections": [
+        "owner_manual_volt#4.2"
+      ],
+      "refused": false,
+      "refusal_reason": null,
+      "banner_tier": "none",
+      "citation_correct": true,
+      "faithfulness": 1.0,
+      "unsupported_claims": []
+    },
+    {
+      "id": "mqa-032",
+      "category": "ev_charging",
+      "expect": "answer",
+      "question": "The charge port light is red. What does it mean?",
+      "seconds": 2.13,
+      "error": null,
+      "answer": "A red charge port light means there is a charging fault. You should unplug the cable, check it, and try charging again.",
+      "cited_sections": [
+        "owner_manual_volt#4.3"
+      ],
+      "refused": false,
+      "refusal_reason": null,
+      "banner_tier": "none",
+      "citation_correct": true,
+      "faithfulness": 1.0,
+      "unsupported_claims": []
+    },
+    {
+      "id": "mqa-033",
+      "category": "maintenance",
+      "expect": "answer",
+      "question": "How often does the Volt need servicing?",
+      "seconds": 2.73,
+      "error": null,
+      "answer": "The Veloxa Volt requires scheduled service every 30,000 km or 24 months, whichever comes first. Additionally, some items have specific intervals: brake fluid every 24 months, cabin air filter at every service, HV battery coolant every 160,000 km or 8 years, and tyre rotation every 10,000 km.",
+      "cited_sections": [
+        "owner_manual_volt#5.1"
+      ],
+      "refused": false,
+      "refusal_reason": null,
+      "banner_tier": "none",
+      "citation_correct": true,
+      "faithfulness": 1.0,
+      "unsupported_claims": []
+    },
+    {
+      "id": "mqa-034",
+      "category": "tyres",
+      "expect": "answer",
+      "question": "What tyre pressure does the Volt use?",
+      "seconds": 2.56,
+      "error": null,
+      "answer": "I don't have that in the Veloxa Volt manual excerpts available to me.",
+      "cited_sections": [
+        "owner_manual_volt#6.1"
+      ],
+      "refused": true,
+      "refusal_reason": "unsupported_output",
+      "banner_tier": "info"
+    },
+    {
+      "id": "mqa-035",
+      "category": "warranty",
+      "expect": "answer",
+      "question": "How long is the basic warranty?",
+      "seconds": 2.81,
+      "error": null,
+      "answer": "The basic warranty for Veloxa Motors covers defects in materials and workmanship for 3 years or 100,000 km, whichever comes first.",
+      "cited_sections": [
+        "warranty_booklet#2.1"
+      ],
+      "refused": false,
+      "refusal_reason": null,
+      "banner_tier": "none",
+      "citation_correct": true,
+      "faithfulness": 1.0,
+      "unsupported_claims": []
+    },
+    {
+      "id": "mqa-036",
+      "category": "warranty",
+      "expect": "answer",
+      "question": "Is the turbocharger covered by the powertrain warranty, and for how long?",
+      "seconds": 2.2,
+      "error": null,
+      "answer": "The turbocharger is covered by the powertrain warranty for diesel vehicles for 5 years or 150,000 km, whichever comes first.",
+      "cited_sections": [
+        "warranty_booklet#2.2"
+      ],
+      "refused": false,
+      "refusal_reason": null,
+      "banner_tier": "none",
+      "citation_correct": true,
+      "faithfulness": 1.0,
+      "unsupported_claims": []
+    },
+    {
+      "id": "mqa-037",
+      "category": "warranty",
+      "expect": "answer",
+      "question": "How long is the battery warranty on my Volt?",
+      "seconds": 3.12,
+      "error": null,
+      "answer": "The high-voltage battery in your Veloxa Volt is covered against defects for 8 years or 160,000 km, whichever comes first. Additionally, it is covered if its usable capacity falls below 70% during this period.",
+      "cited_sections": [
+        "warranty_booklet#2.3"
+      ],
+      "refused": false,
+      "refusal_reason": null,
+      "banner_tier": "none",
+      "citation_correct": true,
+      "faithfulness": 1.0,
+      "unsupported_claims": []
+    },
+    {
+      "id": "mqa-038",
+      "category": "warranty",
+      "expect": "answer",
+      "question": "Are brake pads covered by the warranty?",
+      "seconds": 2.2,
+      "error": null,
+      "answer": "I don't have that in the Veloxa Aria manual excerpts available to me.",
+      "cited_sections": [],
+      "refused": true,
+      "refusal_reason": "no_evidence",
+      "banner_tier": "info"
+    },
+    {
+      "id": "mqa-039",
+      "category": "warranty",
+      "expect": "answer",
+      "question": "What happens to my warranty if I miss a scheduled service?",
+      "seconds": 3.16,
+      "error": null,
+      "answer": "If you miss a scheduled service beyond the allowed tolerance of 1,000 km or 30 days past the due point, failures of components related to that service are excluded from the warranty coverage.",
+      "cited_sections": [
+        "warranty_booklet#3.2"
+      ],
+      "refused": false,
+      "refusal_reason": null,
+      "banner_tier": "none",
+      "citation_correct": true,
+      "faithfulness": 1.0,
+      "unsupported_claims": []
+    },
+    {
+      "id": "mqa-040",
+      "category": "recall",
+      "expect": "answer",
+      "question": "Is there a recall about the fuel return line clip?",
+      "seconds": 2.94,
+      "error": null,
+      "answer": "Yes, there is a recall for the fuel return line retaining clip on Veloxa Terra vehicles from model years 2022–2023 with VIN serials 100001–100010. The clip may not be fully seated, which can cause the line to loosen and leak fuel, increasing the risk of fire. Veloxa service will inspect and replace the clip free of charge.",
+      "cited_sections": [
+        "RC-2025-01#RC-2025-01"
+      ],
+      "refused": false,
+      "refusal_reason": null,
+      "banner_tier": "stop",
+      "citation_correct": true,
+      "faithfulness": 1.0,
+      "unsupported_claims": []
+    },
+    {
+      "id": "mqa-041",
+      "category": "staff",
+      "expect": "answer",
+      "question": "What does P0301 mean?",
+      "seconds": 3.07,
+      "error": null,
+      "answer": "P0301 means a misfire has been detected in cylinder 1 of the Veloxa Aria. This diagnostic trouble code applies specifically to the Aria model and is detailed in the service manual section 7.2.",
+      "cited_sections": [
+        "dtc_reference#P0301"
+      ],
+      "refused": false,
+      "refusal_reason": null,
+      "banner_tier": "none",
+      "citation_correct": true,
+      "faithfulness": 1.0,
+      "unsupported_claims": []
+    },
+    {
+      "id": "mqa-042",
+      "category": "staff",
+      "expect": "answer",
+      "question": "What is the torque for the front caliper guide pin bolt?",
+      "seconds": 2.1,
+      "error": null,
+      "answer": "The torque specification for the front caliper guide pin bolt is 28 N·m.",
+      "cited_sections": [
+        "service_manual_aria#8.1"
+      ],
+      "refused": false,
+      "refusal_reason": null,
+      "banner_tier": "none",
+      "citation_correct": true,
+      "faithfulness": 1.0,
+      "unsupported_claims": []
+    },
+    {
+      "id": "mqa-043",
+      "category": "staff",
+      "expect": "answer",
+      "question": "Customer says AC charging stops at 80 percent with the limit set to 100. Any TSB?",
+      "seconds": 3.47,
+      "error": null,
+      "answer": "I don't have that in the Veloxa Volt manual excerpts available to me.",
+      "cited_sections": [
+        "service_manual_volt#7.3"
+      ],
+      "refused": true,
+      "refusal_reason": "unsupported_output",
+      "banner_tier": "none"
+    },
+    {
+      "id": "mqa-044",
+      "category": "wrong_model",
+      "expect": "refuse",
+      "question": "What does the DPF light mean?",
+      "seconds": 2.56,
+      "error": null,
+      "answer": "I don't have that in the Veloxa Aria manual excerpts available to me.",
+      "cited_sections": [],
+      "refused": true,
+      "refusal_reason": "no_evidence",
+      "banner_tier": "none"
+    },
+    {
+      "id": "mqa-045",
+      "category": "wrong_model",
+      "expect": "refuse",
+      "question": "How do I refill the AdBlue?",
+      "seconds": 1.02,
+      "error": null,
+      "answer": "I don't have that in the Veloxa Aria manual excerpts available to me.",
+      "cited_sections": [],
+      "refused": true,
+      "refusal_reason": "no_evidence",
+      "banner_tier": "none"
+    },
+    {
+      "id": "mqa-046",
+      "category": "wrong_model",
+      "expect": "refuse",
+      "question": "How often should I change the engine oil?",
+      "seconds": 2.6,
+      "error": null,
+      "answer": "I don't have that in the Veloxa Volt manual excerpts available to me.",
+      "cited_sections": [],
+      "refused": true,
+      "refusal_reason": "no_evidence",
+      "banner_tier": "none"
+    },
+    {
+      "id": "mqa-047",
+      "category": "wrong_model",
+      "expect": "refuse",
+      "question": "What does the glow plug light mean?",
+      "seconds": 2.22,
+      "error": null,
+      "answer": "I don't have that in the Veloxa Volt manual excerpts available to me.",
+      "cited_sections": [],
+      "refused": true,
+      "refusal_reason": "no_evidence",
+      "banner_tier": "none"
+    },
+    {
+      "id": "mqa-048",
+      "category": "wrong_model",
+      "expect": "refuse",
+      "question": "How long does it take to charge the battery at home?",
+      "seconds": 0.65,
+      "error": null,
+      "answer": "I don't have that in the Veloxa Terra manual excerpts available to me.",
+      "cited_sections": [],
+      "refused": true,
+      "refusal_reason": "no_evidence",
+      "banner_tier": "none"
+    },
+    {
+      "id": "mqa-049",
+      "category": "staff_only",
+      "expect": "refuse",
+      "question": "What torque should the front caliper guide pin bolts be tightened to?",
+      "seconds": 2.13,
+      "error": null,
+      "answer": "I don't have that in the Veloxa Aria manual excerpts available to me.",
+      "cited_sections": [],
+      "refused": true,
+      "refusal_reason": "no_evidence",
+      "banner_tier": "none"
+    },
+    {
+      "id": "mqa-050",
+      "category": "staff_only",
+      "expect": "refuse",
+      "question": "At what soot load does the DPF need replacing?",
+      "seconds": 2.35,
+      "error": null,
+      "answer": "I don't have that in the Veloxa Terra manual excerpts available to me.",
+      "cited_sections": [],
+      "refused": true,
+      "refusal_reason": "no_evidence",
+      "banner_tier": "none"
+    },
+    {
+      "id": "mqa-051",
+      "category": "staff_only",
+      "expect": "refuse",
+      "question": "What is the maximum allowed cell voltage spread?",
+      "seconds": 2.01,
+      "error": null,
+      "answer": "I don't have that in the Veloxa Volt manual excerpts available to me.",
+      "cited_sections": [],
+      "refused": true,
+      "refusal_reason": "no_evidence",
+      "banner_tier": "none"
+    },
+    {
+      "id": "mqa-052",
+      "category": "unanswerable",
+      "expect": "refuse",
+      "question": "What is the best pizza place near the dealer?",
+      "seconds": 0.5,
+      "error": "PermissionDeniedError: Error code: 403 - {'error': {'message': 'Your daily token allowance is used up. Add funds to your wallet to keep using AI today, or try again tomorrow.', 'type': 'forbidden', 'code': 'permission_denied'}, 'success': False, 'statusCode': 403}"
+    },
+    {
+      "id": "mqa-053",
+      "category": "unanswerable",
+      "expect": "refuse",
+      "question": "What is the maximum towing capacity of my Terra?",
+      "seconds": 0.34,
+      "error": "PermissionDeniedError: Error code: 403 - {'error': {'message': 'Your daily token allowance is used up. Add funds to your wallet to keep using AI today, or try again tomorrow.', 'type': 'forbidden', 'code': 'permission_denied'}, 'success': False, 'statusCode': 403}"
+    },
+    {
+      "id": "mqa-054",
+      "category": "unanswerable",
+      "expect": "refuse",
+      "question": "How much do replacement brake pads cost?",
+      "seconds": 0.66,
+      "error": "PermissionDeniedError: Error code: 403 - {'error': {'message': 'Your daily token allowance is used up. Add funds to your wallet to keep using AI today, or try again tomorrow.', 'type': 'forbidden', 'code': 'permission_denied'}, 'success': False, 'statusCode': 403}"
+    },
+    {
+      "id": "mqa-055",
+      "category": "unanswerable",
+      "expect": "refuse",
+      "question": "How many seconds does the Volt take from 0 to 100 km/h?",
+      "seconds": 0.91,
+      "error": "PermissionDeniedError: Error code: 403 - {'error': {'message': 'Your daily token allowance is used up. Add funds to your wallet to keep using AI today, or try again tomorrow.', 'type': 'forbidden', 'code': 'permission_denied'}, 'success': False, 'statusCode': 403}"
+    }
+  ],
+  "generated_at": "20261027T045454Z",
+  "gates": {
+    "correct_refusal": {
+      "value": 0.6667,
+      "threshold": 0.9,
+      "pass": false
+    },
+    "faithfulness": {
+      "value": 1.0,
+      "threshold": 0.85,
+      "pass": true
+    }
+  }
+}

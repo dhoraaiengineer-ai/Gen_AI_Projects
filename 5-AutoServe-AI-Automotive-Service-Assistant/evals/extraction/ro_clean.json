@@ -1,0 +1,16 @@
+{
+  "name": "ro_clean",
+  "ext": "pdf",
+  "doc_class": "repair_order",
+  "fields": {
+    "document_number": "RO-2026-000001",
+    "document_date": "2026-10-20",
+    "vin": "VLXTR2D00NK100003",
+    "odometer_km": "49950",
+    "op_codes": "OP-RC2501-INSPECT, OP-DPF-REGEN",
+    "labour_hours": "1.80"
+  },
+  "expect_issues": [],
+  "expect_injection": false,
+  "file": "data/samples/generated/ro_clean.pdf"
+}

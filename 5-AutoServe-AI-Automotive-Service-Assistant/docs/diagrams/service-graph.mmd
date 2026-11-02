@@ -1,0 +1,16 @@
+flowchart TD
+  S([Advisor: Run workflow]) --> I["1 Intake<br/>RO + check-in"]
+  I --> VC["2 Vehicle context<br/>VIN · history · recalls · TSBs · coverage"]
+  VC --> D["3 Documents<br/>checklist · unverified fields · invoice parts"]
+  D --> DG["4 Diagnosis<br/>technician-confirmed finding"]
+  DG --> WR["5 Warranty rules<br/>coverage · exclusions · maintenance · recall overlap"]
+  WR --> E["6 Estimate<br/>Decimal maths · recall > warranty > customer"]
+  E --> RK["7 Risk<br/>D-01 … D-09 'indicators for review'"]
+  RK --> RT{"route (deterministic)"}
+  RT -->|missing docs / not estimable| IP["RO → INFO_PENDING"]
+  RT -->|open recall covers part| RJ["Recall job recommended"]
+  RT -->|otherwise| HR["9 Human review (interrupt)"]
+  HR -->|estimate_approval: owner / advisor + consent| REC["record_decision → APPROVED / DECLINED"]
+  HR -->|warranty_decision: warranty admin + rationale| REC2["record_decision → SUBMITTED_TO_OEM (DEMO) / RETURNED / REJECTED"]
+  REC --> N["notify (DEMO)"]
+  REC2 --> N

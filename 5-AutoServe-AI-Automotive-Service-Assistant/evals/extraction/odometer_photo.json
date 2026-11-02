@@ -1,0 +1,11 @@
+{
+  "name": "odometer_photo",
+  "ext": "png",
+  "doc_class": "odometer_photo",
+  "requires_ocr": true,
+  "declared_class": "odometer_photo",
+  "fields": {},
+  "expect_issues": [],
+  "expect_injection": false,
+  "file": "data/samples/generated/odometer_photo.png"
+}

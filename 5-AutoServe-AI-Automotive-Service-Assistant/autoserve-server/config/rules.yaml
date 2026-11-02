@@ -1,0 +1,56 @@
+# Deterministic business rules (ADR-006). Every domain number carries `source` = the corpus section_id that states it
+# (stable across re-ingest; resolved to a chunk for citations). tests/unit/test_rules_config.py checks that each number
+# literally appears in the cited section of data/knowledge/src/*.md, so config and corpus cannot drift apart.
+# Numbers not stated in the corpus cite their origin under `adr` instead.
+
+maintenance:
+  Aria:  {interval_km: 15000, interval_months: 12, source: "owner_manual_aria#5.1"}
+  Terra: {interval_km: 20000, interval_months: 12, source: "owner_manual_terra#5.1"}
+  Volt:  {interval_km: 30000, interval_months: 24, source: "owner_manual_volt#5.1"}
+  scheduled_service_op_codes: [OP-SVC-STD, OP-SVC-EV]
+
+warranty:
+  basic:      {years: 3, km: 100000, source: "warranty_booklet#2.1"}
+  powertrain: {years: 5, km: 150000, source: "warranty_booklet#2.2",
+               component_groups: [engine, transmission, drive_axle, turbocharger]}
+  ev_battery: {years: 8, km: 160000, min_state_of_health_pct: 70, source: "warranty_booklet#2.3",
+               models: [Volt], component_groups: [ev_hv_battery]}
+  maintenance_tolerance: {km: 1000, days: 30, source: "warranty_booklet#3.2"}
+  labour_tolerance_pct:  {value: 10, source: "warranty_booklet#4.2"}
+  # Exclusions (warranty_booklet §3.1). Component groups come from parts_price_list.csv.
+  exclusions:
+    source: "warranty_booklet#3.1"
+    wear_component_groups: [wear]
+    # Words in check-in damage notes / complaint / documents that indicate accident damage or aftermarket parts.
+    accident_terms: [accident, collision, crash, flood, flooded, fire damage, misuse]
+    aftermarket_terms: [aftermarket, non-veloxa, non-genuine, modified, modification, tuning, remap]
+    genuine_part_prefix: "VLX-"
+  # Groups whose failures relate to scheduled maintenance (warranty_booklet §3.2 "components related to that service").
+  maintenance_related_groups: {groups: [engine, turbocharger, exhaust], source: "warranty_booklet#3.2"}
+
+estimate:
+  # Tax is not stated in the synthetic corpus → DEMO profiles (ADR-006: documented, not invented domain facts).
+  tax_profiles:
+    DEMO-TAX-A: {rate_pct: 18, applies_to: [customer], adr: "DEMO tax profile (ADR-006) — not a real tax rate"}
+
+review:
+  # Route to human review with these reasons (every binding decision is reviewed anyway; reasons are shown to the reviewer).
+  amount_threshold:   {value: 50000, adr: "DEMO review threshold (ADR-006)"}
+  min_confidence_pct: {value: 60, adr: "DEMO extraction/diagnosis confidence floor (ADR-006)"}
+
+detectors:
+  D-01_odometer_rollback: {severity: high}
+  D-02_duplicate_claim_days: {value: 90, adr: "MASTER_PROMPT A6"}
+  D-03_repeat_repair_days:  {value: 30, adr: "MASTER_PROMPT A6"}
+  D-04_labour_over_flat_rate: {severity: medium}   # tolerance = warranty.labour_tolerance_pct (warranty_booklet §4.2)
+  D-05_part_not_on_invoice:   {severity: medium}
+  D-06_invoice_total_mismatch: {severity: medium}
+  D-07_repair_before_in_service: {severity: high}
+  D-08_recall_covered_part:   {severity: medium}
+  D-09_document_injection:    {severity: high}
+
+risk:
+  # level = high if any high flag or weighted sum ≥ high; medium if sum ≥ medium; else low.
+  weights:    {low: 1, medium: 2, high: 3}
+  thresholds: {medium: 2, high: 4}
+  adr: "DEMO risk weighting (ADR-006)"
