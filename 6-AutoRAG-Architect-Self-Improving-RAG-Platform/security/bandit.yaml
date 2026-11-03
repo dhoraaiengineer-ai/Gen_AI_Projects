@@ -1,0 +1,73 @@
+# AutoRAG Architect — Bandit SAST Config (Python)
+# Version: v4.0 | Updated: 21-Jul-2026
+#
+# Bandit scans Python code for security anti-patterns.
+# Run locally: cd autorag-server && uv run bandit -r app -c ../security/bandit.yaml
+# CI: runs in .github/workflows/security.yml
+
+# ── Severity thresholds ───────────────────────────────────────────────
+# HIGH severity   → CI fails (blocks merge)
+# MEDIUM severity → CI warns (does not block, must be reviewed)
+# LOW severity    → ignored in CI (informational only)
+
+# ── Scan targets ──────────────────────────────────────────────────────
+# Run against: autorag-server/app/
+# Exclude:     autorag-server/tests/ (test code may use insecure patterns intentionally)
+
+exclude_dirs:
+  - autorag-server/tests
+  - autorag-server/.venv
+  - .venv
+  - venv
+  - node_modules
+
+# ── Plugin configuration ──────────────────────────────────────────────
+# B101 — assert_used: asserts stripped in optimized Python (-O flag)
+#         Allow in tests only; disallow in production app code
+# B104 — hardcoded_bind_all_interfaces: 0.0.0.0 binding
+#         Allowed inside Docker containers (ECS handles network isolation)
+# B108 — hardcoded_tmp_filenames: /tmp paths
+#         Flag as warning — not critical in this context
+
+skips:
+  - B104   # 0.0.0.0 bind — acceptable inside ECS Fargate containers
+  - B101   # assert — we handle this separately in tests/
+
+# ── Rules to enforce (HIGH severity — CI fail) ────────────────────────
+# B102 — exec_used: never use exec() in production
+# B103 — setting_noqa: trust noqa overrides carefully
+# B105 — hardcoded_password_string: no hardcoded passwords
+# B106 — hardcoded_password_funcarg: no password defaults in function args
+# B107 — hardcoded_password_default: no password defaults
+# B201 — flask_debug_true: debug mode in production
+# B301 — pickle_usage: deserialization attacks
+# B302 — marshal_usage: unsafe deserialization
+# B303 — use_of_md5: weak hashing
+# B304 — use_of_des: weak encryption
+# B305 — cipher_modes: insecure cipher mode
+# B306 — mktemp_q: insecure temp file
+# B307 — eval_usage: eval() is dangerous
+# B312 — telnetlib: insecure protocol
+# B320 — xml_bad_minidom: XML bomb vulnerability
+# B501 — request_with_no_cert_validation: SSL disabled
+# B502 — ssl_with_bad_version: weak SSL version
+# B503 — ssl_with_bad_defaults: insecure SSL defaults
+# B601 — paramiko_calls: unsafe shell injection via paramiko
+# B602 — subprocess_popen_with_shell_equals_true: shell=True injection
+# B603 — subprocess_without_shell_equals_true: still check args
+# B604 — any_other_function_with_shell_equals_true
+# B605 — start_process_with_a_shell: os.system() etc.
+# B608 — hardcoded_sql_expressions: SQL injection
+# B611 — django_rawsql_used (not Django, but flag anyway)
+
+# All other rules run at their default severity levels.
+# HIGH = fail CI. MEDIUM = warn. LOW = log only.
+#
+# Note: B105 (hardcoded_password_string) and B106 (hardcoded_password_funcarg) were
+# the rules that originally caught the D-20 audit finding (jwt_secret_key defaulted
+# to the literal "CHANGE_ME" in config.py). D-20 is DONE (Team 10, Mahesh Kumar +
+# Mahesh Kumar) — jwt_secret_key now defaults to a real 32+ char local-dev value,
+# never the "CHANGE_ME" placeholder. grafana_password="admin" and
+# postgres_password="postgres" remain as intentional, comment-documented
+# local-Docker-only defaults (overridden via env in staging/prod) — not pending
+# remediation; Bandit still flags them, and that is expected/accepted, not a gap.

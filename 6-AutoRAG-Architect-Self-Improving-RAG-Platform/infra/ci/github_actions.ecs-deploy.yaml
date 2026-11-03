@@ -1,0 +1,58 @@
+# AutoRAG Architect v4.0 — ECS Blue/Green Deploy Reference
+#
+# This file documents the ECS CodeDeploy Blue/Green deployment configuration.
+# The actual GitHub Actions workflow is at: .github/workflows/deploy.yml (stages 4-8).
+# (lint.yml is Stage 1 only — lint/type-check; it does not deploy anything.)
+#
+# HOW BLUE/GREEN WORKS IN THIS PROJECT:
+# ─────────────────────────────────────
+# 1. CI builds a new image → pushes to ECR with SHA tag (e.g., :abc1234)
+# 2. GitHub Actions updates the ECS task definition with the new SHA image
+# 3. CodeDeploy shifts 100% of ALB traffic from Blue (old) to Green (new)
+# 4. During the 10-minute standby window, auto-rollback triggers if:
+#      - error_rate > 1%
+#      - p95 latency > 3s
+#      - Unified Score drop > 0.10
+# 5. After 10 minutes with no alerts → Blue is terminated
+#
+# REQUIRED AWS RESOURCES (created by ecs_fargate + alb modules):
+# ──────────────────────────────────────────────────────────────
+# - ECS Service: deployment_controller type = "CODE_DEPLOY"
+# - ALB Listener: two target groups (blue + green)
+# - CodeDeploy App + Deployment Group: configured per environment
+#
+# REQUIRED GITHUB SECRETS:
+# ────────────────────────
+# AWS_ACCESS_KEY_ID          — IAM user with ECR push + ECS deploy permissions
+# AWS_SECRET_ACCESS_KEY      — Corresponding secret key
+# AWS_REGION                 — e.g., ap-south-1
+# ECR_API_REPOSITORY_URL     — from ecr module output: api_repository_url
+# ECR_WORKER_REPOSITORY_URL  — from ecr module output: worker_repository_url
+# ECS_CLUSTER_NAME           — from ecs_fargate module output: cluster_name
+# ECS_API_SERVICE_NAME       — from ecs_fargate module output: api_service_name
+#
+# CODEDEPLOY APPSPEC (inline in GitHub Actions step):
+# ───────────────────────────────────────────────────
+# version: 0.0
+# Resources:
+#   - TargetService:
+#       Type: AWS::ECS::Service
+#       Properties:
+#         TaskDefinition: <TASK_DEFINITION>
+#         LoadBalancerInfo:
+#           ContainerName: "api"
+#           ContainerPort: 8000
+#
+# ROLLBACK COMMAND (emergency manual rollback):
+# ─────────────────────────────────────────────
+# aws deploy stop-deployment \
+#   --deployment-id <deployment-id> \
+#   --auto-rollback-enabled \
+#   --region ap-south-1
+#
+# Or via ECS directly (reverts to previous task definition):
+# aws ecs update-service \
+#   --cluster autorag-production-cluster \
+#   --service autorag-production-api \
+#   --task-definition autorag-production-api:<previous-revision> \
+#   --region ap-south-1

@@ -1,0 +1,70 @@
+NEW EMPLOYEE ONBOARDING GUIDE — AUTORAG SOLUTIONS
+Version 2.0 | People Operations | Updated: June 2026
+
+WELCOME
+
+This guide will walk you through everything you need to complete in your first 30 days at AutoRAG Solutions. Your manager and onboarding buddy will support you through this process. Please reach out to people@autorag-solutions.com if you have any questions.
+
+DAY 1 CHECKLIST
+
+Identity and Access
+- Collect your laptop from IT Reception (Level 3, Building B)
+- Complete identity verification with People Operations (valid government ID required)
+- Set up corporate email using the credentials in your onboarding email
+- Enable multi-factor authentication on all corporate accounts within 24 hours
+- Activate your access card with the facilities team
+
+Mandatory Paperwork (must be completed by end of Day 1)
+- Sign and return the employment contract countersignature
+- Submit bank account details for payroll via the HR portal
+- Complete the tax residency declaration form
+- Submit emergency contact information
+
+WEEK 1 ACTIVITIES
+
+Security and Compliance Training (mandatory, must be completed within 5 business days)
+- Data Protection and PDPA/GDPR Essentials (45 minutes, LMS module SC-01)
+- Information Security Awareness (30 minutes, LMS module SC-02)
+- Code of Conduct acknowledgment (sign in HR portal)
+
+System Access Setup
+- Corporate VPN: download GlobalProtect from the IT portal and configure using your corporate credentials
+- Jira and Confluence: access is provisioned automatically; request additional project access through your manager
+- GitHub: request access to the appropriate repositories through your Engineering lead
+- Slack: join your team channels and the #welcome channel
+
+FIRST 30 DAYS EXPECTATIONS
+
+Week 1 — Orientation
+Attend all scheduled orientation sessions. Complete mandatory compliance training. Meet your team members, manager, and onboarding buddy. Review the product documentation in Confluence under "Product Overview".
+
+Week 2 — Domain Learning
+Shadow a senior team member for at least 3 days. Complete your role-specific technical setup as guided by your manager. Attend one sprint planning meeting and one sprint review to understand team workflows.
+
+Week 3 — Contribution Begins
+Take ownership of your first task or ticket as agreed with your manager. Participate actively in daily standups. Complete your 30-day check-in with People Operations.
+
+Week 4 — Independent Work
+Deliver your first independent contribution. Complete your 30-day self-assessment in the performance portal. Schedule your 30-day feedback session with your manager.
+
+IMPORTANT CONTACTS
+
+People Operations: people@autorag-solutions.com | +65 6234 5678
+IT Helpdesk: helpdesk@autorag-solutions.com | Ext. 100
+Legal and Compliance: legal@autorag-solutions.com
+Finance and Payroll: payroll@autorag-solutions.com | Payroll cutoff is 25th of each month
+Facilities: facilities@autorag-solutions.com | Lost access cards: Ext. 200
+
+FREQUENTLY ASKED QUESTIONS
+
+Q: When is my first salary payment?
+A: Salaries are paid on the last business day of each month. If you join after the 20th, your first payment covers your partial month and will appear in the following month's payroll.
+
+Q: How do I book a meeting room?
+A: Meeting rooms are booked through the Workplace app on your laptop. Rooms are named by floor and number (e.g., L3-Orchard). Do not book a room for more than 2 hours if not needed for the full duration.
+
+Q: What is the dress code?
+A: Smart casual is the standard. Formal attire is expected for client meetings. Casual Fridays (jeans, sneakers) are permitted except when clients are on-site.
+
+Q: Can I work remotely on my first week?
+A: No. The first week requires in-office attendance to complete identity verification, equipment setup, and in-person orientation sessions.

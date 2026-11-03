@@ -1,0 +1,147 @@
+# autorag-alerts.yml — AutoRAG Architect Alert Rules
+# Deployed to Prometheus Alertmanager.
+# Critical alerts map to auto-rollback triggers in the Deployer Agent.
+
+groups:
+  - name: autorag.slo
+    rules:
+      - alert: HighP95Latency
+        expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m])) > 3
+        for: 2m
+        labels:
+          severity: critical
+          team: devops
+        annotations:
+          summary: "p95 latency > 3s — rollback trigger"
+          description: "p95 latency is {{ $value }}s. Auto-rollback threshold breached."
+
+      - alert: HighErrorRate
+        expr: rate(http_requests_total{status=~"5.."}[5m]) / rate(http_requests_total[5m]) > 0.01
+        for: 2m
+        labels:
+          severity: critical
+          team: devops
+        annotations:
+          summary: "Error rate > 1% — rollback trigger"
+          description: "Error rate is {{ $value | humanizePercentage }}. Auto-rollback threshold breached."
+
+      - alert: UnifiedScoreDrop
+        # Fixed 24-Jul-2026 (R-051, release audit, Critical): previously
+        # queried autorag_unified_score, a metric that never existed in this
+        # codebase -- this alert could never fire. autorag_org_score_avg is
+        # now genuinely set on every real evaluation run (evaluator.py), and
+        # is labeled by organization_id, so this fires per-org.
+        expr: autorag_org_score_avg < 0.85
+        for: 5m
+        labels:
+          severity: warning
+          team: ml-platform
+        annotations:
+          summary: "Unified Score dropped below SLO target (0.85) for org {{ $labels.organization_id }}"
+          description: "Current score: {{ $value }}. Below deployment gate. Diagnoser + Improver loop may be needed."
+
+      # RedisQueueDepthHigh removed 24-Jul-2026 (R-052/R-050, release audit):
+      # this alert queried redis_list_length{key="autorag:task:queue"}, but no
+      # code in this repository ever writes to that key. Async work (document
+      # ingestion, evaluation runs) is dispatched via FastAPI's in-process
+      # BackgroundTasks (see app/routes/ingest.py, app/routes/evaluate.py) --
+      # there is no Redis-backed task queue in the current architecture.
+      # Redis here is used only for caching/session-style lookups
+      # (embedding_service.py, llm_service.py, jobs.py). Configuring the
+      # exporter to check this key would not have made the alert real -- the
+      # key would simply never exist. If a genuine Redis-backed job queue is
+      # introduced later (see Version 5 roadmap), reintroduce this alert
+      # alongside real producer/consumer instrumentation, not before.
+
+  - name: autorag.cost_latency
+    rules:
+      - alert: AgentCostSpike
+        expr: |
+          sum(increase(autorag_agent_cost_usd_total[24h]))
+          > 2 * avg_over_time(sum(increase(autorag_agent_cost_usd_total[24h]))[7d:1d])
+        for: 10m
+        labels:
+          severity: high
+          team: ml-platform
+        annotations:
+          summary: "Daily LLM cost > 2× 7-day average"
+          description: "Cost spike detected: ${{ $value | humanize }}. Check provider failover and Improver variant generation."
+
+      - alert: AgentLatencyBreach
+        expr: |
+          histogram_quantile(0.95,
+            sum by(le)(rate(autorag_agent_latency_ms_bucket[5m]))) > 3000
+        for: 2m
+        labels:
+          severity: critical
+          team: devops
+        annotations:
+          summary: "Agent p95 latency > 3000ms — rollback trigger"
+          description: "p95 latency is {{ $value }}ms. Exceeds SLO. Auto-rollback may fire."
+
+      - alert: ExpensiveLowQualityPipeline
+        # Fixed 24-Jul-2026 (R-051) -- same metric-name correction as UnifiedScoreDrop above.
+        expr: |
+          (autorag_org_score_avg < 0.85)
+          and on() (autorag_cost_per_query_usd > 0.01)
+        for: 5m
+        labels:
+          severity: high
+          team: ml-platform
+        annotations:
+          summary: "Pipeline is expensive AND low quality"
+          description: "Score: {{ $value }}. Cost per query > $0.01. Diagnoser + Improver loop needed."
+
+      - alert: TokenExplosion
+        expr: |
+          sum(rate(autorag_agent_tokens_total[1h]))
+          > 2 * avg_over_time(sum(rate(autorag_agent_tokens_total[1h]))[7d:1h])
+        for: 15m
+        labels:
+          severity: medium
+          team: ml-platform
+        annotations:
+          summary: "Token consumption > 2× 7-day baseline"
+          description: "Token rate: {{ $value | humanize }}/s. Check chunk size and context window settings."
+
+  - name: autorag.provider_failover
+    rules:
+      - alert: ProviderFailoverHigh
+        expr: sum(rate(autorag_provider_switch_total[1h])) > 5
+        for: 10m
+        labels:
+          severity: warning
+          team: ml-platform
+        annotations:
+          summary: "Provider failover rate > 5/hour"
+          description: "Failover rate: {{ $value | humanize }}/hr. Primary provider may be degraded."
+
+      - alert: ProviderFailureSpike
+        expr: sum(rate(autorag_provider_failures_total[1h])) > 2
+        for: 5m
+        labels:
+          severity: high
+          team: ml-platform
+        annotations:
+          summary: "Provider failures > 2/hour"
+          description: "Failure rate: {{ $value | humanize }}/hr. Check API key validity and provider status."
+
+      - alert: ProviderRateLimitHit
+        expr: sum(rate(autorag_provider_rate_limit_total[5m])) > 0
+        for: 1m
+        labels:
+          severity: warning
+          team: ml-platform
+        annotations:
+          summary: "Provider rate limit triggered"
+          description: "Rate limit hit. Failover chain may exhaust under sustained load."
+
+      - alert: ProviderTimeoutSpike
+        expr: sum(rate(autorag_provider_timeout_total[1h])) > 1
+        for: 5m
+        labels:
+          severity: high
+          team: ml-platform
+        annotations:
+          summary: "Provider timeout rate > 1/hour"
+          description: "Timeout rate: {{ $value | humanize }}/hr. Check provider latency and timeout settings."

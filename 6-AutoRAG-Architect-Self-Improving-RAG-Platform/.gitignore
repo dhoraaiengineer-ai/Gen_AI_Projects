@@ -1,0 +1,303 @@
+﻿# 🛡️═══════════════════════════════════════════════════════════════════════
+#                     AutoRAG Architect — Root .gitignore
+# ════════════════════════════════════════════════════════════════════════
+#
+# Version: v3.1
+#
+# PURPOSE
+# -----------------------------------------------------------------------------
+# This file defines repository-wide ignore rules for:
+# - secrets
+# - local runtime artifacts
+# - generated files
+# - build outputs
+# - infrastructure state
+# - temporary development files
+#
+# IMPORTANT TEAM RULES
+# -----------------------------------------------------------------------------
+#
+# ✅ SAFE TO COMMIT
+# -----------------------------------------------------------------------------
+# - *.example templates
+# - documentation
+# - source code
+# - infrastructure definitions
+#
+# ❌ NEVER COMMIT
+# -----------------------------------------------------------------------------
+# - real .env files
+# - production credentials
+# - cloud secrets
+# - Terraform state
+# - local runtime data
+# - generated build artifacts
+#
+# If secrets are accidentally committed:
+# 1. Rotate secrets immediately
+# 2. Remove from Git history
+# 3. Notify project leads
+#
+# 🛡️═══════════════════════════════════════════════════════════════════════
+
+
+# ════════════════════════════════════════════════════════════════════════
+# ENVIRONMENT FILES & SECRETS
+# ════════════════════════════════════════════════════════════════════════
+#
+# REAL runtime environment files
+# NEVER commit these.
+#
+# ⚠️ UPDATED 17-Jul-2026: root .env.example reintroduced (placeholder values
+# only, safe to commit — see the file itself). Team leads still distribute
+# real, pre-filled .env files directly for actual local dev; the template
+# exists as the authoritative field-name reference so a fresh template never
+# silently drifts from what app/core/config.py actually reads (the real .env
+# had accumulated several dead/unused variable names before this).
+#
+# NEVER commit:
+#   ❌ .env
+#   ❌ .env.dev
+#   ❌ .env.staging
+#   ❌ .env.prod
+#
+# ════════════════════════════════════════════════════════════════════════
+
+.env
+.env.*
+!.env.example
+!.env.dev.example
+!.env.staging.example
+!.env.prod.example
+
+# Additional framework-specific env files
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Secrets / certificates / private keys
+*.pem
+*.key
+*.crt
+*.p12
+
+
+# ════════════════════════════════════════════════════════════════════════
+# PYTHON
+# ════════════════════════════════════════════════════════════════════════
+
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Python tooling caches
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.pyre/
+.hypothesis/
+
+# Virtual environments
+venv/
+.venv/
+env/
+
+# Build artifacts
+build/
+dist/
+*.egg-info/
+
+# Coverage reports
+.coverage
+htmlcov/
+
+# Notebook checkpoints
+.ipynb_checkpoints/
+
+# Python version manager
+.python-version
+
+
+# ════════════════════════════════════════════════════════════════════════
+# NODE.JS / NEXT.JS
+# ════════════════════════════════════════════════════════════════════════
+
+node_modules/
+
+# Next.js build output
+.next/
+out/
+
+# Package manager caches
+.npm
+.pnpm-store/
+
+# Package manager logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Turborepo / Turbopack
+.turbo/
+
+# Next.js generated types
+next-env.d.ts
+
+
+# ════════════════════════════════════════════════════════════════════════
+# DOCKER & CONTAINERS
+# ════════════════════════════════════════════════════════════════════════
+#
+# Local Docker runtime artifacts
+#
+# ════════════════════════════════════════════════════════════════════════
+
+docker-data/
+*.tar
+
+
+# ════════════════════════════════════════════════════════════════════════
+# LANGGRAPH / AI RUNTIME ARTIFACTS
+# ════════════════════════════════════════════════════════════════════════
+#
+# Local orchestration runtime state
+# Never commit generated execution state
+#
+# ════════════════════════════════════════════════════════════════════════
+
+checkpoints/
+runtime-state/
+execution-logs/
+graph-cache/
+
+
+# ════════════════════════════════════════════════════════════════════════
+# OBSERVABILITY & MONITORING
+# ════════════════════════════════════════════════════════════════════════
+#
+# These may contain:
+# - internal IPs
+# - credentials
+# - deployment topology
+#
+# Template/example configs ARE committed.
+#
+# ════════════════════════════════════════════════════════════════════════
+
+observability/prometheus/prometheus.yml
+observability/grafana/grafana.ini
+
+
+# ════════════════════════════════════════════════════════════════════════
+# IDE / EDITORS
+# ════════════════════════════════════════════════════════════════════════
+
+.vscode/
+.idea/
+
+
+# ════════════════════════════════════════════════════════════════════════
+# OPERATING SYSTEM FILES
+# ════════════════════════════════════════════════════════════════════════
+
+.DS_Store
+Thumbs.db
+
+
+# ════════════════════════════════════════════════════════════════════════
+# LOGS & TEMPORARY FILES
+# ════════════════════════════════════════════════════════════════════════
+
+logs/
+*.log
+
+.temp/
+tmp/
+temp/
+
+scratch/
+
+# testing/ removed 26-Jul-2026 — its contents (corpus, results, fixture PDFs) were
+# consolidated into evaluation/ (tracked) at the user's explicit request. See
+# .claude/MEMORY.md L-017/L-018 for the tracked-vs-gitignored history.
+
+# Local media/debug storage
+mediaStorage/
+
+# Local reference docs (not committed)
+mydocs/
+
+# Claude Code auto-memory — never committed (MEMORY.md security rule). This
+# targets Claude Code's global cross-session memory, which lives entirely
+# outside this repo (in the user's home directory) and was never at risk of
+# being committed anyway. The bare pattern below was found (25-Jul-2026)
+# to also silently catch this project's own tracked .claude/memory/
+# institutional-memory folder -- e.g. .claude/memory/session_02jul_2026_merges.md
+# existed on disk, was referenced by .claude/MEMORY.md, but had never
+# actually been committed because of this rule. Excluded below.
+memory/
+!.claude/memory/
+
+
+# ════════════════════════════════════════════════════════════════════════
+# TERRAFORM / INFRASTRUCTURE
+# ════════════════════════════════════════════════════════════════════════
+#
+# Terraform state contains:
+# - cloud resource IDs
+# - infrastructure topology
+# - secrets
+#
+# NEVER commit Terraform state.
+#
+# ════════════════════════════════════════════════════════════════════════
+
+*.tfstate
+*.tfstate.*
+.terraform/
+
+terraform.tfvars
+terraform.tfvars.json
+
+crash.log
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+
+# ════════════════════════════════════════════════════════════════════════
+# TESTING ARTIFACTS
+# ════════════════════════════════════════════════════════════════════════
+
+playwright-report/
+test-results/
+coverage/
+
+
+# ════════════════════════════════════════════════════════════════════════
+# MISCELLANEOUS
+# ════════════════════════════════════════════════════════════════════════
+
+*.bak
+*.swp
+*.tmp
+*.orig
+jay_project_observations
+
+# Personal maintenance scripts + generated reports
+scripts/post_pr_update.py
+scripts/LINK_REPORT.txt
+scripts/audit_history/
+
+# Version 5 planning documents (private roadmap — not committed to repo;
+# renamed 20-Jul-2026, was "V4" until Version 4.0 shipped for real)
+.claude/V4-PLAN.md
+.claude/docs/roadmap/VERSION_5_ROADMAP.md
+.claude/docs/guardrails-v4-roadmap.md
+.claude/docs/observability-v4-roadmap.md
+
+# Internal project guides (private — not committed to repo)
+project-guides/

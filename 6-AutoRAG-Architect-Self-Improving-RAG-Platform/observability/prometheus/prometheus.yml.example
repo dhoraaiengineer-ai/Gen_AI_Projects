@@ -1,0 +1,91 @@
+# prometheus.yml.example — AutoRAG Architect (ECS Production Template)
+# Copy to prometheus.yml and fill in ECS service discovery endpoints.
+# DO NOT commit prometheus.yml (contains internal endpoints / service IPs).
+#
+# Rule 86 metrics scraped from autorag-api job:
+#   autorag_agent_cost_usd_total{agent_name, provider}
+#   autorag_agent_latency_ms{agent_name} (histogram)
+#   autorag_agent_tokens_total{agent_name, provider, token_type}
+#   autorag_cache_hits_total{agent_name}
+#   autorag_cache_misses_total{agent_name}
+#   autorag_cache_latency_ms{agent_name} (histogram)
+#   autorag_provider_failures_total{provider}
+#   autorag_provider_switch_total{from_provider, to_provider}
+#   autorag_provider_rate_limit_total{provider}
+#   autorag_provider_timeout_total{provider}
+
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  # Labels applied to all scraped metrics in this instance
+  external_labels:
+    environment: "production"           # override per environment
+    region: "ap-south-1"               # update to your AWS region
+
+# Alert rules location
+rule_files:
+  - "/etc/prometheus/autorag-alerts.yml"   # container absolute path (matches prometheus.local.yml)
+
+# Alertmanager configuration (optional — replace with your endpoint)
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets: ["<ALERTMANAGER_HOST>:9093"]  # optional, fill if deployed
+
+scrape_configs:
+  # ─────────────────────────────────────────────────────────────────────────────
+  # FastAPI — primary API server + Rule 86 agent metrics
+  # Exposes: request latency, error rate, all 10 autorag_agent_* / autorag_cache_*
+  #          / autorag_provider_* metrics from app/metrics.py
+  # ─────────────────────────────────────────────────────────────────────────────
+  - job_name: "autorag-api"
+    scrape_interval: 15s
+    static_configs:
+      - targets:
+          - "<ECS_FASTAPI_PRIVATE_IP>:8000"  # fill from Terraform output: ecs_fastapi_ip
+    metrics_path: "/metrics"
+    # ECS task labels for Grafana filtering
+    relabel_configs:
+      - target_label: service
+        replacement: "autorag-api"
+      - target_label: environment
+        replacement: "production"              # set per environment: dev | staging | production
+        # Note: use --config.expand-environment-variables flag to inject at runtime
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # LangGraph Workers — background agent execution tasks
+  # Exposes: agent node timing, retry counts, queue wait time
+  # ─────────────────────────────────────────────────────────────────────────────
+  - job_name: "autorag-langgraph-workers"
+    scrape_interval: 15s
+    static_configs:
+      - targets:
+          - "<ECS_WORKER_PRIVATE_IP>:8001"   # fill from Terraform output: ecs_worker_ip; workers expose metrics on 8001 (9090 is Prometheus itself)
+    metrics_path: "/metrics"
+    relabel_configs:
+      - target_label: service
+        replacement: "autorag-workers"
+      - target_label: environment
+        replacement: "production"              # set per environment: dev | staging | production
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Redis Exporter — queue depth + cache hit/miss tracking
+  # Deploy redis_exporter as ECS sidecar (port 9121)
+  # ─────────────────────────────────────────────────────────────────────────────
+  - job_name: "redis"
+    scrape_interval: 30s
+    static_configs:
+      - targets:
+          - "<REDIS_EXPORTER_HOST>:9121"     # redis_exporter sidecar address
+    relabel_configs:
+      - target_label: service
+        replacement: "redis"
+      - target_label: environment
+        replacement: "production"              # set per environment: dev | staging | production
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Prometheus self-monitoring
+  # ─────────────────────────────────────────────────────────────────────────────
+  - job_name: "prometheus"
+    static_configs:
+      - targets: ["localhost:9090"]

@@ -1,0 +1,1971 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>AutoRAG Architect — AI Command Center v2</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet"/>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #f5f7fa;
+  --card: #ffffff;
+  --card2: #f8fafc;
+  --border: #e2e8f0;
+  --border2: #cbd5e1;
+  --text: #1e293b;
+  --text2: #475569;
+  --text3: #94a3b8;
+  --blue: #2563eb;
+  --blue-dark: #1d4ed8;
+  --blue-light: #dbeafe;
+  --blue-xlight: #eff6ff;
+  --green: #16a34a;
+  --green-light: #dcfce7;
+  --amber: #d97706;
+  --amber-light: #fef3c7;
+  --red: #dc2626;
+  --red-light: #fee2e2;
+  --purple: #7c3aed;
+  --purple-light: #ede9fe;
+  --slate: #64748b;
+}
+
+body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); font-size: 14px; line-height: 1.6; }
+
+/* ── HEADER ─────────────────────────────── */
+.header {
+  background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
+  padding: 0;
+  position: sticky; top: 0; z-index: 100;
+  box-shadow: 0 1px 6px rgba(0,0,0,0.3);
+}
+.header-inner {
+  max-width: 1400px; margin: 0 auto; padding: 14px 40px 12px;
+  display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;
+}
+.header-brand { display: flex; align-items: center; gap: 10px; }
+.header-icon {
+  width: 34px; height: 34px; border-radius: 8px;
+  background: linear-gradient(135deg, #2563eb, #7c3aed);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 15px; flex-shrink: 0;
+}
+.header-brand h1 { font-size: 19px; font-weight: 800; color: #fff; letter-spacing: -0.5px; }
+.header-brand p { font-size: 11px; color: #bfdbfe; margin-top: 1px; }
+.header-meta { text-align: right; }
+.header-meta .meta-row { font-size: 11px; color: #bfdbfe; }
+.header-meta .meta-row strong { color: #fff; }
+.header-nav {
+  max-width: 1400px; margin: 0 auto; padding: 0 40px;
+  display: flex; gap: 0; border-top: 1px solid rgba(255,255,255,0.12);
+}
+.header-nav a {
+  color: #bfdbfe; text-decoration: none; font-size: 13px; font-weight: 500;
+  padding: 5px 16px; transition: all 0.2s; border-bottom: 2px solid transparent;
+}
+.header-nav a:hover { color: #fff; border-bottom-color: #818cf8; }
+.nav-active { color: #fff !important; border-bottom-color: #818cf8 !important; }
+
+/* ── LAYOUT ────────────────────────────── */
+.main { max-width: 1400px; margin: 0 auto; padding: 28px 40px 60px; }
+
+/* ── SECTION TITLES ─────────────────────── */
+.section-title {
+  font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px;
+  color: #1e293b; margin-bottom: 14px; display: flex; align-items: center; gap: 8px;
+}
+.section-title::after { content: ''; flex: 1; height: 1px; background: #cbd5e1; }
+
+/* ── CARD ───────────────────────────────── */
+.card {
+  background: var(--card); border: 1px solid var(--border); border-radius: 12px;
+  padding: 20px 24px; box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+}
+.card-title { font-size: 14px; font-weight: 700; color: var(--text); margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+
+/* ── HERO KPIS ─────────────────────────── */
+.kpi-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 14px; margin-bottom: 24px; }
+.kpi-card {
+  background: var(--card); border: 1px solid var(--border); border-radius: 12px;
+  padding: 18px 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  border-top: 4px solid var(--border);
+  transition: transform 0.15s, box-shadow 0.15s;
+  position: relative; overflow: hidden;
+}
+.kpi-card::before {
+  content: ''; position: absolute; inset: 0; border-radius: 11px;
+  background: linear-gradient(135deg, rgba(255,255,255,0.07) 0%, rgba(255,255,255,0) 60%);
+  pointer-events: none;
+}
+.kpi-card:hover { transform: translateY(-3px); box-shadow: 0 8px 24px rgba(0,0,0,0.28); }
+.kpi-card.blue   { border-top-color: var(--blue);   background: linear-gradient(135deg, #1e3a5f, #0f2744); border-color: #2563eb40; }
+.kpi-card.green  { border-top-color: var(--green);  background: linear-gradient(135deg, #14532d, #0a3320); border-color: #16a34a40; }
+.kpi-card.amber  { border-top-color: var(--amber);  background: linear-gradient(135deg, #451a03, #2d1002); border-color: #d9770640; }
+.kpi-card.red    { border-top-color: var(--red);    background: linear-gradient(135deg, #450a0a, #2d0505); border-color: #dc262640; }
+.kpi-card.purple { border-top-color: var(--purple); background: linear-gradient(135deg, #2e1065, #1a0840); border-color: #7c3aed40; }
+.kpi-card.slate  { border-top-color: var(--slate);  background: linear-gradient(135deg, #1e293b, #0f1827); border-color: #33415540; }
+.kpi-icon { font-size: 18px; margin-bottom: 6px; display: block; opacity: 0.80; }
+@keyframes phase-d-glow {
+  0%,100% { box-shadow: 0 0 12px 4px rgba(16,185,129,0.55), 0 0 4px 1px rgba(52,211,153,0.4); border-top-color: #10b981; }
+  50%     { box-shadow: 0 0 24px 9px rgba(16,185,129,0.85), 0 0 8px 3px rgba(52,211,153,0.65); border-top-color: #34d399; }
+}
+.kpi-card.phase-active { animation: phase-d-glow 2.4s ease-in-out infinite; border-top-color: #10b981 !important; }
+@keyframes blocker-glow {
+  0%,100% { box-shadow: 0 0 10px 3px rgba(220,38,38,0.50), 0 0 4px 1px rgba(248,113,113,0.35); border-top-color: #dc2626; }
+  50%     { box-shadow: 0 0 22px 8px rgba(220,38,38,0.80), 0 0 8px 3px rgba(248,113,113,0.60); border-top-color: #f87171; }
+}
+.kpi-card.blocker-active { animation: blocker-glow 2.0s ease-in-out infinite; border-top-color: #dc2626 !important; }
+@keyframes sprint-phase-glow {
+  0%,100% { box-shadow: inset 0 0 10px 3px rgba(217,119,6,0.40), 0 0 8px 2px rgba(217,119,6,0.30); }
+  50%     { box-shadow: inset 0 0 20px 7px rgba(217,119,6,0.70), 0 0 16px 5px rgba(217,119,6,0.55); }
+}
+.sprint-phase-active { animation: sprint-phase-glow 2.2s ease-in-out infinite; }
+@keyframes critical-row-glow {
+  0%,100% { box-shadow: 0 0 8px 2px rgba(220,38,38,0.45), inset 0 0 6px 1px rgba(220,38,38,0.15); }
+  50%     { box-shadow: 0 0 20px 7px rgba(220,38,38,0.78), inset 0 0 10px 3px rgba(220,38,38,0.28); }
+}
+.risk-row-critical { animation: critical-row-glow 1.8s ease-in-out infinite; }
+@keyframes phase-header-glow {
+  0%,100% { box-shadow: 0 0 8px 2px rgba(16,185,129,0.38); }
+  50%     { box-shadow: 0 0 20px 7px rgba(16,185,129,0.70); }
+}
+.phase-header-active { animation: phase-header-glow 2.6s ease-in-out infinite; }
+@keyframes df-sprint-glow {
+  0%,100% { box-shadow: -4px 0 12px 2px rgba(37,99,235,0.40), 0 0 8px 1px rgba(37,99,235,0.22); border-left-color: #2563eb; }
+  50%     { box-shadow: -4px 0 24px 7px rgba(37,99,235,0.72), 0 0 18px 4px rgba(37,99,235,0.48); border-left-color: #60a5fa; }
+}
+.df-section-active { animation: df-sprint-glow 2.2s ease-in-out infinite; }
+@keyframes df-box-critical {
+  0%,100% { box-shadow: 0 0 6px 2px rgba(220,38,38,0.50); }
+  50%     { box-shadow: 0 0 16px 6px rgba(220,38,38,0.82); }
+}
+.df-box-critical { animation: df-box-critical 1.8s ease-in-out infinite; }
+@keyframes section-title-glow {
+  0%,100% { text-shadow: 0 0 8px rgba(16,185,129,0.50); color: #059669; }
+  50%     { text-shadow: 0 0 18px rgba(16,185,129,0.85); color: #10b981; }
+}
+.section-title-active { animation: section-title-glow 2.6s ease-in-out infinite; }
+@keyframes phase-section-glow {
+  0%,100% { box-shadow: 0 0 10px 2px rgba(16,185,129,0.30), 0 1px 3px rgba(0,0,0,0.04); border-color: #10b98140; }
+  50%     { box-shadow: 0 0 22px 7px rgba(16,185,129,0.58), 0 1px 3px rgba(0,0,0,0.04); border-color: #10b98180; }
+}
+.phase-section-active { animation: phase-section-glow 2.6s ease-in-out infinite; }
+.kpi-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #e2e8f0; margin-bottom: 8px; }
+.kpi-value { font-size: 32px; font-weight: 800; line-height: 1; letter-spacing: -1px; }
+.kpi-value.blue { color: #93c5fd; }
+.kpi-value.green { color: #86efac; }
+.kpi-value.amber { color: #fcd34d; }
+.kpi-value.red { color: #fca5a5; }
+.kpi-value.purple { color: #c4b5fd; }
+.kpi-value.slate { color: #f1f5f9; }
+.kpi-sub { font-size: 11px; color: #cbd5e1; margin-top: 4px; font-weight: 500; }
+
+/* ── PHASE TIMELINE ─────────────────────── */
+.phase-timeline { display: flex; flex-direction: column; gap: 10px; }
+.pt-row { display: grid; grid-template-columns: 80px 1fr 52px 70px; align-items: center; gap: 12px; }
+.pt-label { font-size: 12px; font-weight: 600; color: var(--text); }
+.pt-track { height: 10px; background: #e2e8f0; border-radius: 5px; overflow: hidden; }
+.pt-fill { height: 100%; border-radius: 5px; width: 0; transition: width 1.3s cubic-bezier(0.4,0,0.2,1); }
+.pt-fill-done { background: linear-gradient(90deg, #16a34a, #4ade80); }
+.pt-fill-progress { background: linear-gradient(90deg, #2563eb, #60a5fa); }
+.pt-fill-idle { background: #e2e8f0; }
+.pt-pct { font-size: 12px; font-weight: 700; text-align: right; }
+.pt-pct.done { color: var(--green); }
+.pt-pct.progress { color: var(--blue); }
+.pt-pct.idle { color: #475569; }
+.pt-badge { font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 10px; text-align: center; }
+.pt-badge.done { background: var(--green-light); color: #15803d; }
+.pt-badge.progress { background: var(--blue-light); color: #1d4ed8; }
+.pt-badge.queued { background: #e2e8f0; color: #334155; }
+.pt-badge.notstarted { background: #e2e8f0; color: #475569; }
+
+/* ── TEAM READINESS ─────────────────────── */
+.team-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(270px, 1fr)); gap: 10px; }
+.team-card {
+  background: var(--card2); border: 1px solid var(--border); border-radius: 10px;
+  padding: 12px 14px; display: flex; align-items: center; gap: 12px;
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+.team-card:hover { transform: translateY(-2px); box-shadow: 0 4px 14px rgba(0,0,0,0.11); }
+.team-card > div:last-child { flex-shrink: 0; min-width: 96px; text-align: right; }
+.team-dot { width: 15px; height: 15px; border-radius: 50%; flex-shrink: 0; }
+.dot-green { background: var(--green); box-shadow: 0 0 0 3px rgba(22,163,74,0.15); }
+.dot-amber { background: var(--amber); box-shadow: 0 0 0 3px rgba(217,119,6,0.15); }
+.dot-red { background: var(--red); box-shadow: 0 0 0 3px rgba(220,38,38,0.15); animation: pulse-dot 1.5s infinite; }
+.dot-blue { background: var(--blue); box-shadow: 0 0 0 3px rgba(37,99,235,0.15); }
+@keyframes pulse-dot { 0%,100%{box-shadow:0 0 0 3px rgba(220,38,38,0.15)} 50%{box-shadow:0 0 0 6px rgba(220,38,38,0.08)} }
+.team-info { flex: 1; min-width: 0; }
+.team-info .t-name { font-size: 13px; font-weight: 700; color: var(--text); }
+.team-info .t-lead { font-size: 11px; color: #334155; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.team-status-tag { font-size: 10px; font-weight: 600; padding: 2px 7px; border-radius: 8px; white-space: nowrap; }
+.tag-ready { background: var(--green-light); color: #15803d; }
+.tag-pending { background: var(--amber-light); color: #92400e; }
+.tag-blocked { background: var(--red-light); color: #991b1b; }
+.tag-waiting { background: #f1f5f9; color: var(--slate); }
+
+/* ── SPRINT BOARD ───────────────────────── */
+.sprint-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 12px; }
+.sprint-card { border-radius: 10px; padding: 16px; border: 1px solid; }
+.sprint-0 { background: #fff5f5; border-color: #fecaca; }
+.sprint-1 { background: var(--blue-xlight); border-color: #bfdbfe; }
+.sprint-1-5 { background: #f0fdf4; border-color: #bbf7d0; }
+.sprint-2 { background: var(--purple-light); border-color: #c4b5fd; }
+.sprint-4 { background: #fdf4ff; border-color: #e9d5ff; }
+.sprint-5 { background: #fff7ed; border-color: #fed7aa; }
+.sprint-header { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
+.sprint-0 .sprint-header { color: #b91c1c; }
+.sprint-1 .sprint-header { color: #1d4ed8; }
+.sprint-1-5 .sprint-header { color: #15803d; }
+.sprint-2 .sprint-header { color: #5b21b6; }
+.sprint-4 .sprint-header { color: #6b21a8; }
+.sprint-5 .sprint-header { color: #92400e; }
+.sprint-desc { font-size: 11px; color: #334155; font-weight: 500; margin-bottom: 10px; }
+.sprint-tasks { display: flex; flex-direction: column; gap: 5px; }
+.sprint-task { display: flex; align-items: center; gap: 7px; font-size: 12px; color: #1e293b; font-weight: 500; }
+.sprint-task-id { font-family: 'JetBrains Mono', monospace; font-size: 10px; font-weight: 600; padding: 1px 5px; border-radius: 3px; flex-shrink: 0; }
+.s0-id { background: #fee2e2; color: #dc2626; }
+.s1-id { background: #dbeafe; color: #1d4ed8; }
+.s15-id { background: #dcfce7; color: #15803d; }
+.s2-id { background: #ede9fe; color: #6d28d9; }
+.s4-id { background: #f3e8ff; color: #6d28d9; }
+.s5-id { background: #ffedd5; color: #c2410c; }
+
+/* ── RISK PANEL ─────────────────────────── */
+.risk-grid { display: flex; flex-direction: column; gap: 8px; }
+.risk-row {
+  display: flex; align-items: center; gap: 12px; padding: 10px 14px;
+  background: var(--card2); border: 1px solid var(--border); border-radius: 8px;
+  border-left: 4px solid;
+}
+.risk-row.crit { border-left-color: var(--red); }
+.risk-row.warn { border-left-color: var(--amber); }
+.risk-row.info { border-left-color: var(--blue); }
+.risk-icon { font-size: 16px; flex-shrink: 0; }
+.risk-id { font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 700; width: 60px; flex-shrink: 0; }
+.risk-id.crit { color: var(--red); }
+.risk-id.warn { color: var(--amber); }
+.risk-id.info { color: var(--blue); }
+.risk-name { flex: 1; font-size: 13px; color: var(--text); }
+.risk-impact { font-size: 11px; color: #334155; font-weight: 500; }
+.risk-impact span { color: var(--amber); font-weight: 700; }
+.risk-badge { font-size: 10px; font-weight: 700; padding: 3px 9px; border-radius: 10px; white-space: nowrap; }
+.badge-critical { background: var(--red-light); color: var(--red); }
+.badge-high { background: var(--amber-light); color: var(--amber); }
+.badge-medium { background: var(--blue-light); color: var(--blue); }
+
+/* ── GATE CHECKLIST ─────────────────────── */
+.gate-list { display: flex; flex-direction: column; gap: 8px; }
+.gate-item {
+  display: flex; align-items: center; gap: 12px; padding: 10px 14px;
+  background: var(--card2); border: 1px solid var(--border); border-radius: 8px;
+  font-size: 13px;
+}
+.gate-icon { font-size: 16px; flex-shrink: 0; }
+.gate-text { flex: 1; color: #1e293b; font-weight: 500; }
+.gate-status { font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 8px; white-space: nowrap; }
+
+/* ── DEPENDENCY TREE ────────────────────── */
+.dep-tree {
+  font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #1e293b;
+  background: var(--card2); border: 1px solid var(--border); border-radius: 8px;
+  padding: 20px 24px; line-height: 2; font-weight: 500;
+}
+.dep-node { display: inline-block; padding: 1px 8px; border-radius: 4px; font-weight: 600; font-size: 11px; }
+.dn-red { background: var(--red-light); color: var(--red); }
+.dn-amber { background: var(--amber-light); color: var(--amber); }
+.dn-blue { background: var(--blue-light); color: var(--blue); }
+.dn-green { background: var(--green-light); color: var(--green); }
+.dn-gray { background: #f1f5f9; color: var(--slate); }
+
+/* ── STATUS BADGES ──────────────────────── */
+.badge { display: inline-flex; align-items: center; gap: 5px; padding: 2px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; white-space: nowrap; }
+.badge::before { content: ''; width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+.badge-done { background: var(--green-light); color: #15803d; border: 1px solid #bbf7d0; }
+.badge-done::before { background: var(--green); }
+.badge-progress { background: var(--blue-light); color: #1d4ed8; border: 1px solid #bfdbfe; animation: pulse-blue 2s infinite; }
+.badge-progress::before { background: var(--blue); }
+.badge-pending { background: #f1f5f9; color: var(--slate); border: 1px solid #e2e8f0; }
+.badge-pending::before { background: var(--slate); }
+.badge-blocked { background: var(--red-light); color: var(--red); border: 1px solid #fecaca; animation: pulse-red 2s infinite; }
+.badge-blocked::before { background: var(--red); }
+.badge-atrisk { background: var(--amber-light); color: var(--amber); border: 1px solid #fde68a; }
+.badge-atrisk::before { background: var(--amber); }
+.badge-notstarted { background: #e2e8f0; color: #475569; border: 1px solid #cbd5e1; }
+.badge-notstarted::before { background: #475569; }
+@keyframes pulse-blue { 0%,100%{opacity:1} 50%{opacity:0.7} }
+@keyframes pulse-red { 0%,100%{opacity:1} 50%{opacity:0.6} }
+
+/* ── PHASE ACCORDION ────────────────────── */
+.phase-section { background: var(--card); border: 1px solid var(--border); border-radius: 12px; margin-bottom: 12px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+.phase-header { display: flex; align-items: center; gap: 14px; padding: 16px 20px; cursor: pointer; user-select: none; transition: background 0.2s; }
+.phase-header:has(.pill-green)  { background: linear-gradient(90deg, #f0fdf4 0%, #ffffff 55%); }
+.phase-header:has(.pill-blue)   { background: linear-gradient(90deg, #eff6ff 0%, #ffffff 55%); }
+.phase-header:has(.pill-amber)  { background: linear-gradient(90deg, #fffbeb 0%, #ffffff 55%); }
+.phase-header:has(.pill-gray)   { background: linear-gradient(90deg, #f1f5f9 0%, #ffffff 55%); }
+.phase-header:hover { background: #f0f4f8; }
+.phase-pill { width: 38px; height: 38px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 14px; flex-shrink: 0; }
+.pill-green { background: var(--green-light); color: #15803d; border: 1px solid #bbf7d0; }
+.pill-blue { background: var(--blue-light); color: #1d4ed8; border: 1px solid #bfdbfe; }
+.pill-amber { background: var(--amber-light); color: #92400e; border: 1px solid #fde68a; }
+.pill-gray { background: #f1f5f9; color: var(--slate); border: 1px solid #e2e8f0; }
+.phase-title h3 { font-size: 14px; font-weight: 700; color: #1e293b; }
+.phase-title p { font-size: 11px; color: #475569; margin-top: 1px; font-weight: 500; }
+.phase-meta { display: flex; align-items: center; gap: 10px; margin-left: auto; }
+.phase-toggle { color: #475569; transition: transform 0.3s; font-size: 14px; }
+.phase-section.open .phase-toggle { transform: rotate(180deg); }
+.phase-body { display: none; border-top: 1px solid var(--border); }
+.phase-section.open .phase-body { display: block; }
+.phase-note { padding: 10px 20px; background: #f8fafc; border-bottom: 1px solid var(--border); font-size: 12px; color: #334155; font-weight: 500; }
+.phase-note strong { color: var(--amber); }
+
+/* ── TASK TABLE ─────────────────────────── */
+.task-table { width: 100%; border-collapse: collapse; }
+.task-table th { background: #f1f5f9; color: #334155; font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; padding: 10px 16px; text-align: left; border-bottom: 1px solid var(--border); font-weight: 700; }
+.task-table td { padding: 11px 16px; border-bottom: 1px solid var(--border); vertical-align: middle; transition: background 0.12s; }
+.task-table tr:last-child td { border-bottom: none; }
+.task-table tbody tr:nth-child(even) td { background: #f8fafc; }
+.task-table tbody tr:hover td { background: #eff6ff !important; border-left: 2px solid #93c5fd; }
+.tr-blocked:hover td { background: #fee2e2 !important; border-left: 2px solid #fca5a5; }
+.tr-atrisk:hover  td { background: #fef9c3 !important; border-left: 2px solid #fcd34d; }
+.t-id { font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 700; color: var(--blue); white-space: nowrap; }
+.t-name { font-size: 13px; font-weight: 500; color: var(--text); }
+.t-branch { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #166534; font-weight: 600; }
+.t-lead { font-size: 12px; color: #1e293b; font-weight: 500; }
+.t-team { font-size: 11px; color: #334155; font-weight: 500; }
+.deps { display: flex; flex-wrap: wrap; gap: 3px; margin-top: 3px; }
+.dep-tag { font-family: 'JetBrains Mono', monospace; font-size: 9px; padding: 1px 5px; border-radius: 3px; background: var(--blue-light); color: #1d4ed8; border: 1px solid #bfdbfe; }
+.dep-label { font-size: 10px; color: #475569; font-weight: 500; }
+.tr-blocked { background: #fff5f5 !important; }
+.tr-atrisk { background: #fffbeb !important; }
+
+/* ── SUMMARY TABLE ──────────────────────── */
+.sum-table { width: 100%; border-collapse: collapse; }
+.sum-table th { background: #f1f5f9; color: #334155; font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; padding: 8px 14px; text-align: left; border-bottom: 1px solid var(--border); font-weight: 700; }
+.sum-table td { padding: 10px 14px; border-bottom: 1px solid var(--border); font-size: 13px; }
+.sum-table tr:last-child td { font-weight: 700; background: #f8fafc; border-bottom: none; }
+.mini-track { height: 6px; background: #e2e8f0; border-radius: 3px; overflow: hidden; min-width: 100px; }
+.mini-fill { height: 100%; border-radius: 3px; width: 0; transition: width 1.5s cubic-bezier(0.4,0,0.2,1); }
+.mini-done { background: linear-gradient(90deg, #16a34a, #4ade80); }
+.mini-progress { background: linear-gradient(90deg, #2563eb, #60a5fa); }
+.mini-idle { background: #e2e8f0; }
+
+/* ── LEGEND ─────────────────────────────── */
+.legend { display: flex; gap: 10px; flex-wrap: wrap; padding: 10px 40px; background: #fff; border-bottom: 1px solid var(--border); max-width: 1400px; margin: 0 auto; }
+.legend-label { font-size: 11px; color: #334155; align-self: center; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; margin-right: 4px; }
+
+/* ── FOOTER ─────────────────────────────── */
+.footer { text-align: center; padding: 24px 40px; font-size: 12px; color: #475569; border-top: 1px solid var(--border); background: var(--card); margin-top: 40px; font-weight: 500; }
+.footer strong { color: var(--blue); }
+
+/* ── FLOATING BUTTONS ───────────────────── */
+.fab-group { position: fixed; bottom: 28px; right: 28px; display: flex; flex-direction: column; gap: 10px; z-index: 999; }
+.fab {
+  width: 44px; height: 44px; border-radius: 50%; border: none; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px; font-weight: 700; box-shadow: 0 4px 14px rgba(0,0,0,0.15);
+  transition: all 0.2s; opacity: 0; pointer-events: none;
+}
+.fab.visible { opacity: 1; pointer-events: auto; }
+.fab:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,0.2); }
+.fab-top    { background: var(--blue);   color: #fff; }
+.fab-bottom { background: var(--purple); color: #fff; }
+.fab-back { background: var(--card); color: var(--blue); border: 1.5px solid var(--border); font-size: 14px; }
+
+/* ── TWO-COL GRID ───────────────────────── */
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px; }
+@media(max-width:900px){ .two-col{ grid-template-columns:1fr; } }
+
+/* ── SCROLL OFFSET (sticky header compensation) ── */
+#overview, #teams, #sprints, #risks, #tasks {
+  scroll-margin-top: 110px;
+}
+
+/* ── TASK REF FILES ─────────────────────── */
+.ref-btn {
+  margin-left: 7px; vertical-align: middle;
+  background: none; border: 1px solid #cbd5e1; border-radius: 4px;
+  cursor: pointer; font-size: 11px; padding: 1px 5px; line-height: 1.4;
+  color: #64748b; transition: background 0.15s, border-color 0.15s;
+}
+.ref-btn:hover, .ref-btn.active { background: #ede9fe; border-color: #7c3aed; color: #7c3aed; }
+.ref-files { display: none; flex-wrap: wrap; gap: 4px; margin-top: 5px; }
+.ref-files.open { display: flex; }
+.ref-chip {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px; font-weight: 500;
+  background: #f0fdf4; color: #166534;
+  border: 1px solid #bbf7d0; border-radius: 4px;
+  padding: 2px 7px; white-space: nowrap;
+}
+
+/* ── DEPENDENCY FLOW ─────────────────────── */
+.df-wrap { display:flex; flex-direction:column; gap:12px; }
+.df-section {
+  padding:12px 16px 14px; background:#f8fafc;
+  border-radius:8px; border:1px solid #e2e8f0;
+}
+.df-section-title {
+  font-size:13px; font-weight:700; color:#1e293b;
+  margin-bottom:12px; display:flex; align-items:center; gap:6px;
+}
+.df-box {
+  display:inline-flex; flex-direction:column; align-items:center;
+  border:1.5px solid #cbd5e1; border-radius:7px;
+  padding:5px 10px; background:#f1f5f9;
+  min-width:64px; line-height:1.35; flex-shrink:0;
+}
+.df-box.green  { background:#dcfce7; border-color:#16a34a; }
+.df-box.blue   { background:#dbeafe; border-color:#2563eb; }
+.df-box.amber  { background:#fef3c7; border-color:#d97706; }
+.df-box.red    { background:#fee2e2; border-color:#dc2626; }
+.df-box.purple { background:#ede9fe; border-color:#7c3aed; }
+.df-box.gray   { background:#f1f5f9; border-color:#94a3b8; }
+.df-id  { font-family:'JetBrains Mono',monospace; font-size:10px; font-weight:800; color:#1e293b; }
+.df-lbl { font-size:10px; color:#475569; white-space:nowrap; }
+.df-arr { font-size:18px; color:#94a3b8; font-weight:900; padding:0 2px; flex-shrink:0; line-height:1; }
+</style>
+</head>
+<body>
+
+<!-- ── HEADER ── -->
+<div class="header">
+  <div class="header-inner">
+    <div class="header-brand">
+      <div class="header-icon">🤖</div>
+      <div>
+        <h1>AutoRAG Architect</h1>
+        <p>Enterprise RAG Evaluation &amp; Deployment Platform · v4.0</p>
+      </div>
+    </div>
+    <div class="header-meta">
+      <div class="meta-row"><strong>Project Lead:</strong> Mahesh Kumar</div>
+      <div class="meta-row"><strong>Guide:</strong> Sudhanshu Kumar, Euron Consulting</div>
+      <div class="meta-row" style="margin-top:6px"><strong>Updated:</strong> <span id="hdr-ts" style="color:#93c5fd;font-weight:700;"></span> &nbsp;·&nbsp; <strong>Branch:</strong> development</div>
+    </div>
+  </div>
+  <div class="header-nav">
+    <a href="#overview" class="nav-active">Overview</a>
+    <a href="#teams">Teams</a>
+    <a href="#sprints">Sprints</a>
+    <a href="#risks">Risks</a>
+    <a href="#depflow">Dependency Flow</a>
+    <a href="#tasks">Full Task Tracker</a>
+    <a href="#summary">📋 Progress Summary</a>
+    <a href="#audit">Audit Log</a>
+  </div>
+</div>
+
+<!-- STATUS LEGEND -->
+<div style="background:#fff;border-bottom:1px solid var(--border);padding:8px 40px;max-width:1400px;margin:0 auto;display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
+  <span style="font-size:11px;color:#334155;font-weight:600;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;margin-right:6px;">Status:</span>
+  <span class="badge badge-done">DONE</span>
+  <span class="badge badge-progress">IN PROGRESS</span>
+  <span class="badge badge-pending">PENDING</span>
+  <span class="badge badge-blocked">BLOCKED</span>
+  <span class="badge badge-atrisk">AT RISK</span>
+  <span class="badge badge-notstarted">NOT STARTED</span>
+</div>
+
+<div class="main" id="overview">
+
+  <!-- ── HERO KPIs ── -->
+  <div class="section-title" style="margin-top:4px">📊 Executive Summary</div>
+  <div class="kpi-grid">
+    <div class="kpi-card green phase-active">
+      <div class="kpi-label">Current Phase</div>
+      <div class="kpi-value green" style="font-size:18px;letter-spacing:0;">1 OPEN 🔓</div>
+      <div class="kpi-sub">Phase G 6/7 (G-7 OPEN) · Sprint 5 ✅ 13/13 · Sprint 6 ✅ 8/8 · G-Sprint 6/7 · 107/108 tasks done</div>
+    </div>
+    <div class="kpi-card slate">
+      <div class="kpi-label">Total Tasks</div>
+      <div class="kpi-value slate">108</div>
+      <div class="kpi-sub">Phases A – G</div>
+    </div>
+    <div class="kpi-card green">
+      <div class="kpi-label">Completed</div>
+      <div class="kpi-value green">107</div>
+      <div class="kpi-sub">99% of total</div>
+    </div>
+    <div class="kpi-card blue">
+      <div class="kpi-label">In Progress</div>
+      <div class="kpi-value blue">0</div>
+      <div class="kpi-sub">1 OPEN (G-7) — Team 8 backlog</div>
+    </div>
+    <div class="kpi-card green">
+      <div class="kpi-label">Blockers</div>
+      <div class="kpi-value green">0</div>
+      <div class="kpi-sub">D-7 ✅ DONE</div>
+    </div>
+    <div class="kpi-card green">
+      <div class="kpi-label">At Risk</div>
+      <div class="kpi-value green">0</div>
+      <div class="kpi-sub">D-24 ✅ DONE</div>
+    </div>
+    <div class="kpi-card green">
+      <div class="kpi-label">Teams Ready</div>
+      <div class="kpi-value green" style="font-size:24px;letter-spacing:0;">10/10</div>
+      <div class="kpi-sub">All teams active</div>
+    </div>
+    <div class="kpi-card slate">
+      <div class="kpi-label">Engineers</div>
+      <div class="kpi-value slate">28</div>
+      <div class="kpi-sub">10 teams</div>
+    </div>
+  </div>
+
+  <!-- ── PHASE TIMELINE + GATE ── -->
+  <div class="two-col">
+
+    <div class="card">
+      <div class="card-title">📈 Phase Timeline</div>
+      <div class="phase-timeline">
+        <div class="pt-row">
+          <div class="pt-label">Phase A</div>
+          <div class="pt-track"><div class="pt-fill pt-fill-done" data-pct="100"></div></div>
+          <div class="pt-pct done">100%</div>
+          <div class="pt-badge done">DONE</div>
+        </div>
+        <div class="pt-row">
+          <div class="pt-label">Phase B</div>
+          <div class="pt-track"><div class="pt-fill pt-fill-done" data-pct="100"></div></div>
+          <div class="pt-pct done">100%</div>
+          <div class="pt-badge done">DONE</div>
+        </div>
+        <div class="pt-row">
+          <div class="pt-label">Phase C</div>
+          <div class="pt-track"><div class="pt-fill pt-fill-done" data-pct="100"></div></div>
+          <div class="pt-pct done">100%</div>
+          <div class="pt-badge done">DONE</div>
+        </div>
+        <div class="pt-row">
+          <div class="pt-label">Phase D</div>
+          <div class="pt-track"><div class="pt-fill pt-fill-done" data-pct="100"></div></div>
+          <div class="pt-pct done">100%</div>
+          <div class="pt-badge done">DONE</div>
+        </div>
+        <div class="pt-row">
+          <div class="pt-label">Phase E</div>
+          <div class="pt-track"><div class="pt-fill pt-fill-done" data-pct="100"></div></div>
+          <div class="pt-pct done">100%</div>
+          <div class="pt-badge done">DONE</div>
+        </div>
+        <div class="pt-row">
+          <div class="pt-label">Phase F</div>
+          <div class="pt-track"><div class="pt-fill pt-fill-done" data-pct="100"></div></div>
+          <div class="pt-pct done">100%</div>
+          <div class="pt-badge done">DONE</div>
+        </div>
+        <div class="pt-row">
+          <div class="pt-label">Phase G</div>
+          <div class="pt-track"><div class="pt-fill pt-fill-progress" data-pct="86"></div></div>
+          <div class="pt-pct progress">86%</div>
+          <div class="pt-badge progress">6/7</div>
+        </div>
+      </div>
+      <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;">
+        <span style="font-size:12px;color:var(--text3)">Overall completion</span>
+        <span style="font-size:20px;font-weight:800;color:var(--green)">99% (107/108)</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">🔐 Phase D Entry Gate</div>
+      <div style="font-size:11px;color:#334155;font-weight:600;margin-bottom:12px;">✅ Phase D OPEN — 5 / 5 gates clear — Phase C COMPLETE</div>
+      <div class="gate-list">
+        <div class="gate-item" style="border-left:3px solid #16a34a;">
+          <div class="gate-icon">✅</div>
+          <div class="gate-text"><strong>C-8</strong> — API keys distributed to all teams</div>
+          <div class="gate-status" style="background:#dcfce7;color:#15803d;">DONE</div>
+        </div>
+        <div class="gate-item" style="border-left:3px solid #16a34a;">
+          <div class="gate-icon">✅</div>
+          <div class="gate-text"><strong>C-9a</strong> — Backend environment verified</div>
+          <div class="gate-status" style="background:#dcfce7;color:#15803d;">DONE</div>
+        </div>
+        <div class="gate-item" style="border-left:3px solid #16a34a;">
+          <div class="gate-icon">✅</div>
+          <div class="gate-text"><strong>C-9b</strong> — Frontend environment verified</div>
+          <div class="gate-status" style="background:#dcfce7;color:#15803d;">DONE</div>
+        </div>
+        <div class="gate-item" style="border-left:3px solid #16a34a;">
+          <div class="gate-icon">✅</div>
+          <div class="gate-text"><strong>D-2</strong> — Alembic migrations bootstrapped</div>
+          <div class="gate-status" style="background:#dcfce7;color:#15803d;">DONE</div>
+        </div>
+        <div class="gate-item" style="border-left:3px solid #16a34a;">
+          <div class="gate-icon">✅</div>
+          <div class="gate-text"><strong>C-Final</strong> — Sprint 1 starter kits delivered</div>
+          <div class="gate-status" style="background:#dcfce7;color:#15803d;border:1px solid #86efac;">DONE</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ── TEAM SECTION ── -->
+  <div id="teams" class="section-title">👥 Teams</div>
+
+  <!-- TEAM MEMBERS TABLE -->
+  <div class="card" style="margin-bottom:24px;">
+    <div class="card-title">👤 Team Roster — Members &amp; Leads</div>
+    <table class="task-table">
+      <thead>
+        <tr>
+          <th style="width:80px;">Team No.</th>
+          <th>Team Lead</th>
+          <th>Member/s</th>
+          <th style="width:120px;">Focus Area</th>
+          <th style="width:60px;">Size</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="t-id">Team 1</td>
+          <td><strong>Ashish Singh</strong></td>
+          <td class="t-lead">Ashish Singh · Mandeep Sharma · Ganesh Sahu</td>
+          <td class="t-team">Infrastructure &amp; DevOps</td>
+          <td style="text-align:center;font-weight:700;color:var(--blue);">3</td>
+        </tr>
+        <tr>
+          <td class="t-id">Team 2</td>
+          <td><strong>Mrityunjay</strong></td>
+          <td class="t-lead">Mrityunjay · Dorababu · Mandar Aarondekar</td>
+          <td class="t-team">Evaluation &amp; Quality Gate</td>
+          <td style="text-align:center;font-weight:700;color:var(--blue);">3</td>
+        </tr>
+        <tr>
+          <td class="t-id">Team 3</td>
+          <td><strong>Vansh</strong></td>
+          <td class="t-lead">Vansh · Pradeep Kumar · Kaushlendra Kumar Gupta</td>
+          <td class="t-team">Query Rewriter &amp; MLflow</td>
+          <td style="text-align:center;font-weight:700;color:var(--blue);">3</td>
+        </tr>
+        <tr>
+          <td class="t-id">Team 4</td>
+          <td><strong>Vanishree</strong></td>
+          <td class="t-lead">Vanishree · Rajesh S</td>
+          <td class="t-team">LangGraph Orchestration</td>
+          <td style="text-align:center;font-weight:700;color:var(--blue);">2</td>
+        </tr>
+        <tr>
+          <td class="t-id">Team 5</td>
+          <td><strong>Vishal Prasad</strong></td>
+          <td class="t-lead">Vishal Prasad · Ramgopal Gupta</td>
+          <td class="t-team">Ingestion &amp; Backend</td>
+          <td style="text-align:center;font-weight:700;color:var(--blue);">2</td>
+        </tr>
+        <tr>
+          <td class="t-id">Team 6</td>
+          <td><strong>Sohail Sheikh</strong></td>
+          <td class="t-lead">Sohail Sheikh · Raj K · Mayuesh</td>
+          <td class="t-team">Vector DB &amp; Retrieval</td>
+          <td style="text-align:center;font-weight:700;color:var(--blue);">3</td>
+        </tr>
+        <tr>
+          <td class="t-id">Team 7</td>
+          <td><strong>Santosh Kumar Biswal</strong></td>
+          <td class="t-lead">Santosh Kumar Biswal · Abhinit Binod</td>
+          <td class="t-team">PII &amp; Security</td>
+          <td style="text-align:center;font-weight:700;color:var(--blue);">2</td>
+        </tr>
+        <tr>
+          <td class="t-id">Team 8</td>
+          <td><strong>Gopinadh Bapatla</strong></td>
+          <td class="t-lead">Gopinadh Bapatla · Adithya Boyapati</td>
+          <td class="t-team">Reranking &amp; Compression</td>
+          <td style="text-align:center;font-weight:700;color:var(--blue);">2</td>
+        </tr>
+        <tr>
+          <td class="t-id">Team 9</td>
+          <td><strong>Saurabh Kumar</strong></td>
+          <td class="t-lead">Saurabh Kumar · Manju Yadav</td>
+          <td class="t-team">Dashboard &amp; UI</td>
+          <td style="text-align:center;font-weight:700;color:var(--blue);">2</td>
+        </tr>
+        <tr style="background:#eff6ff;">
+          <td class="t-id">Team 10</td>
+          <td><strong>Mahesh Kumar</strong></td>
+          <td class="t-lead">Mahesh Kumar &middot; Bhavesh Patel</td>
+          <td class="t-team">Platform &amp; DevOps</td>
+          <td style="text-align:center;font-weight:700;color:var(--blue);">2</td>
+        </tr>
+        <tr style="background:#f8fafc;font-weight:700;">
+          <td colspan="4" style="text-align:right;color:var(--text3);font-size:12px;">Total Engineers</td>
+          <td style="text-align:center;font-size:18px;font-weight:800;color:var(--blue);">28</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- TEAM READINESS CARDS -->
+  <div style="font-size:13px;font-weight:700;color:var(--text2);margin-bottom:10px;">👥 Team Readiness Status</div>
+  <div class="team-grid" style="margin-bottom:24px;">
+    <div class="team-card" style="background:#eff6ff;">
+      <div class="team-dot dot-green"></div>
+      <div class="team-info"><div class="t-name">Team 1 — Infrastructure</div><div class="t-lead">Ashish Singh</div></div>
+      <div><div class="team-status-tag tag-done">DONE</div><div style="font-size:10px;color:var(--text3);margin-top:3px;text-align:right;">F-1→F-9 F-11 F-13 ✅ · all done</div></div>
+    </div>
+    <div class="team-card" style="background:#f0fdf4;">
+      <div class="team-dot dot-green"></div>
+      <div class="team-info"><div class="t-name">Team 2 — Evaluation</div><div class="t-lead">Mrityunjay</div></div>
+      <div><div class="team-status-tag tag-done">DONE</div><div style="font-size:10px;color:var(--text3);margin-top:3px;text-align:right;">D-15 D-16 D-17 ✅ · all done</div></div>
+    </div>
+    <div class="team-card" style="background:#faf5ff;">
+      <div class="team-dot dot-green"></div>
+      <div class="team-info"><div class="t-name">Team 3 — Query / MLflow</div><div class="t-lead">Vansh</div></div>
+      <div><div class="team-status-tag tag-done">DONE</div><div style="font-size:10px;color:var(--text3);margin-top:3px;text-align:right;">E-3 E-7 E-15 E-16 E-17 ✅ · all done</div></div>
+    </div>
+    <div class="team-card" style="background:#f0fdf4;">
+      <div class="team-dot dot-green"></div>
+      <div class="team-info"><div class="t-name">Team 4 — LangGraph</div><div class="t-lead">Vanishree</div></div>
+      <div><div class="team-status-tag tag-done">DONE</div><div style="font-size:10px;color:var(--text3);margin-top:3px;text-align:right;">D-7→D-9 E-1 E-2 ✅</div></div>
+    </div>
+    <div class="team-card" style="background:#fff7ed;">
+      <div class="team-dot dot-green"></div>
+      <div class="team-info"><div class="t-name">Team 5 — Ingestion</div><div class="t-lead">Vishal Prasad</div></div>
+      <div><div class="team-status-tag tag-done">DONE</div><div style="font-size:10px;color:var(--text3);margin-top:3px;text-align:right;">All tasks done</div></div>
+    </div>
+    <div class="team-card" style="background:#eff6ff;">
+      <div class="team-dot dot-green"></div>
+      <div class="team-info"><div class="t-name">Team 6 — Vector DB</div><div class="t-lead">Sohail Sheikh</div></div>
+      <div><div class="team-status-tag tag-done">DONE</div><div style="font-size:10px;color:var(--text3);margin-top:3px;text-align:right;">D-10→D-13 ✅ · E-8 ✅ · done</div></div>
+    </div>
+    <div class="team-card" style="background:#f0fdf4;">
+      <div class="team-dot dot-green"></div>
+      <div class="team-info"><div class="t-name">Team 7 — PII &amp; Security</div><div class="t-lead">Santosh Kumar Biswal</div></div>
+      <div><div class="team-status-tag tag-done">DONE</div><div style="font-size:10px;color:var(--text3);margin-top:3px;text-align:right;">D-5 D-6 ✅ · all done</div></div>
+    </div>
+    <div class="team-card" style="background:#fdf4ff;">
+      <div class="team-dot dot-green"></div>
+      <div class="team-info"><div class="t-name">Team 8 — Reranking</div><div class="t-lead">Gopinadh Bapatla</div></div>
+      <div><div class="team-status-tag tag-done">DONE</div><div style="font-size:10px;color:var(--text3);margin-top:3px;text-align:right;">D-11 ✅ · D-14 ✅ DONE (PR #35)</div></div>
+    </div>
+    <div class="team-card" style="background:#fff7ed;">
+      <div class="team-dot dot-green"></div>
+      <div class="team-info"><div class="t-name">Team 9 — Dashboard</div><div class="t-lead">Saurabh Kumar</div></div>
+      <div><div class="team-status-tag tag-done">DONE</div><div style="font-size:10px;color:var(--text3);margin-top:3px;text-align:right;">E-4→E-14 ✅ F-14→F-21 ✅ · all done</div></div>
+    </div>
+    <div class="team-card" style="background:#f8fafc;">
+      <div class="team-dot dot-green"></div>
+      <div class="team-info"><div class="t-name">Team 10 — Platform</div><div class="t-lead">Mahesh Kumar</div></div>
+      <div><div class="team-status-tag tag-done">DONE</div><div style="font-size:10px;color:var(--text3);margin-top:3px;text-align:right;">D-1→D-32 F-8 ✅ · all done</div></div>
+    </div>
+    <div class="team-card" style="background:#f8fafc;">
+      <div class="team-dot dot-green"></div>
+      <div class="team-info"><div class="t-name">Team 9 — Frontend Infra</div><div class="t-lead">Saurabh Kumar</div></div>
+      <div><div class="team-status-tag tag-done">DONE</div><div style="font-size:10px;color:var(--text3);margin-top:3px;text-align:right;">D-33→D-38 ✅ · all done</div></div>
+    </div>
+  </div>
+
+  <!-- ── SPRINT BOARD ── -->
+  <div id="sprints" class="section-title">📋 Sprint Board</div>
+  <style>
+    .spt-phase { font-size:12px; font-weight:800; text-align:center; vertical-align:middle !important; padding:12px 10px; }
+    .spt-phase-pill { display:inline-block; padding:5px 12px; border-radius:8px; font-size:12px; font-weight:700; letter-spacing:0.3px; }
+    .spt-sprint { font-size:12px; font-weight:700; white-space:nowrap; vertical-align:middle; }
+    .spt-desc { font-size:13px; color:var(--text); vertical-align:middle; }
+    .spt-tasks { display:flex; flex-wrap:wrap; gap:3px; vertical-align:middle; }
+  
+/* ── DEPENDENCY FLOW ─────────────────────── */
+.df-wrap { display:flex; flex-direction:column; gap:12px; }
+.df-section {
+  padding:12px 16px 14px; background:#f8fafc;
+  border-radius:8px; border:1px solid #e2e8f0;
+}
+.df-section-title {
+  font-size:13px; font-weight:700; color:#1e293b;
+  margin-bottom:12px; display:flex; align-items:center; gap:6px;
+}
+.df-box {
+  display:inline-flex; flex-direction:column; align-items:center;
+  border:1.5px solid #cbd5e1; border-radius:7px;
+  padding:5px 10px; background:#f1f5f9;
+  min-width:64px; line-height:1.35; flex-shrink:0;
+}
+.df-box.green  { background:#dcfce7; border-color:#16a34a; }
+.df-box.blue   { background:#dbeafe; border-color:#2563eb; }
+.df-box.amber  { background:#fef3c7; border-color:#d97706; }
+.df-box.red    { background:#fee2e2; border-color:#dc2626; }
+.df-box.purple { background:#ede9fe; border-color:#7c3aed; }
+.df-box.gray   { background:#f1f5f9; border-color:#94a3b8; }
+.df-id  { font-family:'JetBrains Mono',monospace; font-size:10px; font-weight:800; color:#1e293b; }
+.df-lbl { font-size:10px; color:#475569; white-space:nowrap; }
+.df-arr { font-size:18px; color:#94a3b8; font-weight:900; padding:0 2px; flex-shrink:0; line-height:1; }
+</style>
+  <div class="card" style="margin-bottom:24px; overflow:auto;">
+    <table class="task-table">
+      <thead>
+        <tr>
+          <th style="width:100px;">Phase</th>
+          <th style="width:130px;">Sprint</th>
+          <th>Goal</th>
+          <th style="width:110px;">Status</th>
+          <th>Key Tasks</th>
+        </tr>
+      </thead>
+      <tbody>
+
+        <!-- Phase C — Sprint 0 -->
+        <tr>
+          <td class="spt-phase">
+            <div class="spt-phase-pill" style="background:#dcfce7;color:#15803d;border:1px solid #86efac;">Phase C</div>
+          </td>
+          <td class="spt-sprint">✅ Sprint 0<br/><span style="font-size:10px;color:#64748b;font-weight:500;">Gate Complete</span></td>
+          <td class="spt-desc">Phase D gate unblocking — API keys, env files, Alembic bootstrap, starter kits</td>
+          <td><span class="badge badge-done">DONE</span></td>
+          <td><div class="spt-tasks">
+            <span class="sprint-task-id s0-id">C-8</span>
+            <span class="sprint-task-id s0-id">C-9a</span>
+            <span class="sprint-task-id s0-id">C-9b</span>
+            <span class="sprint-task-id s0-id">D-2</span>
+            <span class="sprint-task-id s0-id">C-Final</span>
+          </div></td>
+        </tr>
+
+        <!-- Phase D — Sprint 1 (rowspan=3) -->
+        <tr>
+          <td class="spt-phase" rowspan="3" style="border-right:2px solid #86efac;background:#f0fdf4;">
+            <div class="spt-phase-pill" style="background:#dcfce7;color:#15803d;border:1px solid #86efac;">Phase D</div>
+            <div style="font-size:10px;color:#16a34a;font-weight:600;margin-top:6px;">Done</div>
+          </td>
+          <td class="spt-sprint">🏗️ Sprint 1<br/><span style="font-size:10px;color:#16a34a;font-weight:700;">✅ DONE</span></td>
+          <td class="spt-desc">Core infra — FastAPI, DB schema, audit log, PII masking, LangGraph state + audit fixes D-19→D-29</td>
+          <td><span class="badge badge-done">DONE</span></td>
+          <td><div class="spt-tasks">
+            <span class="sprint-task-id s0-id">D-1✅</span>
+            <span class="sprint-task-id s0-id">D-19✅</span>
+            <span class="sprint-task-id s0-id">D-20✅</span>
+            <span class="sprint-task-id s0-id">D-21✅</span>
+            <span class="sprint-task-id s0-id">D-22✅</span>
+            <span class="sprint-task-id s0-id">D-23✅</span>
+            <span class="sprint-task-id s0-id">D-25✅</span>
+            <span class="sprint-task-id s0-id">D-29✅</span>
+            <span class="sprint-task-id s0-id">D-3✅</span>
+            <span class="sprint-task-id s0-id">D-4✅</span>
+            <span class="sprint-task-id s0-id">D-5✅</span>
+            <span class="sprint-task-id s0-id">D-6✅</span>
+            <span class="sprint-task-id s0-id">D-7✅</span>
+            <span class="sprint-task-id s0-id">D-26✅</span>
+            <span class="sprint-task-id s0-id">D-27✅</span>
+            <span class="sprint-task-id s0-id">D-28✅</span>
+            <span class="sprint-task-id s0-id">D-24✅</span>
+          </div></td>
+        </tr>
+
+        <!-- Phase D — Sprint 2 -->
+        <tr>
+          <td class="spt-sprint">🔄 Sprint 2<br/><span style="font-size:10px;color:#64748b;font-weight:500;">Active</span></td>
+          <td class="spt-desc">Vector DB + chunking adapters (Semantic, Hierarchical, Late) + Gemini Embedding 2 batch</td>
+          <td><span class="badge badge-done">DONE</span></td>
+          <td><div class="spt-tasks">
+            <span class="sprint-task-id s0-id">D-8✅</span>
+            <span class="sprint-task-id s0-id">D-9✅</span>
+            <span class="sprint-task-id s0-id">D-10✅</span>
+            <span class="sprint-task-id s0-id">D-11✅</span>
+            <span class="sprint-task-id s0-id">D-12✅</span>
+          </div></td>
+        </tr>
+
+        <!-- Phase D — Sprint 3 -->
+        <tr>
+          <td class="spt-sprint">⚙️ Sprint 3<br/><span style="font-size:10px;color:#16a34a;font-weight:700;">✅ DONE</span></td>
+          <td class="spt-desc">Hybrid search + Cohere reranking + Unified Score + RAGAS + adversarial suite + deploy gate</td>
+          <td><span class="badge badge-done">DONE</span></td>
+          <td><div class="spt-tasks">
+            <span class="sprint-task-id s0-id">D-13✅</span>
+            <span class="sprint-task-id s0-id">D-14✅</span>
+            <span class="sprint-task-id s0-id">D-15✅</span>
+            <span class="sprint-task-id s0-id">D-16✅</span>
+            <span class="sprint-task-id s0-id">D-17✅</span>
+            <span class="sprint-task-id s0-id">D-18✅</span>
+          </div></td>
+        </tr>
+
+        <!-- Phase E — Sprint 4 -->
+        <tr>
+          <td class="spt-phase">
+            <div class="spt-phase-pill" style="background:#ede9fe;color:#5b21b6;border:1px solid #c4b5fd;">Phase E</div>
+            <div style="font-size:10px;color:#16a34a;font-weight:600;margin-top:6px;">✅ Done</div>
+          </td>
+          <td class="spt-sprint">🔗 Sprint 4<br/><span style="font-size:10px;color:#16a34a;font-weight:700;">17/17</span></td>
+          <td class="spt-desc">Agents (Diagnoser, Improver, MLflow, Query Rewriter, Compressor) + Next.js Dashboard + Auth UI + E-10 ✅ + E-11 ✅ + E-12 ✅ + E-13 ✅ + E-14 ✅ Settings UI — Phase E 100% COMPLETE</td>
+          <td><span class="badge badge-done">DONE</span></td>
+          <td><div class="spt-tasks">
+            <span class="sprint-task-id s0-id">E-1✅</span>
+            <span class="sprint-task-id s0-id">E-2✅</span>
+            <span class="sprint-task-id s0-id">E-3✅</span>
+            <span class="sprint-task-id s0-id">E-4✅</span>
+            <span class="sprint-task-id s0-id">E-5✅</span>
+            <span class="sprint-task-id s0-id">E-6✅</span>
+            <span class="sprint-task-id s0-id">E-7✅</span>
+            <span class="sprint-task-id s0-id">E-8✅</span>
+            <span class="sprint-task-id s0-id">E-9✅</span>
+            <span class="sprint-task-id s0-id">E-10✅</span>
+            <span class="sprint-task-id s0-id">E-11✅</span>
+            <span class="sprint-task-id s0-id">E-12✅</span>
+            <span class="sprint-task-id s0-id">E-13✅</span>
+            <span class="sprint-task-id s0-id">E-14✅</span>
+          </div></td>
+        </tr>
+
+        <!-- Phase F — Sprint 5 -->
+        <tr>
+          <td class="spt-phase">
+            <div class="spt-phase-pill" style="background:#fef3c7;color:#92400e;border:1px solid #fde68a;">Phase F</div>
+            <div style="font-size:10px;color:#d97706;font-weight:600;margin-top:6px;">Active</div>
+          </td>
+          <td class="spt-sprint">🚀 Sprint 5<br/><span style="font-size:10px;color:#16a34a;font-weight:700;">✅ 13/13</span></td>
+          <td class="spt-desc">Blue/Green ECS deploy, auto-rollback canary, Prometheus dashboards, load testing, security hardening, production launch, Observer agent ✅ DONE + Rule 86 metrics — Sprint 5 100% COMPLETE</td>
+          <td><span class="badge badge-done">DONE</span></td>
+          <td><div class="spt-tasks">
+            <span class="sprint-task-id s0-id">F-1✅</span>
+            <span class="sprint-task-id s0-id">F-2✅</span>
+            <span class="sprint-task-id s0-id">F-3✅</span>
+            <span class="sprint-task-id s0-id">F-4✅</span>
+            <span class="sprint-task-id s0-id">F-5✅</span>
+            <span class="sprint-task-id s0-id">F-6✅</span>
+            <span class="sprint-task-id s0-id">F-7✅</span>
+            <span class="sprint-task-id s0-id">F-8✅</span>
+            <span class="sprint-task-id s0-id">F-9✅</span>
+            <span class="sprint-task-id s0-id">F-11✅</span>
+            <span class="sprint-task-id s0-id">F-13✅</span>
+            <span class="sprint-task-id s0-id">F-12✅</span>
+            <span class="sprint-task-id s1-id">F-10(backlog)</span>
+          </div></td>
+        </tr>
+
+        <!-- Phase F — Sprint 6 -->
+        <tr>
+          <td class="spt-phase">
+            <div class="spt-phase-pill" style="background:#fef3c7;color:#92400e;border:1px solid #fde68a;">Phase F</div>
+            <div style="font-size:10px;color:#16a34a;font-weight:600;margin-top:6px;">Done ✅</div>
+          </td>
+          <td class="spt-sprint">🖥️ Sprint 6<br/><span style="font-size:10px;color:#16a34a;font-weight:700;">✅ 8/8 DONE</span></td>
+          <td class="spt-desc">Advanced frontend workspaces (Team 9) — F-14 ✅ PR #41, F-15 ✅ PR #42, F-16 ✅ 814fd03, F-17 ✅ PR #48, F-18 ✅ PR #43, F-19 ✅ PR #44, F-20 ✅ PR #45, F-21 ✅ PR #46 — Sprint 6 COMPLETE 8/8 ✅</td>
+          <td><span class="badge badge-done">DONE</span></td>
+          <td><div class="spt-tasks">
+            <span class="sprint-task-id s0-id">F-14✅</span>
+            <span class="sprint-task-id s0-id">F-15 ✅</span>
+            <span class="sprint-task-id s0-id">F-16✅</span>
+            <span class="sprint-task-id s0-id">F-17✅</span>
+            <span class="sprint-task-id s0-id">F-18 ✅</span>
+            <span class="sprint-task-id s0-id">F-19 ✅</span>
+            <span class="sprint-task-id s0-id">F-20 ✅</span>
+            <span class="sprint-task-id s0-id">F-21 ✅</span>
+          </div></td>
+        </tr>
+
+      </tbody>
+    </table>
+  </div>
+  <!-- ── RISKS + DEPENDENCY ── -->
+
+  <!-- Risk Panel — standalone full-width -->
+  <div id="risks" style="margin-bottom:16px;">
+    <div class="card">
+      <div class="card-title">🔴 Risk &amp; Blockers Panel</div><div class="risk-grid">
+        <div class="risk-row" style="background:#f0fdf4;border-left:3px solid #22c55e;">
+          <div class="risk-icon">✅</div>
+          <div class="risk-id" style="color:#16a34a;">E-14</div>
+          <div class="risk-name">E-10 ✅ E-11 ✅ E-12 ✅ E-13 ✅ E-14 ✅ — Phase E 17/17 COMPLETE<br/><span style="font-size:11px;color:#16a34a;font-weight:600">D-30→D-38 added retroactively (agent nodes + frontend infra). Totals: D 38/38, E 17/17, F 21/21, overall 101/101 (100%).</span></div>
+          <div class="risk-badge" style="background:#dcfce7;color:#15803d;border:1px solid #86efac;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:700;">RESOLVED</div>
+        </div>
+        <div class="risk-row" style="background:#f0fdf4;border-left:3px solid #22c55e;">
+          <div class="risk-icon">✅</div>
+          <div class="risk-id" style="color:#16a34a;">C-8</div>
+          <div class="risk-name">API Keys distributed — RESOLVED<br/><span style="font-size:11px;color:#334155;font-weight:600">All 5 gates DONE. Phase C 100% complete. Phase D active.</span></div>
+          <div class="risk-badge" style="background:#dcfce7;color:#15803d;border:1px solid #86efac;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:700;">RESOLVED</div>
+        </div>
+        <div class="risk-row" style="background:#f0fdf4;border-left:3px solid #22c55e;">
+          <div class="risk-icon">✅</div>
+          <div class="risk-id" style="color:#16a34a;">D-2</div>
+          <div class="risk-name">Alembic migrations complete — RESOLVED<br/><span style="font-size:11px;color:#334155;font-weight:600">SQL executed directly in Supabase. D-3, D-4 unblocked.</span></div>
+          <div class="risk-badge" style="background:#dcfce7;color:#15803d;border:1px solid #86efac;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:700;">RESOLVED</div>
+        </div>
+        <div class="risk-row" style="background:#f0fdf4;border-left:3px solid #22c55e;">
+          <div class="risk-icon">✅</div>
+          <div class="risk-id" style="color:#16a34a;">D-7</div>
+          <div class="risk-name">LangGraph GraphState — RESOLVED (merged PR #9, 23-Jun-2026)<br/><span style="font-size:11px;color:#15803d;font-weight:600">D-8, D-9, E-1, E-2 also DONE. E-7, E-8 now unblocked.</span></div>
+          <div class="risk-badge" style="background:#dcfce7;color:#15803d;border:1px solid #86efac;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:700;">RESOLVED</div>
+        </div>
+        <div class="risk-row" style="background:#f0fdf4;border-left:3px solid #22c55e;">
+          <div class="risk-icon">✅</div>
+          <div class="risk-id" style="color:#16a34a;">D-15</div>
+          <div class="risk-name">Unified Score — RESOLVED (D-16 RAGAS includes it, merged 26-Jun-2026)<br/><span style="font-size:11px;color:#15803d;font-weight:600">D-16 merged. D-15 superseded. D-17, D-18 now unblocked.</span></div>
+          <div class="risk-badge" style="background:#dcfce7;color:#15803d;border:1px solid #86efac;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:700;">RESOLVED</div>
+        </div>
+        <div class="risk-row" style="background:#f0fdf4;border-left:3px solid #22c55e;"><div class="risk-icon">✅</div><div class="risk-id" style="color:#16a34a;">C-9b</div><div class="risk-name">Frontend .env.dev verified — RESOLVED<br/><span style="font-size:11px;color:#334155;font-weight:600">C-9b + C-Final DONE. Phase C 100% complete.</span></div><div class="risk-badge" style="background:#dcfce7;color:#15803d;border:1px solid #86efac;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:700;">RESOLVED</div></div>
+        <div class="risk-row" style="background:#f0fdf4;border-left:3px solid #22c55e;">
+          <div class="risk-icon">✅</div>
+          <div class="risk-id" style="color:#16a34a;">D-23</div>
+          <div class="risk-name">Terraform variable naming mismatch — RESOLVED<br/><span style="font-size:11px;color:#334155;font-weight:600">main.tf variable names aligned with module declarations (env→environment, api_image→backend_image_url). terraform plan unblocked. D-24 can proceed.</span></div>
+          <div class="risk-badge" style="background:#dcfce7;color:#15803d;border:1px solid #86efac;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:700;">RESOLVED</div>
+        </div>
+        <div class="risk-row" style="background:#f0fdf4;border-left:3px solid #22c55e;">
+          <div class="risk-icon">✅</div>
+          <div class="risk-id" style="color:#16a34a;">D-24</div>
+          <div class="risk-name">ECS Fargate task defs + Blue/Green + CloudWatch — RESOLVED (26-Jun-2026)<br/><span style="font-size:11px;color:#15803d;font-weight:600">Task defs, Blue/Green CodeDeploy, rollback alarms all merged PR #13. Phase F infra unblocked.</span></div>
+          <div class="risk-badge" style="background:#dcfce7;color:#15803d;border:1px solid #86efac;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:700;">RESOLVED</div>
+        </div>
+        <div class="risk-row" style="background:#f0fdf4;border-left:3px solid #22c55e;">
+          <div class="risk-icon">✅</div>
+          <div class="risk-id" style="color:#16a34a;">D-26–28</div>
+          <div class="risk-name">Terraform IAM / ALB SG / VPC AZ — RESOLVED (26-Jun-2026)<br/><span style="font-size:11px;color:#15803d;font-weight:600">D-26 (IAM policies), D-27 (ALB SG), D-28 (VPC AZ ap-south-1) all merged PR #13. Phase F infra fully unblocked.</span></div>
+          <div class="risk-badge" style="background:#dcfce7;color:#15803d;border:1px solid #86efac;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:700;">RESOLVED</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Dependency Flow — full width, sprint-organised -->
+    <div id="depflow" class="card" style="margin-bottom:24px;">
+    <div class="card-title">🔗 Dependency Flow — Critical Path by Sprint</div>
+
+    <!-- LEGEND -->
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:8px 14px;background:#f8fafc;border-radius:8px;border:1px solid #e2e8f0;margin-bottom:16px;font-size:11px;">
+      <span style="font-weight:800;color:#1e293b;">LEGEND</span>
+      <span style="display:inline-flex;align-items:center;gap:3px;"><span style="width:12px;height:12px;background:#dcfce7;border:2px solid #16a34a;border-radius:2px;display:inline-block;"></span><span style="color:#15803d;font-weight:700;">DONE</span></span>
+      <span style="display:inline-flex;align-items:center;gap:3px;"><span style="width:12px;height:12px;background:#dbeafe;border:2px solid #2563eb;border-radius:2px;display:inline-block;"></span><span style="color:#1d4ed8;font-weight:700;">PENDING</span></span>
+      <span style="display:inline-flex;align-items:center;gap:3px;"><span style="width:12px;height:12px;background:#fef3c7;border:2px solid #d97706;border-radius:2px;display:inline-block;"></span><span style="color:#92400e;font-weight:700;">AT RISK</span></span>
+      <span style="display:inline-flex;align-items:center;gap:3px;"><span style="width:12px;height:12px;background:#fee2e2;border:2px solid #dc2626;border-radius:2px;display:inline-block;"></span><span style="color:#991b1b;font-weight:700;">CRITICAL</span></span>
+      <span style="display:inline-flex;align-items:center;gap:3px;"><span style="width:12px;height:12px;background:#f1f5f9;border:2px solid #94a3b8;border-radius:2px;display:inline-block;"></span><span style="color:#334155;font-weight:700;">FUTURE</span></span>
+      <span style="display:inline-flex;align-items:center;gap:3px;"><span style="width:12px;height:12px;background:#ede9fe;border:2px solid #7c3aed;border-radius:2px;display:inline-block;"></span><span style="color:#5b21b6;font-weight:700;">PHASE E</span></span>
+      <span style="color:#64748b;margin-left:6px;"><b>→</b> blocks &nbsp; <b>+</b> parallel</span>
+    </div>
+
+    <div class="df-wrap">
+
+      <!-- ══ SPRINT 0 — Phase C (all done) ══ -->
+      <div class="df-section" style="border-left:4px solid #16a34a;">
+        <div class="df-section-title"><span style="background:#dcfce7;color:#15803d;padding:2px 10px;border-radius:6px;font-size:11px;font-weight:700;margin-right:8px;">Sprint 0</span>Phase C Gate Chain — All Done ✅</div>
+        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+          <div class="df-box green"><span class="df-id">C-8</span><span class="df-lbl">API Keys ✅</span></div>
+          <div class="df-arr">→</div>
+          <div class="df-box green"><span class="df-id">C-9a</span><span class="df-lbl">Backend .env ✅</span></div>
+          <span style="font-size:11px;color:#64748b;">+</span>
+          <div class="df-box green"><span class="df-id">C-9b</span><span class="df-lbl">Frontend .env ✅</span></div>
+          <span style="font-size:11px;color:#64748b;">+</span>
+          <div class="df-box green"><span class="df-id">D-2</span><span class="df-lbl">Alembic ✅</span></div>
+          <span style="font-size:11px;color:#64748b;">+</span>
+          <div class="df-box green"><span class="df-id">C-Final</span><span class="df-lbl">Starter Kits ✅</span></div>
+          <div class="df-arr">→</div>
+          <div class="df-box green"><span class="df-id">Phase D</span><span class="df-lbl">Started 🚀</span></div>
+        </div>
+      </div>
+
+      <!-- ══ SPRINT 1 — Phase D Core (ACTIVE) ══ -->
+      <div class="df-section df-section-active" style="border-left:4px solid #2563eb;">
+        <div class="df-section-title"><span style="background:#dbeafe;color:#1d4ed8;padding:2px 10px;border-radius:6px;font-size:11px;font-weight:700;margin-right:8px;">Sprint 1 ▶ ACTIVE</span>Phase D Core Infrastructure</div>
+
+        <!-- LangGraph chain -->
+        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:8px;">
+          <span style="font-size:10px;font-weight:700;color:#1d4ed8;width:72px;flex-shrink:0;">LangGraph</span>
+          <div class="df-box green"><span class="df-id">D-1</span><span class="df-lbl">FastAPI ✅</span></div>
+          <div class="df-arr">→</div>
+          <div class="df-box green"><span class="df-id">D-7</span><span class="df-lbl">LangGraph ✅</span></div>
+          <span style="font-size:10px;font-weight:700;color:#15803d;background:#dcfce7;padding:2px 7px;border-radius:4px;border:1px solid #bbf7d0;">✅ DONE — D-8 D-9 E-1 E-2 also DONE; E-7 E-8 now unblocked</span>
+        </div>
+
+        <!-- DB Schema chain A: D-2 → D-3 → D-5 → D-6 -->
+        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:6px;">
+          <span style="font-size:10px;font-weight:700;color:#1d4ed8;width:72px;flex-shrink:0;">DB Schema</span>
+          <div class="df-box green"><span class="df-id">D-2</span><span class="df-lbl">Alembic ✅</span></div>
+          <div class="df-arr">→</div>
+          <div class="df-box blue"><span class="df-id">D-3</span><span class="df-lbl">Core Tables</span></div>
+          <div class="df-arr">→</div>
+          <div class="df-box blue"><span class="df-id">D-5</span><span class="df-lbl">Doc Parser</span></div>
+          <div class="df-arr">→</div>
+          <div class="df-box blue"><span class="df-id">D-6</span><span class="df-lbl">PII Mask</span></div>
+        </div>
+
+        <!-- DB Schema chain B: D-2 → D-4 (parallel) -->
+        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:8px;">
+          <span style="font-size:10px;width:72px;flex-shrink:0;"></span>
+          <div class="df-box green"><span class="df-id">D-2</span><span class="df-lbl">Alembic ✅</span></div>
+          <div class="df-arr">→</div>
+          <div class="df-box blue"><span class="df-id">D-4</span><span class="df-lbl">Audit Log</span></div>
+          <span style="font-size:10px;color:#94a3b8;font-style:italic;">(parallel branch)</span>
+        </div>
+
+        <!-- Terraform chain: D-23 → D-24 CRITICAL -->
+        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+          <span style="font-size:10px;font-weight:700;color:#b91c1c;width:72px;flex-shrink:0;">Terraform</span>
+          <div class="df-box green"><span class="df-id">D-23</span><span class="df-lbl">Var fix ✅</span></div>
+          <div class="df-arr">→</div>
+          <div class="df-box green"><span class="df-id">D-24</span><span class="df-lbl">ECS Fargate ✅</span></div>
+          <span style="font-size:10px;font-weight:700;color:#15803d;background:#dcfce7;padding:2px 7px;border-radius:4px;border:1px solid #bbf7d0;">✅ DONE — Phase F infra unblocked</span>
+        </div>
+      </div>
+
+      <!-- ══ SPRINT 2 — Vector DB + Persistence + Infra Fixes ══ -->
+      <div class="df-section" style="border-left:4px solid #3b82f6;">
+        <div class="df-section-title"><span style="background:#dbeafe;color:#1d4ed8;padding:2px 10px;border-radius:6px;font-size:11px;font-weight:700;margin-right:8px;">Sprint 2</span>Phase D — Vector DB · LangGraph Persistence · Terraform Infra Fixes</div>
+
+        <!-- LangGraph persistence (after D-7) -->
+        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:8px;">
+          <span style="font-size:10px;font-weight:700;color:#1d4ed8;width:72px;flex-shrink:0;">LangGraph</span>
+          <div class="df-box green"><span class="df-id">D-7</span><span class="df-lbl">LangGraph ✅</span></div>
+          <div class="df-arr">→</div>
+          <div class="df-box green"><span class="df-id">D-8</span><span class="df-lbl">Checkpoint ✅</span></div>
+          <span style="font-size:11px;color:#64748b;">+</span>
+          <div class="df-box green"><span class="df-id">D-9</span><span class="df-lbl">Retry Edges ✅</span></div>
+        </div>
+
+        <!-- Vector DB chain: D-1 → D-10 → D-11 + D-12 + D-13 + D-14 -->
+        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:8px;">
+          <span style="font-size:10px;font-weight:700;color:#1d4ed8;width:72px;flex-shrink:0;">Vector DB</span>
+          <div class="df-box green"><span class="df-id">D-1</span><span class="df-lbl">FastAPI ✅</span></div>
+          <div class="df-arr">→</div>
+          <div class="df-box green"><span class="df-id">D-10</span><span class="df-lbl">Vector Client ✅</span></div>
+          <div class="df-arr">→</div>
+          <div class="df-box green"><span class="df-id">D-11</span><span class="df-lbl">Chunking ✅</span></div>
+          <span style="font-size:11px;color:#64748b;">+</span>
+          <div class="df-box green"><span class="df-id">D-12</span><span class="df-lbl">Embeddings ✅</span></div>
+          <span style="font-size:10px;color:#d97706;font-weight:700;">(+ D-6 PII)</span>
+          <span style="font-size:10px;color:#64748b;font-style:italic;">(Sprint 3: D-13 D-14 →)</span>
+        </div>
+
+        <!-- Terraform: D-23 → D-26 + D-27 + D-28 (already unblocked) -->
+        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+          <span style="font-size:10px;font-weight:700;color:#b91c1c;width:72px;flex-shrink:0;">Terraform</span>
+          <div class="df-box green"><span class="df-id">D-23</span><span class="df-lbl">Var fix ✅</span></div>
+          <div class="df-arr">→</div>
+          <div class="df-box green"><span class="df-id">D-26</span><span class="df-lbl">IAM Roles ✅</span></div>
+          <span style="font-size:11px;color:#64748b;">+</span>
+          <div class="df-box green"><span class="df-id">D-27</span><span class="df-lbl">ALB SG ✅</span></div>
+          <span style="font-size:11px;color:#64748b;">+</span>
+          <div class="df-box green"><span class="df-id">D-28</span><span class="df-lbl">VPC AZ ✅</span></div>
+          <div class="df-arr">→</div>
+          <div class="df-box gray"><span class="df-id">Phase F</span><span class="df-lbl">Production</span></div>
+          <span style="font-size:10px;color:#15803d;font-weight:700;background:#dcfce7;padding:2px 6px;border-radius:4px;">✅ all infra DONE</span>
+        </div>
+      </div>
+
+      <!-- ══ SPRINT 3 — Evaluation Gate ══ -->
+      <div class="df-section" style="border-left:4px solid #64748b;">
+        <div class="df-section-title"><span style="background:#f1f5f9;color:#334155;padding:2px 10px;border-radius:6px;font-size:11px;font-weight:700;margin-right:8px;">Sprint 3</span>Phase D — Evaluation &amp; Deployment Gate</div>
+
+        <!-- D-10 → D-13 + D-14 (Sprint 3 retrieval entry) -->
+        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:8px;">
+          <span style="font-size:10px;font-weight:700;color:#334155;width:72px;flex-shrink:0;">Retrieval</span>
+          <div class="df-box green"><span class="df-id">D-10</span><span class="df-lbl">Vector Client ✅</span></div>
+          <div class="df-arr">→</div>
+          <div class="df-box green"><span class="df-id">D-13</span><span class="df-lbl">Hybrid Search ✅</span></div>
+          <span style="font-size:11px;color:#64748b;">+</span>
+          <div class="df-box green"><span class="df-id">D-14</span><span class="df-lbl">Rerank ✅</span></div>
+          <div class="df-arr">→</div>
+          <span style="font-size:10px;color:#64748b;font-style:italic;">eval gate below</span>
+        </div>
+
+        <!-- D-15 + D-16 parallel (both dep D-1→D-14) -->
+        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:6px;">
+          <span style="font-size:10px;font-weight:700;color:#334155;width:72px;flex-shrink:0;">Eval Gate</span>
+          <span style="font-size:10px;color:#64748b;font-style:italic;">D-1→D-14 →</span>
+          <div class="df-box green"><span class="df-id">D-15</span><span class="df-lbl">Unified Score ✅</span></div>
+          <span style="font-size:11px;color:#64748b;">+</span>
+          <div class="df-box green"><span class="df-id">D-16</span><span class="df-lbl">RAGAS ✅</span></div>
+          <span style="font-size:10px;color:#64748b;font-style:italic;">(parallel)</span>
+        </div>
+
+        <!-- D-15 → D-17 → D-18 → Phase F -->
+        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+          <span style="font-size:10px;width:72px;flex-shrink:0;"></span>
+          <span style="font-size:10px;color:#64748b;font-style:italic;">D-15 + D-16 →</span>
+          <div class="df-box gray"><span class="df-id">D-17</span><span class="df-lbl">Adversarial QA</span></div>
+          <div class="df-arr">→</div>
+          <div class="df-box gray"><span class="df-id">D-18</span><span class="df-lbl">Deploy Gate ≥0.85</span></div>
+          <div class="df-arr">→</div>
+          <div class="df-box gray"><span class="df-id">Phase F</span><span class="df-lbl">Production</span></div>
+        </div>
+      </div>
+
+      <!-- ══ SPRINT 4 — Phase E Agents + Dashboard + Auth UI ══ -->
+      <div class="df-section" style="border-left:4px solid #7c3aed;">
+        <div class="df-section-title"><span style="background:#ede9fe;color:#5b21b6;padding:2px 10px;border-radius:6px;font-size:11px;font-weight:700;margin-right:8px;">Sprint 4</span>Phase E — Agents · Dashboard · Auth UI</div>
+
+        <!-- Agent loop: D-7 → E-1 → E-2 + E-3 (branch) -->
+        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:8px;">
+          <span style="font-size:10px;font-weight:700;color:#5b21b6;width:72px;flex-shrink:0;">Agents</span>
+          <div class="df-box green"><span class="df-id">D-7</span><span class="df-lbl">LangGraph ✅</span></div>
+          <div class="df-arr">→</div>
+          <div class="df-box green"><span class="df-id">E-1</span><span class="df-lbl">Diagnoser ✅</span></div>
+          <div class="df-arr">→</div>
+          <div class="df-box green"><span class="df-id">E-2</span><span class="df-lbl">Improver ✅</span></div>
+          <span style="font-size:11px;color:#64748b;">+</span>
+          <div class="df-box green"><span class="df-id">E-3</span><span class="df-lbl">MLflow Log ✅</span></div>
+          <span style="font-size:10px;color:#64748b;font-style:italic;">(E-2 + E-3 both dep E-1)</span>
+        </div>
+
+        <!-- Retrieval: D-7 → E-7 + E-8 -->
+        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:8px;">
+          <span style="font-size:10px;font-weight:700;color:#5b21b6;width:72px;flex-shrink:0;">Retrieval</span>
+          <div class="df-box green"><span class="df-id">D-7</span><span class="df-lbl">LangGraph ✅</span></div>
+          <div class="df-arr">→</div>
+          <div class="df-box green"><span class="df-id">E-7</span><span class="df-lbl">Query Rewriter ✅</span></div>
+          <span style="font-size:11px;color:#64748b;">+</span>
+          <div class="df-box green"><span class="df-id">E-8</span><span class="df-lbl">Compressor ✅</span></div>
+          <span style="font-size:10px;color:#15803d;font-weight:700;">(E-8 + D-10 ✅)</span>
+        </div>
+
+        <!-- Dashboard: D-1 + D-15 → E-4 → E-6 | D-1 → E-5 (parallel) -->
+        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:4px;">
+          <span style="font-size:10px;font-weight:700;color:#5b21b6;width:72px;flex-shrink:0;">Dashboard</span>
+          <div class="df-box green"><span class="df-id">D-1</span><span class="df-lbl">FastAPI ✅</span></div>
+          <span style="font-size:11px;color:#64748b;">+</span>
+          <div class="df-box green"><span class="df-id">D-15</span><span class="df-lbl">Score ✅</span></div>
+          <div class="df-arr">→</div>
+          <div class="df-box green"><span class="df-id">E-4</span><span class="df-lbl">Dashboard ✅</span></div>
+          <div class="df-arr">→</div>
+          <div class="df-box green"><span class="df-id">E-6</span><span class="df-lbl">Live Charts ✅</span></div>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:8px;">
+          <span style="font-size:10px;width:72px;flex-shrink:0;"></span>
+          <div class="df-box green"><span class="df-id">D-1</span><span class="df-lbl">FastAPI ✅</span></div>
+          <div class="df-arr">→</div>
+          <div class="df-box green"><span class="df-id">E-5</span><span class="df-lbl">Configurator ✅</span></div>
+          <span style="font-size:10px;color:#64748b;font-style:italic;">(parallel — deps D-1 only, not E-4)</span>
+        </div>
+
+        <!-- Auth: D-1 → E-9 (standalone); UI pages: E-4 → E-10 … E-14 -->
+        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:4px;">
+          <span style="font-size:10px;font-weight:700;color:#5b21b6;width:72px;flex-shrink:0;">Auth</span>
+          <div class="df-box green"><span class="df-id">D-1</span><span class="df-lbl">FastAPI ✅</span></div>
+          <div class="df-arr">→</div>
+          <div class="df-box green"><span class="df-id">E-9</span><span class="df-lbl">Auth UI ✅</span></div>
+          <span style="font-size:10px;color:#64748b;font-style:italic;">(standalone — deps D-1 only)</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+          <span style="font-size:10px;font-weight:700;color:#5b21b6;width:72px;flex-shrink:0;">UI Pages</span>
+          <div class="df-box green"><span class="df-id">E-4</span><span class="df-lbl">Dashboard ✅</span></div>
+          <div class="df-arr">→</div>
+          <div class="df-box green"><span class="df-id">E-10</span><span class="df-lbl">Retrieval UI ✅</span></div>
+          <span style="font-size:11px;color:#64748b;">+</span>
+          <div class="df-box green"><span class="df-id">E-11</span><span class="df-lbl">Eval UI ✅</span></div>
+          <span style="font-size:11px;color:#64748b;">+</span>
+          <div class="df-box green"><span class="df-id">E-12</span><span class="df-lbl">Deploy UI ✅</span></div>
+          <span style="font-size:11px;color:#64748b;">+</span>
+          <div class="df-box green"><span class="df-id">E-13</span><span class="df-lbl">Audit UI ✅</span></div>
+          <span style="font-size:11px;color:#64748b;">+</span>
+          <div class="df-box green"><span class="df-id">E-14</span><span class="df-lbl">Settings ✅</span></div>
+        </div>
+      </div>
+
+      <!-- ══ SPRINT 5 — Phase F Production Readiness ══ -->
+      <div class="df-section" style="border-left:4px solid #d97706;">
+        <div class="df-section-title"><span style="background:#fef3c7;color:#92400e;padding:2px 10px;border-radius:6px;font-size:11px;font-weight:700;margin-right:8px;">Sprint 5</span>Phase F — Production Readiness ✅ DONE</div>
+
+        <!-- Observability chain -->
+        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:8px;">
+          <span style="font-size:10px;font-weight:700;color:#5b21b6;width:72px;flex-shrink:0;">Observability</span>
+          <div class="df-box green"><span class="df-id">D-1</span><span class="df-lbl">FastAPI ✅</span></div>
+          <div class="df-arr">→</div>
+          <div class="df-box green"><span class="df-id">F-3</span><span class="df-lbl">Prometheus + Grafana ✅</span></div>
+          <span style="font-size:11px;color:#64748b;">+</span>
+          <div class="df-box green"><span class="df-id">F-9</span><span class="df-lbl">Observer Agent ✅</span></div>
+          <span style="font-size:11px;color:#64748b;">+</span>
+          <div class="df-box green"><span class="df-id">F-11</span><span class="df-lbl">Cost Metrics ✅</span></div>
+          <div class="df-arr">→</div>
+          <div class="df-box green"><span class="df-id">F-13</span><span class="df-lbl">Alert Rules ✅</span></div>
+        </div>
+
+        <!-- Infra chain -->
+        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:8px;">
+          <span style="font-size:10px;font-weight:700;color:#5b21b6;width:72px;flex-shrink:0;">Infra / CI</span>
+          <div class="df-box green"><span class="df-id">F-1</span><span class="df-lbl">ECS Fargate ✅</span></div>
+          <span style="font-size:11px;color:#64748b;">+</span>
+          <div class="df-box green"><span class="df-id">F-2</span><span class="df-lbl">ECR ✅</span></div>
+          <div class="df-arr">→</div>
+          <div class="df-box green"><span class="df-id">F-4</span><span class="df-lbl">CI/CD ✅</span></div>
+          <div class="df-arr">→</div>
+          <div class="df-box green"><span class="df-id">F-5</span><span class="df-lbl">Staging ✅</span></div>
+          <div class="df-arr">→</div>
+          <div class="df-box green"><span class="df-id">F-6</span><span class="df-lbl">Smoke ✅</span></div>
+          <div class="df-arr">→</div>
+          <div class="df-box green"><span class="df-id">F-7</span><span class="df-lbl">Prod Deploy ✅</span></div>
+          <div class="df-arr">→</div>
+          <div class="df-box green"><span class="df-id">F-8</span><span class="df-lbl">Rollback ✅</span></div>
+        </div>
+
+        <!-- VS Code extension backlog + agent_metrics DB migration -->
+        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+          <span style="font-size:10px;font-weight:700;color:#5b21b6;width:72px;flex-shrink:0;">Other</span>
+          <div class="df-box" style="background:#fef3c7;border:2px solid #d97706;"><span class="df-id" style="color:#92400e;">F-10</span><span class="df-lbl" style="color:#92400e;">VS Code Ext</span></div>
+          <span style="font-size:10px;color:#92400e;font-weight:700;background:#fef3c7;padding:2px 7px;border-radius:4px;">BACKLOG</span>
+          <span style="font-size:11px;color:#64748b;">|</span>
+          <div class="df-box green"><span class="df-id">D-2</span><span class="df-lbl">Alembic ✅</span></div>
+          <div class="df-arr">→</div>
+          <div class="df-box" style="background:#d1fae5;border:2px solid #059669;"><span class="df-id" style="color:#065f46;">F-12</span><span class="df-lbl" style="color:#065f46;">agent_metrics</span></div>
+          <span style="font-size:10px;color:#065f46;font-weight:700;background:#d1fae5;padding:2px 7px;border-radius:4px;">DONE (Supabase dev)</span>
+        </div>
+      </div>
+
+      <!-- ══ SPRINT 6 — Phase F Advanced Frontend Workspaces (Team 9) ══ -->
+      <div class="df-section" style="border-left:4px solid #f97316;">
+        <div class="df-section-title"><span style="background:#fff7ed;color:#c2410c;padding:2px 10px;border-radius:6px;font-size:11px;font-weight:700;margin-right:8px;">Sprint 6</span>Phase F — Advanced Frontend Workspaces (Team 9)</div>
+
+        <!-- Diagnose + Improve loop -->
+        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:8px;">
+          <span style="font-size:10px;font-weight:700;color:#c2410c;width:72px;flex-shrink:0;">Loop UI</span>
+          <div class="df-box green"><span class="df-id">E-1</span><span class="df-lbl">Diagnoser ✅</span></div>
+          <div class="df-arr">→</div>
+          <div class="df-box green"><span class="df-id">F-14</span><span class="df-lbl">Diagnoser UI ✅</span></div>
+          <div class="df-arr">→</div>
+          <div class="df-box green"><span class="df-id">E-2</span><span class="df-lbl">Improver ✅</span></div>
+          <div class="df-arr">→</div>
+          <div class="df-box green"><span class="df-id">F-15</span><span class="df-lbl">Improver UI ✅</span></div>
+          <span style="font-size:10px;color:#64748b;font-style:italic;">(F-15 deps F-14)</span>
+        </div>
+
+        <!-- Experiments + Documents + Knowledge -->
+        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:8px;">
+          <span style="font-size:10px;font-weight:700;color:#c2410c;width:72px;flex-shrink:0;">Data Mgmt</span>
+          <div class="df-box green"><span class="df-id">E-3</span><span class="df-lbl">MLflow ✅</span></div>
+          <div class="df-arr">→</div>
+          <div class="df-box green"><span class="df-id">F-16</span><span class="df-lbl">Experiments ✅</span></div>
+          <span style="font-size:11px;color:#64748b;">|</span>
+          <div class="df-box green"><span class="df-id">D-5</span><span class="df-lbl">Ingestion ✅</span></div>
+          <div class="df-arr">→</div>
+          <div class="df-box green"><span class="df-id">F-17</span><span class="df-lbl">Docs UI ✅</span></div>
+          <div class="df-arr">→</div>
+          <div class="df-box green"><span class="df-id">F-18</span><span class="df-lbl">Knowledge UI ✅</span></div>
+          <span style="font-size:10px;color:#64748b;font-style:italic;">(F-18 deps F-17)</span>
+        </div>
+
+        <!-- Health + Version History + Observer (blocked) -->
+        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+          <span style="font-size:10px;font-weight:700;color:#c2410c;width:72px;flex-shrink:0;">Ops / Gov</span>
+          <div class="df-box green"><span class="df-id">F-9</span><span class="df-lbl">Observer Agent ✅</span></div>
+          <div class="df-arr">→</div>
+          <div class="df-box green"><span class="df-id">F-19</span><span class="df-lbl">Health UI ✅</span></div>
+          <span style="font-size:11px;color:#64748b;">|</span>
+          <div class="df-box green"><span class="df-id">D-2</span><span class="df-lbl">Alembic ✅</span></div>
+          <div class="df-arr">→</div>
+          <div class="df-box green"><span class="df-id">F-20</span><span class="df-lbl">Version History ✅</span></div>
+          <span style="font-size:11px;color:#64748b;">|</span>
+          <div class="df-box green"><span class="df-id">F-21</span><span class="df-lbl">Observer UI ✅</span></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+  <!-- ── FULL TASK TRACKER ── -->
+  <div id="tasks" class="section-title" style="margin-top:8px;">📁 Full Task Tracker</div>
+
+  <!-- Phase A -->
+  <div class="phase-section" id="pa">
+    <div class="phase-header" onclick="tog('pa')">
+      <div class="phase-pill pill-amber">A</div>
+      <div class="phase-title"><h3>Phase A — Architecture &amp; Design</h3><p>Governance contracts, ADRs, 18 coding rules</p></div>
+      <div class="phase-meta"><span class="badge badge-done">DONE</span><span style="font-size:11px;color:#16a34a;font-weight:600">6 / 6</span><span class="phase-toggle">▼</span></div>
+    </div>
+    <div class="phase-body">
+      <div class="phase-note">All design decisions frozen. Unlocks all downstream phases.</div>
+      <table class="task-table"><thead><tr><th>ID</th><th>Description</th><th>Branch</th><th>Lead</th><th>Team</th><th>Status</th></tr></thead><tbody>
+        <tr><td class="t-id">A-1</td><td class="t-name">Architecture v1.0 finalization</td><td class="t-branch">feature/A-1-arch-v1</td><td class="t-lead">Mahesh Kumar, Bhavesh Patel</td><td class="t-team">Team 10</td><td><span class="badge badge-done">DONE</span></td></tr>
+        <tr><td class="t-id">A-2</td><td class="t-name">PLAN.md 6-phase roadmap</td><td class="t-branch">feature/A-2-plan-roadmap</td><td class="t-lead">Mahesh Kumar, Bhavesh Patel</td><td class="t-team">Team 10</td><td><span class="badge badge-done">DONE</span></td></tr>
+        <tr><td class="t-id">A-3</td><td class="t-name">CLAUDE.md master contract</td><td class="t-branch">feature/A-3-claude-master</td><td class="t-lead">Mahesh Kumar, Bhavesh Patel</td><td class="t-team">Team 10</td><td><span class="badge badge-done">DONE</span></td></tr>
+        <tr><td class="t-id">A-4</td><td class="t-name">Frozen contracts (DB, API, GraphState)</td><td class="t-branch">feature/A-4-contracts-frozen</td><td class="t-lead">Mahesh Kumar, Bhavesh Patel</td><td class="t-team">Team 10</td><td><span class="badge badge-done">DONE</span></td></tr>
+        <tr><td class="t-id">A-5</td><td class="t-name">ADRs (6 decision records)</td><td class="t-branch">feature/A-5-adr-stack</td><td class="t-lead">Mahesh Kumar, Bhavesh Patel</td><td class="t-team">Team 10</td><td><span class="badge badge-done">DONE</span></td></tr>
+        <tr><td class="t-id">A-6</td><td class="t-name">18 Coding rules + rule enforcement</td><td class="t-branch">feature/A-6-rules-17-standards</td><td class="t-lead">Mahesh Kumar, Bhavesh Patel</td><td class="t-team">Team 10</td><td><span class="badge badge-done">DONE</span></td></tr>
+        </tbody></table>
+    </div>
+  </div>
+
+  <!-- Phase B -->
+  <div class="phase-section" id="pb">
+    <div class="phase-header" onclick="tog('pb')">
+      <div class="phase-pill pill-amber">B</div>
+      <div class="phase-title"><h3>Phase B — Foundation &amp; Governance</h3><p>Monorepo, Docker, Terraform, linting, developer tooling</p></div>
+      <div class="phase-meta"><span class="badge badge-done">DONE</span><span style="font-size:11px;color:#16a34a;font-weight:600">7 / 7</span><span class="phase-toggle">▼</span></div>
+    </div>
+    <div class="phase-body">
+      <div class="phase-note">Local dev stack fully operational. Depends on: A-1.</div>
+      <table class="task-table"><thead><tr><th>ID</th><th>Description</th><th>Branch</th><th>Lead</th><th>Team</th><th>Status</th></tr></thead><tbody>
+        <tr><td class="t-id">B-1</td><td class="t-name">Monorepo directories scaffold</td><td class="t-branch">feature/B-1-monorepo-root</td><td class="t-lead">Mahesh Kumar, Bhavesh Patel</td><td class="t-team">Team 10</td><td><span class="badge badge-done">DONE</span></td></tr>
+        <tr><td class="t-id">B-2</td><td class="t-name">npm workspaces + Turborepo</td><td class="t-branch">feature/B-2-workspace-turborepo</td><td class="t-lead">Mahesh Kumar, Bhavesh Patel</td><td class="t-team">Team 10</td><td><span class="badge badge-done">DONE</span></td></tr>
+        <tr><td class="t-id">B-3</td><td class="t-name">Docker Compose (7-service local stack)</td><td class="t-branch">feature/B-3-docker-compose-local</td><td class="t-lead">Ashish Singh</td><td class="t-team">Team 1</td><td><span class="badge badge-done">DONE</span></td></tr>
+        <tr><td class="t-id">B-4</td><td class="t-name">Dev setup scripts + .env.example</td><td class="t-branch">feature/B-4-dev-setup-scripts</td><td class="t-lead">Mahesh Kumar, Bhavesh Patel</td><td class="t-team">Team 10</td><td><span class="badge badge-done">DONE</span></td></tr>
+        <tr><td class="t-id">B-5</td><td class="t-name">Ruff + mypy + Prettier + pre-commit</td><td class="t-branch">feature/B-5-editor-lint-baseline</td><td class="t-lead">Mahesh Kumar, Bhavesh Patel</td><td class="t-team">Team 10</td><td><span class="badge badge-done">DONE</span></td></tr>
+        <tr><td class="t-id">B-6</td><td class="t-name">README quickstart</td><td class="t-branch">feature/B-6-readme-quickstart</td><td class="t-lead">Mahesh Kumar, Bhavesh Patel</td><td class="t-team">Team 10</td><td><span class="badge badge-done">DONE</span></td></tr>
+        <tr><td class="t-id">B-7</td><td class="t-name">Terraform modules layout + S3 remote state</td><td class="t-branch">feature/B-7-infra-terraform-bootstrap</td><td class="t-lead">Ashish Singh</td><td class="t-team">Team 1</td><td><span class="badge badge-done">DONE</span></td></tr>
+      </tbody></table>
+    </div>
+  </div>
+
+  <!-- Phase C -->
+  <div class="phase-section" id="pc">
+    <div class="phase-header" onclick="tog('pc')">
+      <div class="phase-pill pill-amber">C</div>
+      <div class="phase-title"><h3>Phase C — Platform Setup &amp; Team Readiness</h3><p>Infra, API keys, env files, Sprint 1 starter kits</p></div>
+      <div class="phase-meta"><span class="badge badge-done">DONE</span><span style="font-size:11px;color:#334155;font-weight:600">12 / 12</span><span class="phase-toggle">▼</span></div>
+    </div>
+    <div class="phase-body">
+      <div class="phase-note"><strong>✅ Gate Clear: C-8 + C-9a + C-9b + D-2 DONE. Phase C 100% COMPLETE — all gates cleared 17-Jun-2026.</strong> Infrastructure (C-1 to C-5) is fully DONE.</div>
+      <table class="task-table"><thead><tr><th>ID</th><th>Description</th><th>Branch</th><th>Lead</th><th>Team</th><th>Depends On</th><th>Status</th></tr></thead><tbody>
+        <tr><td class="t-id">C-1</td><td class="t-name">Supabase DEV project + pgvector</td><td class="t-branch">feature/C-1-supabase-dev</td><td class="t-lead">Ashish Singh</td><td class="t-team">Team 1</td><td><div class="deps"><span class="dep-tag">B-3</span></div></td><td><span class="badge badge-done">DONE</span></td></tr>
+        <tr><td class="t-id">C-2</td><td class="t-name">Redis (ElastiCache or local)</td><td class="t-branch">feature/C-2-redis-setup</td><td class="t-lead">Ashish Singh</td><td class="t-team">Team 1</td><td><div class="deps"><span class="dep-tag">B-3</span></div></td><td><span class="badge badge-done">DONE</span></td></tr>
+        <tr><td class="t-id">C-3</td><td class="t-name">Prometheus + Grafana observability</td><td class="t-branch">feature/C-3-prometheus-grafana</td><td class="t-lead">Ashish Singh</td><td class="t-team">Team 1</td><td><div class="deps"><span class="dep-tag">B-3</span></div></td><td><span class="badge badge-done">DONE</span></td></tr>
+        <tr><td class="t-id">C-4</td><td class="t-name">GitHub Actions CI/CD pipeline (8-stage)</td><td class="t-branch">feature/C-4-ci-cd-8stage</td><td class="t-lead">Ashish Singh</td><td class="t-team">Team 1</td><td><div class="deps"><span class="dep-tag">B-1</span></div></td><td><span class="badge badge-done">DONE</span></td></tr>
+        <tr><td class="t-id">C-5</td><td class="t-name">ECR + Dockerfile (backend + frontend)</td><td class="t-branch">feature/C-5-ecr-dockerfiles</td><td class="t-lead">Ashish Singh</td><td class="t-team">Team 1</td><td><div class="deps"><span class="dep-tag">B-1</span></div></td><td><span class="badge badge-done">DONE</span></td></tr>
+        <tr><td class="t-id">C-6</td><td class="t-name">TASK_TRACKER.md (unified execution board)</td><td class="t-branch">feature/C-6-task-tracker</td><td class="t-lead">Mahesh Kumar, Bhavesh Patel</td><td class="t-team">Team 10</td><td><div class="deps"><span class="dep-tag">C-1 to C-5</span></div></td><td><span class="badge badge-done">DONE</span></td></tr>
+        <tr><td class="t-id">C-7</td><td class="t-name">Archive old tracking files</td><td class="t-branch">—</td><td class="t-lead">Mahesh Kumar, Bhavesh Patel</td><td class="t-team">Team 10</td><td><div class="deps"><span class="dep-tag">C-6</span></div></td><td><span class="badge badge-done">DONE</span></td></tr>
+        <tr><td class="t-id">C-Doc</td><td class="t-name">Update project_docs to v3.0 (PRD, Architecture, HLD, LLD)</td><td class="t-branch">—</td><td class="t-lead">Mahesh Kumar, Bhavesh Patel</td><td class="t-team">Team 10</td><td>—</td><td><span class="badge badge-done">DONE</span></td></tr>
+        <tr><td class="t-id">C-8</td><td class="t-name">Generate API keys + populate autorag-server/.env.dev</td><td class="t-branch">—</td><td class="t-lead">Mahesh/Bhavesh delegate</td><td class="t-team">EURI Team</td><td><div class="deps"><span class="dep-label">blocks:</span><span class="dep-tag">C-9a</span><span class="dep-tag">C-9b</span><span class="dep-tag">D-1</span><span class="dep-tag">D-2</span></div></td><td><span class="badge badge-done">DONE</span></td></tr>
+        <tr><td class="t-id">C-9a</td><td class="t-name">Verify API keys + Supabase DB URL</td><td class="t-branch">—</td><td class="t-lead">Bhavesh Patel</td><td class="t-team">Team 10</td><td><div class="deps"><span class="dep-tag">C-8</span></div></td><td><span class="badge badge-done">DONE</span></td></tr>
+        <tr><td class="t-id">C-9b</td><td class="t-name">Populate autorag-client/.env.dev</td><td class="t-branch">—</td><td class="t-lead">Vansh</td><td class="t-team">Team 3</td><td><div class="deps"><span class="dep-tag">C-8</span><span class="dep-tag">C-9a</span></div></td><td><span class="badge badge-done">DONE</span></td></tr>
+        <tr><td class="t-id">C-Final</td><td class="t-name">Create Sprint 1 Starter Kits (All 10 Teams)</td><td class="t-branch">project-guides/team-*/</td><td class="t-lead">Mahesh Kumar (coords)</td><td class="t-team">All Leads</td><td><div class="deps"><span class="dep-tag">C-9a</span><span class="dep-tag">C-9b</span><span class="dep-tag">D-2</span></div></td><td><span class="badge badge-done">DONE</span></td></tr>
+      </tbody></table>
+    </div>
+  </div>
+
+  <!-- Phase D -->
+  <div class="phase-section" id="pd">
+    <div class="phase-header" onclick="tog('pd')">
+      <div class="phase-pill pill-amber">D</div>
+      <div class="phase-title"><h3>Phase D — Core Implementation (38 Tasks)</h3><p>FastAPI, database, LangGraph, vector DB, retrieval, evaluation + audit fixes + agent node implementations + frontend infrastructure</p></div>
+      <div class="phase-meta"><span class="badge badge-done">DONE</span><span style="font-size:11px;color:#16a34a;font-weight:600">38 / 38</span><span class="phase-toggle">▼</span></div>
+    </div>
+    <div class="phase-body">
+      <div class="phase-note" style="background:#f0fdf4;border-color:#16a34a;color:#15803d;"><strong>✅ 38/38 — Phase D COMPLETE (05-Jul-2026):</strong> D-30/D-31/D-32 (ingestion/builder/deployer node implementations) + D-33/D-34/D-35/D-36/D-37/D-38 (frontend app shell, auth middleware, shared libs, domain types, Playwright E2E, Vitest infra) added retroactively — all real code confirmed. All 38 Phase D tasks confirmed.</div>
+      <table class="task-table"><thead><tr><th>ID</th><th>Description</th><th>Branch</th><th>Lead</th><th>Team</th><th>Depends On</th><th>Status</th></tr></thead><tbody>
+        <tr><td class="t-id">D-1</td><td class="t-name">FastAPI shell, health check, OpenAPI</td><td class="t-branch">feature/D-1-fastapi-shell</td><td class="t-lead">Mahesh Kumar, Bhavesh Patel</td><td class="t-team">Team 10</td><td><div class="deps"><span class="dep-tag">C-8</span><span class="dep-tag">C-9</span></div></td><td><span class="badge badge-done">DONE</span></td></tr>
+        <tr><td class="t-id">D-2</td><td class="t-name">Alembic migrations bootstrap</td><td class="t-branch">feature/D-2-alembic-bootstrap</td><td class="t-lead">Ashish Singh</td><td class="t-team">Team 1</td><td><div class="deps"><span class="dep-tag">C-8</span><span class="dep-tag">C-9</span></div></td><td><span class="badge badge-done">DONE</span></td></tr>
+        <tr><td class="t-id">D-3</td><td class="t-name">Core SQL tables (pipelines, runs, evals, deploys)</td><td class="t-branch">feature/D-3-backend-core-schema</td><td class="t-lead">Vishal Prasad</td><td class="t-team">Team 5</td><td><div class="deps"><span class="dep-tag">D-2</span></div></td><td><span class="badge badge-done">DONE</span></td></tr>
+        <tr><td class="t-id">D-4</td><td class="t-name">✅ audit_log table (INSERT ONLY)</td><td class="t-branch">feature/D-4-immutable-audit-log</td><td class="t-lead">Mahesh Kumar, Bhavesh Patel</td><td class="t-team">Team 10</td><td><div class="deps"><span class="dep-tag">D-2</span></div></td><td><span class="badge badge-done">DONE</span></td></tr>
+        <tr><td class="t-id">D-5</td><td class="t-name">Document parser + Supabase Storage</td><td class="t-branch">feature/D-5-ingest-document-parser</td><td class="t-lead">Vishal Prasad + Santosh Kumar Biswal</td><td class="t-team">Team 5 + 7</td><td><div class="deps"><span class="dep-tag">D-3</span></div></td><td><span class="badge badge-done">DONE</span></td></tr>
+        <tr><td class="t-id">D-6</td><td class="t-name">Custom PII Detection &amp; Masking</td><td class="t-branch">feature/D-6-ingest-pii-masking</td><td class="t-lead">Santosh Kumar Biswal</td><td class="t-team">Team 7</td><td><div class="deps"><span class="dep-tag">D-5</span></div></td><td><span class="badge badge-done">DONE</span></td></tr>
+        <tr><td class="t-id">D-7</td><td class="t-name">LangGraph + GraphState schema</td><td class="t-branch">feature/D-7-langgraph-runtime</td><td class="t-lead">Vanishree</td><td class="t-team">Team 4</td><td><div class="deps"><span class="dep-tag">D-1 ✅</span></div></td><td><span class="badge badge-done">DONE</span></td></tr>
+        <tr><td class="t-id">D-8</td><td class="t-name">PostgreSQL graph checkpointing</td><td class="t-branch">feature/D-8-graph-checkpointing</td><td class="t-lead">Vanishree</td><td class="t-team">Team 4</td><td><div class="deps"><span class="dep-tag">D-7</span></div></td><td><span class="badge badge-done">DONE</span></td></tr>
+        <tr><td class="t-id">D-9</td><td class="t-name">Explicit retry graph edges</td><td class="t-branch">feature/D-9-retry-routing</td><td class="t-lead">Vanishree</td><td class="t-team">Team 4</td><td><div class="deps"><span class="dep-tag">D-7</span></div></td><td><span class="badge badge-done">DONE</span></td></tr>
+        <tr><td class="t-id">D-10</td><td class="t-name">Supabase Vector client wrapper</td><td class="t-branch">feature/D-10-supabase-vector-client</td><td class="t-lead">Sohail Sheikh</td><td class="t-team">Team 6</td><td><div class="deps"><span class="dep-tag">D-1</span></div></td><td><span class="badge badge-done">DONE</span></td></tr>
+        <tr><td class="t-id">D-11</td><td class="t-name">Chunking adapters (Semantic, Hierarchical, Late)</td><td class="t-branch">feature/D-11-chunking-adapters</td><td class="t-lead">Sohail Sheikh + Gopinadh Bapatla</td><td class="t-team">Team 6 + 8</td><td><div class="deps"><span class="dep-tag">D-10</span></div></td><td><span class="badge badge-done">DONE</span></td></tr>
+        <tr><td class="t-id">D-12</td><td class="t-name">Gemini Embedding 2 batch</td><td class="t-branch">feature/D-12-gemini-embeddings</td><td class="t-lead">Vishal Prasad</td><td class="t-team">Team 5</td><td><div class="deps"><span class="dep-tag">D-10</span><span class="dep-tag">D-6</span></div></td><td><span class="badge badge-done">DONE</span></td></tr>
+        <tr><td class="t-id">D-13</td><td class="t-name">Dense + BM25 hybrid search</td><td class="t-branch">feature/D-13-hybrid-search</td><td class="t-lead">Sohail Sheikh</td><td class="t-team">Team 6</td><td><div class="deps"><span class="dep-tag">D-10</span></div></td><td><span class="badge badge-done">DONE</span></td></tr>
+        <tr><td class="t-id">D-14</td><td class="t-name">Cohere Rerank v3 + BGE-Reranker fallback (Stage 4 of 4-stage retrieval stack)</td><td class="t-branch">feature/D-14-cohere-rerank</td><td class="t-lead">Gopinadh Bapatla</td><td class="t-team">Team 8</td><td><div class="deps"><span class="dep-tag">D-10</span></div></td><td><span class="badge badge-done">DONE</span></td></tr>
+        <tr><td class="t-id">D-15</td><td class="t-name">Unified Score formula (0.25R + 0.35Q + 0.25F − 0.10L − 0.05C)</td><td class="t-branch">feature/D-15-unified-score</td><td class="t-lead">Mrityunjay</td><td class="t-team">Team 2</td><td><div class="deps"><span class="dep-tag">D-1 → D-14</span></div></td><td><span class="badge badge-done">DONE</span></td></tr>
+        <tr><td class="t-id">D-16</td><td class="t-name">RAGAS metrics (Faithfulness, Precision, Recall, MRR, nDCG, Recall@5, Recall@10, Search Latency)</td><td class="t-branch">feature/D-16-ragas-metrics</td><td class="t-lead">Mrityunjay</td><td class="t-team">Team 2</td><td><div class="deps"><span class="dep-tag">D-1 → D-14</span></div></td><td><span class="badge badge-done">DONE</span></td></tr>
+        <tr><td class="t-id">D-17</td><td class="t-name">Adversarial Q&amp;A suite (10 unanswerable questions)</td><td class="t-branch">feature/D-17-adversarial-tests</td><td class="t-lead">Mrityunjay</td><td class="t-team">Team 2</td><td><div class="deps"><span class="dep-tag">D-15</span></div></td><td><span class="badge badge-done">DONE</span></td></tr>
+        <tr><td class="t-id">D-18</td><td class="t-name">Deploy eligibility gate (Unified Score ≥ 0.85)</td><td class="t-branch">feature/D-18-deploy-gate</td><td class="t-lead">Mahesh Kumar, Bhavesh Patel</td><td class="t-team">Team 10</td><td><div class="deps"><span class="dep-tag">D-15</span><span class="dep-tag">D-16</span><span class="dep-tag">D-17</span></div></td><td><span class="badge badge-done">DONE</span></td></tr>
+        <tr><td class="t-id">D-19</td><td class="t-name">✅ Fix audit_log CheckConstraint — add cost_limit_exceeded event type (Rule 86)</td><td class="t-branch">feature/D-19-audit-log-fix-cost-limit-event</td><td class="t-lead">Vishal Prasad</td><td class="t-team">Team 5</td><td><div class="deps"><span class="dep-tag">D-4</span></div></td><td><span class="badge badge-done">DONE</span></td></tr>
+        <tr><td class="t-id">D-20</td><td class="t-name">✅ Remove hardcoded secrets from config.py — JWT default, DB URL creds, Docker creds</td><td class="t-branch">feature/D-20-config-remove-hardcoded-secrets</td><td class="t-lead">Mahesh Kumar, Bhavesh Patel</td><td class="t-team">Team 10</td><td><div class="deps"><span class="dep-tag">D-1</span></div></td><td><span class="badge badge-done">DONE</span></td></tr>
+        <tr><td class="t-id">D-21</td><td class="t-name">✅ Fix wrong /settings docstrings in pipelines, experiments, audit-log page files</td><td class="t-branch">feature/D-21-frontend-fix-page-docstrings</td><td class="t-lead">Mahesh Kumar, Bhavesh Patel</td><td class="t-team">Team 10</td><td><div class="deps"><span class="dep-tag">E-4</span></div></td><td><span class="badge badge-done">DONE</span></td></tr>
+        <tr><td class="t-id">D-22</td><td class="t-name">✅ Type unknown params + implement X-Trace-ID header injection in api-client.ts</td><td class="t-branch">feature/D-22-api-client-types-trace-id</td><td class="t-lead">Mahesh Kumar, Bhavesh Patel</td><td class="t-team">Team 10</td><td><div class="deps"><span class="dep-tag">E-4</span></div></td><td><span class="badge badge-done">DONE</span></td></tr>
+        <tr><td class="t-id">D-23</td><td class="t-name">✅ Fix Terraform module variable naming mismatch (env→environment, api_image→backend_image_url)</td><td class="t-branch">feature/D-23-terraform-fix-variable-naming</td><td class="t-lead">Mahesh Kumar, Bhavesh Patel</td><td class="t-team">Team 10</td><td>—</td><td><span class="badge badge-done">DONE</span></td></tr>
+        <tr><td class="t-id">D-24</td><td class="t-name">Implement ECS Fargate task definitions + Blue/Green CodeDeploy + CloudWatch rollback alarms</td><td class="t-branch">feature/D-24-ecs-fargate-task-definitions</td><td class="t-lead">Mahesh Kumar</td><td class="t-team">Team 10</td><td><div class="deps"><span class="dep-tag">D-23</span></div></td><td><span class="badge badge-done">DONE</span></td></tr>
+        <tr><td class="t-id">D-25</td><td class="t-name">✅ Add S3 state bucket versioning, AES256 encryption, block-public-access</td><td class="t-branch">feature/D-25-terraform-s3-state-security</td><td class="t-lead">Mahesh Kumar, Bhavesh Patel</td><td class="t-team">Team 10</td><td><div class="deps"><span class="dep-tag">D-23</span></div></td><td><span class="badge badge-done">DONE</span></td></tr>
+        <tr><td class="t-id">D-26</td><td class="t-name">Attach IAM policies to ECS task execution role (ECR pull + Secrets Manager + CloudWatch Logs)</td><td class="t-branch">feature/D-26-terraform-iam-policies</td><td class="t-lead">Ashish Singh</td><td class="t-team">Team 1</td><td><div class="deps"><span class="dep-tag">D-23</span></div></td><td><span class="badge badge-done">DONE</span></td></tr>
+        <tr><td class="t-id">D-27</td><td class="t-name">Add explicit security group to ALB module (ports 80/443)</td><td class="t-branch">feature/D-27-terraform-alb-security-group</td><td class="t-lead">Ashish Singh</td><td class="t-team">Team 1</td><td><div class="deps"><span class="dep-tag">D-23</span></div></td><td><span class="badge badge-done">DONE</span></td></tr>
+        <tr><td class="t-id">D-28</td><td class="t-name">Fix VPC default availability zones from us-east-1 to ap-south-1</td><td class="t-branch">feature/D-28-terraform-vpc-az-defaults</td><td class="t-lead">Ashish Singh</td><td class="t-team">Team 1</td><td><div class="deps"><span class="dep-tag">D-23</span></div></td><td><span class="badge badge-done">DONE</span></td></tr>
+        <tr><td class="t-id">D-29</td><td class="t-name">✅ Bootstrap outputs (state_bucket_name, lock_table_name, secret_arn_*) + wire secret_arns into ecs_fargate + iam_core (02-Jul-2026)</td><td class="t-branch">feature/D-29-terraform-bootstrap-outputs</td><td class="t-lead">Mahesh Kumar, Bhavesh Patel</td><td class="t-team">Team 10</td><td>—</td><td><span class="badge badge-done">DONE</span></td></tr>
+        <tr><td class="t-id">D-30</td><td class="t-name">✅ Ingestion node — Storage list → parse → PII mask → chunk (semantic/hierarchical/late) → TokenGuardrail → create_table → manifest upload (05-Jul-2026, commit 84a7203)</td><td class="t-branch">—</td><td class="t-lead">Mahesh Kumar</td><td class="t-team">Team 5+7</td><td><div class="deps"><span class="dep-tag">D-5</span><span class="dep-tag">D-6</span><span class="dep-tag">D-11</span><span class="dep-tag">E-17</span></div></td><td><span class="badge badge-done">DONE</span></td></tr>
+        <tr><td class="t-id">D-31</td><td class="t-name">✅ Builder node — load manifest → embed 768-dim batches → upsert pgvector → 4-stage hybrid retrieval (RRF + Cohere rerank) → optional HyDE (05-Jul-2026, commit 84a7203)</td><td class="t-branch">—</td><td class="t-lead">Mahesh Kumar</td><td class="t-team">Team 2+6+8</td><td><div class="deps"><span class="dep-tag">D-10</span><span class="dep-tag">D-12</span><span class="dep-tag">D-13</span><span class="dep-tag">D-14</span></div></td><td><span class="badge badge-done">DONE</span></td></tr>
+        <tr><td class="t-id">D-32</td><td class="t-name">✅ Deployer node — gate check → reject :latest → boto3 ECS task def register + service update → ALB Blue/Green canary → CloudWatch poll → promote or rollback → audit_log (05-Jul-2026, commit 84a7203)</td><td class="t-branch">—</td><td class="t-lead">Mahesh Kumar</td><td class="t-team">Team 10</td><td><div class="deps"><span class="dep-tag">D-18</span><span class="dep-tag">D-24</span><span class="dep-tag">F-2</span></div></td><td><span class="badge badge-done">DONE</span></td></tr>
+        <tr><td class="t-id">D-33</td><td class="t-name">✅ Frontend app shell — AppShell.tsx, Header.tsx, sidebar.tsx, QueryProvider (React Query) — base layout for all dashboard pages</td><td class="t-branch">—</td><td class="t-lead">Saurabh Kumar</td><td class="t-team">Team 9</td><td>—</td><td><span class="badge badge-done">DONE</span></td></tr>
+        <tr><td class="t-id">D-34</td><td class="t-name">✅ Next.js auth middleware — middleware.ts protecting all routes; redirects unauthenticated users to /login; Supabase session check</td><td class="t-branch">—</td><td class="t-lead">Saurabh Kumar</td><td class="t-team">Team 9</td><td><div class="deps"><span class="dep-tag">D-33</span></div></td><td><span class="badge badge-done">DONE</span></td></tr>
+        <tr><td class="t-id">D-35</td><td class="t-name">✅ Shared lib utilities — charts.ts, format.ts, kpi.ts, nav.ts, score.ts, supabase.ts, utils.ts + Vitest unit tests</td><td class="t-branch">—</td><td class="t-lead">Saurabh Kumar</td><td class="t-team">Team 9</td><td>—</td><td><span class="badge badge-done">DONE</span></td></tr>
+        <tr><td class="t-id">D-36</td><td class="t-name">✅ Frontend domain type definitions — types/index.ts (Pipeline, Chunk, EvalResult, etc.) + types/auth.ts (Session, User)</td><td class="t-branch">—</td><td class="t-lead">Saurabh Kumar</td><td class="t-team">Team 9</td><td>—</td><td><span class="badge badge-done">DONE</span></td></tr>
+        <tr><td class="t-id">D-37</td><td class="t-name">✅ Playwright E2E test suite — 4 spec files (auth.spec.ts, pipeline.spec.ts, dashboard.spec.ts, api.spec.ts) + playwright.config.ts</td><td class="t-branch">—</td><td class="t-lead">Saurabh Kumar</td><td class="t-team">Team 9</td><td><div class="deps"><span class="dep-tag">D-33</span><span class="dep-tag">D-34</span></div></td><td><span class="badge badge-done">DONE</span></td></tr>
+        <tr><td class="t-id">D-38</td><td class="t-name">✅ Frontend test infrastructure — vitest.setup.ts (global mocks for Supabase, fetch, next/router) + test-utils/fixtures.ts (pipeline/chunk/eval factories)</td><td class="t-branch">—</td><td class="t-lead">Saurabh Kumar</td><td class="t-team">Team 9</td><td>—</td><td><span class="badge badge-done">DONE</span></td></tr>
+      </tbody></table>
+    </div>
+  </div>
+
+  <!-- Phase E -->
+  <div class="phase-section" id="pe">
+    <div class="phase-header" onclick="tog('pe')">
+      <div class="phase-pill pill-amber">E</div>
+      <div class="phase-title"><h3>Phase E — Integration &amp; Testing</h3><p>Diagnoser, Improver, MLflow, Dashboard, Configurator</p></div>
+      <div class="phase-meta"><span class="badge badge-done">DONE</span><span style="font-size:11px;color:#16a34a;font-weight:600">17 / 17</span><span class="phase-toggle">▼</span></div>
+    </div>
+    <div class="phase-body">
+      <div class="phase-note"><strong>17/17 ✅ COMPLETE — E-10 ✅ (PR #32), E-11 ✅ (PR #34), E-12 ✅ (PR #37, 04-Jul), E-13 ✅ (PR #39, 04-Jul), E-14 ✅ (Settings UI merged 04-Jul-2026). Phase E 100% DONE.</strong></div>
+      <table class="task-table"><thead><tr><th>ID</th><th>Description</th><th>Branch</th><th>Lead</th><th>Team</th><th>Depends On</th><th>Status</th></tr></thead><tbody>
+        <tr><td class="t-id">E-1</td><td class="t-name">Diagnoser agent (6-type failure classification: F-01 to F-06, F-06 added via G-6 10-Jul-2026)</td><td class="t-branch">feature/E-1-diagnoser-agent</td><td class="t-lead">Vanishree</td><td class="t-team">Team 4</td><td><div class="deps"><span class="dep-tag">D-7</span></div></td><td><span class="badge badge-done">DONE</span></td></tr>
+        <tr><td class="t-id">E-2</td><td class="t-name">Improver agent (variant hyperparameter generation)</td><td class="t-branch">feature/E-2-improver-agent</td><td class="t-lead">Vanishree</td><td class="t-team">Team 4 + 3</td><td><div class="deps"><span class="dep-tag">D-7</span><span class="dep-tag">E-1</span></div></td><td><span class="badge badge-done">DONE</span></td></tr>
+        <tr><td class="t-id">E-3</td><td class="t-name">MLflow experiment logging</td><td class="t-branch">feature/E-3-mlflow-telemetry</td><td class="t-lead">Vansh</td><td class="t-team">Team 3</td><td><div class="deps"><span class="dep-tag">E-1</span></div></td><td><span class="badge badge-done">DONE</span></td></tr>
+        <tr><td class="t-id">E-4</td><td class="t-name">✅ Next.js 15 Dashboard shell</td><td class="t-branch">feature/E-4-nextjs-dashboard</td><td class="t-lead">Saurabh Kumar</td><td class="t-team">Team 9</td><td><div class="deps"><span class="dep-tag">D-1</span><span class="dep-tag">D-15</span></div></td><td><span class="badge badge-done">DONE</span></td></tr>
+        <tr><td class="t-id">E-5</td><td class="t-name">Configurator wizard (6-step UI)</td><td class="t-branch">feature/E-5-configurator-wizard</td><td class="t-lead">Saurabh Kumar</td><td class="t-team">Team 9</td><td><div class="deps"><span class="dep-tag">D-1</span></div></td><td><span class="badge badge-done">DONE</span></td></tr>
+        <tr><td class="t-id">E-6</td><td class="t-name">Real-time agent progress charts</td><td class="t-branch">feature/E-6-realtime-charts</td><td class="t-lead">Saurabh Kumar</td><td class="t-team">Team 9</td><td><div class="deps"><span class="dep-tag">E-4</span></div></td><td><span class="badge badge-done">DONE</span></td></tr>
+        <tr><td class="t-id">E-7</td><td class="t-name">Query Rewriter agent (LLM-based query reformulation)</td><td class="t-branch">feature/E-7-query-rewriter-agent</td><td class="t-lead">Vansh</td><td class="t-team">Team 3</td><td><div class="deps"><span class="dep-tag">D-7</span></div></td><td><span class="badge badge-done">DONE</span></td></tr>
+        <tr><td class="t-id">E-8</td><td class="t-name">Context Compressor agent (token-budget context reduction)</td><td class="t-branch">feature/E-8-compressor-agent</td><td class="t-lead">Sohail Sheikh</td><td class="t-team">Team 6</td><td><div class="deps"><span class="dep-tag">D-7</span><span class="dep-tag">D-10</span></div></td><td><span class="badge badge-done">DONE</span></td></tr>
+        <tr><td class="t-id">E-15</td><td class="t-name">LLM Service wrapper — LLMResponse dataclass, cost calc from model_pricing.yaml, Gemini→KiMi→Gemini failover chain</td><td class="t-branch">feature/E-15-llm-service-cost-tracking</td><td class="t-lead">Vansh</td><td class="t-team">Team 3</td><td><div class="deps"><span class="dep-tag">D-7</span></div></td><td><span class="badge badge-done">DONE</span></td></tr>
+        <tr><td class="t-id">E-16</td><td class="t-name">CostGuardrail service — env-var budgets (MAX_QUERY_COST_USD etc.), audit_log INSERT on breach</td><td class="t-branch">feature/E-16-cost-guardrail</td><td class="t-lead">Vansh</td><td class="t-team">Team 3</td><td><div class="deps"><span class="dep-tag">E-15</span><span class="dep-tag">D-19</span></div></td><td><span class="badge badge-done">DONE</span></td></tr>
+        <tr><td class="t-id">E-17</td><td class="t-name">TokenGuardrail service — token_budgets.yaml limits, pre-LLM-call enforcement, prevents token explosions</td><td class="t-branch">feature/E-17-token-guardrail</td><td class="t-lead">Vansh</td><td class="t-team">Team 3</td><td><div class="deps"><span class="dep-tag">E-15</span></div></td><td><span class="badge badge-done">DONE</span></td></tr>
+        <tr><td class="t-id">E-9</td><td class="t-name">Authentication UI (Login / Signup / Forgot Password — email/password only)</td><td class="t-branch">feature/E-9-auth-ui</td><td class="t-lead">Saurabh Kumar</td><td class="t-team">Team 9</td><td><div class="deps"><span class="dep-tag">D-1</span></div></td><td><span class="badge badge-done">DONE</span></td></tr>
+        <tr><td class="t-id">E-10</td><td class="t-name">Retrieval page UI `/retrieve` (query → rewrite → chunks + scores)</td><td class="t-branch">feature/E-10-retrieval-ui</td><td class="t-lead">Saurabh Kumar</td><td class="t-team">Team 9</td><td><div class="deps"><span class="dep-tag">E-4</span><span class="dep-tag">D-13</span></div></td><td><span class="badge badge-done">DONE</span></td></tr>
+        <tr><td class="t-id">E-11</td><td class="t-name">Evaluation page UI `/evaluation` (Unified Score gauge + RAGAS + hallucination) — PR #34 merged 02-Jul-2026</td><td class="t-branch">feature/E-11-evaluation-ui</td><td class="t-lead">Saurabh Kumar</td><td class="t-team">Team 9</td><td><div class="deps"><span class="dep-tag">E-4</span><span class="dep-tag">D-15</span><span class="dep-tag">D-16</span></div></td><td><span class="badge badge-done">DONE</span></td></tr>
+        <tr><td class="t-id">E-12</td><td class="t-name">Deployment page UI `/deploy` (Blue/Green traffic split + Promote/Rollback) — PR #37 merged 04-Jul-2026</td><td class="t-branch">feature/E-12-deployment-ui</td><td class="t-lead">Saurabh Kumar</td><td class="t-team">Team 9</td><td><div class="deps"><span class="dep-tag">E-4</span><span class="dep-tag">D-18</span></div></td><td><span class="badge badge-done">DONE</span></td></tr>
+        <tr><td class="t-id">E-13</td><td class="t-name">Audit Logs UI `/audit` (table + filters + CSV export + pagination) — PR #39 merged 04-Jul-2026; app/audit/page.tsx + 5 components + use-audit-log hook + Vitest test; nav.ts /audit-log → /audit corrected</td><td class="t-branch">feature/E-13-audit-logs-ui</td><td class="t-lead">Saurabh Kumar</td><td class="t-team">Team 9</td><td><div class="deps"><span class="dep-tag">E-4</span><span class="dep-tag">D-4</span></div></td><td><span class="badge badge-done">DONE</span></td></tr>
+        <tr><td class="t-id">E-14</td><td class="t-name">Settings UI `/settings/*` — 6 tabs (Profile, Organization, Notifications, API Keys, Members, Theme); merged 04-Jul-2026; app/settings/[tab]/page.tsx + layout + redirect; SettingsSidebar + SettingsCard + 6 panels; Chapter 26 spec; 11 files</td><td class="t-branch">feature/E-14-settings-ui</td><td class="t-lead">Saurabh Kumar</td><td class="t-team">Team 9</td><td><div class="deps"><span class="dep-tag">E-4</span><span class="dep-tag">D-1</span></div></td><td><span class="badge badge-done">DONE</span></td></tr>
+      </tbody></table>
+    </div>
+  </div>
+
+  <!-- Phase F -->
+  <div class="phase-section" id="pf">
+    <div class="phase-header" onclick="tog('pf')">
+      <div class="phase-pill pill-amber">F</div>
+      <div class="phase-title"><h3>Phase F — Production Readiness &amp; Launch</h3><p>Blue-green deployment, hardening, production GA — F-10 (VS Code Extension) in backlog</p></div>
+      <div class="phase-meta"><span class="badge badge-done">DONE</span><span style="font-size:11px;color:#16a34a;font-weight:600">21 / 21</span><span class="phase-toggle">▼</span></div>
+    </div>
+    <div class="phase-body">
+      <div class="phase-note"><strong>21/21 (100%) as of 05-Jul-2026 — Sprint 6 COMPLETE 8/8 ✅:</strong> F-14 ✅ PR #41, F-15 ✅ PR #42, F-16 ✅ commit 814fd03, F-17 ✅ PR #48 (e619451), F-18 ✅ PR #43, F-19 ✅ PR #44, F-20 ✅ PR #45, F-21 ✅ PR #46. F-10 VS Code Extension BACKLOG (deferred).</div>
+      <table class="task-table"><thead><tr><th>ID</th><th>Description</th><th>Branch</th><th>Lead</th><th>Team</th><th>Depends On</th><th>Status</th></tr></thead><tbody>
+        <tr><td class="t-id">F-1</td><td class="t-name">Blue-green ECS Fargate deploy</td><td class="t-branch">feature/F-1-blue-green-deploy</td><td class="t-lead">Ashish Singh</td><td class="t-team">Team 1</td><td><div class="deps"><span class="dep-tag">E-1 → E-6</span></div></td><td><span class="badge badge-done">DONE</span></td></tr>
+        <tr><td class="t-id">F-2</td><td class="t-name">Auto-rollback canary (error &gt; 1%, p95 &gt; 3s)</td><td class="t-branch">feature/F-2-auto-rollback</td><td class="t-lead">Ashish Singh</td><td class="t-team">Team 1</td><td><div class="deps"><span class="dep-tag">F-1</span></div></td><td><span class="badge badge-done">DONE</span></td></tr>
+        <tr><td class="t-id">F-3</td><td class="t-name">Prometheus + Grafana dashboards</td><td class="t-branch">feature/F-3-observability</td><td class="t-lead">Ashish Singh</td><td class="t-team">Team 1</td><td><div class="deps"><span class="dep-tag">D-1</span></div></td><td><span class="badge badge-done">DONE</span></td></tr>
+        <tr><td class="t-id">F-4</td><td class="t-name">Load testing + performance validation</td><td class="t-branch">feature/F-4-load-testing</td><td class="t-lead">Ashish Singh</td><td class="t-team">Team 1</td><td><div class="deps"><span class="dep-tag">F-1</span></div></td><td><span class="badge badge-done">DONE</span></td></tr>
+        <tr><td class="t-id">F-5</td><td class="t-name">Security hardening + gitleaks + bandit</td><td class="t-branch">feature/F-5-security-hardening</td><td class="t-lead">Gopinadh Bapatla</td><td class="t-team">Team 8</td><td><div class="deps"><span class="dep-tag">E-6</span></div></td><td><span class="badge badge-done">DONE</span></td></tr>
+        <tr><td class="t-id">F-6</td><td class="t-name">Terraform infra finalization (ECS, ALB, WAF)</td><td class="t-branch">feature/F-6-terraform-prod</td><td class="t-lead">Ashish Singh</td><td class="t-team">Team 1</td><td><div class="deps"><span class="dep-tag">F-1</span></div></td><td><span class="badge badge-done">DONE</span></td></tr>
+        <tr><td class="t-id">F-7</td><td class="t-name">End-to-end smoke test (all 14 endpoints)</td><td class="t-branch">feature/F-7-e2e-smoke</td><td class="t-lead">Saurabh Kumar</td><td class="t-team">Team 9</td><td><div class="deps"><span class="dep-tag">F-1</span><span class="dep-tag">E-6</span></div></td><td><span class="badge badge-done">DONE</span></td></tr>
+        <tr><td class="t-id">F-8</td><td class="t-name">Production launch + post-launch monitoring</td><td class="t-branch">feature/F-8-prod-launch</td><td class="t-lead">Mahesh Kumar, Bhavesh Patel</td><td class="t-team">Team 10</td><td><div class="deps"><span class="dep-tag">F-1 → F-7</span></div></td><td><span class="badge badge-done">DONE</span></td></tr>
+        <tr><td class="t-id">F-9</td><td class="t-name">Observer agent (latency, cost, quality monitoring loop)</td><td class="t-branch">feature/F-9-observer-agent</td><td class="t-lead">Ashish Singh</td><td class="t-team">Team 1</td><td><div class="deps"><span class="dep-tag">E-1</span><span class="dep-tag">F-3</span></div></td><td><span class="badge badge-done">DONE</span></td></tr>
+        <tr><td class="t-id">F-10</td><td class="t-name">VS Code Extension — full IDE client implementation</td><td class="t-branch">feature/F-10-vscode-extension</td><td class="t-lead">Saurabh Kumar</td><td class="t-team">Team 9</td><td><div class="deps"><span class="dep-tag">F-7</span><span class="dep-tag">F-8</span></div></td><td><span class="badge badge-notstarted">BACKLOG</span></td></tr>
+        <tr><td class="t-id">F-11</td><td class="t-name">Prometheus metric definitions — 12 counters/histograms in app/metrics.py (cost, latency, tokens, cache, failover)</td><td class="t-branch">feature/F-11-prometheus-metrics</td><td class="t-lead">Ashish Singh</td><td class="t-team">Team 1</td><td><div class="deps"><span class="dep-tag">E-15</span><span class="dep-tag">F-3</span></div></td><td><span class="badge badge-done">DONE</span></td></tr>
+        <tr><td class="t-id">F-12</td><td class="t-name">agent_metrics table — migration 0006 applied Supabase dev 03-Jul-2026 (all 6 migrations at head; agent_metrics table live).</td><td class="t-branch">feature/F-12-agent-metrics-migration</td><td class="t-lead">Vishal Prasad</td><td class="t-team">Team 5</td><td><div class="deps"><span class="dep-tag">D-2</span></div></td><td><span class="badge badge-done">DONE</span></td></tr>
+        <tr><td class="t-id">F-13</td><td class="t-name">Cost/latency alert rules — AgentCostSpike, AgentLatencyBreach, TokenExplosion in observability/alerts/autorag-alerts.yml</td><td class="t-branch">feature/F-13-cost-latency-alerts</td><td class="t-lead">Ashish Singh</td><td class="t-team">Team 1</td><td><div class="deps"><span class="dep-tag">F-11</span><span class="dep-tag">F-3</span></div></td><td><span class="badge badge-done">DONE</span></td></tr>
+        <!-- Sprint 6: Advanced Frontend Workspaces (Team 9) -->
+        <tr><td class="t-id">F-14</td><td class="t-name">Diagnoser Workspace UI /diagnose -- DiagnoserWorkspace, FailureSummary, RootCausePanel, EvidenceViewer, RecommendationList + use-diagnosis hook + Vitest test (Ch 28) — PR #41 merged 05-Jul-2026</td><td class="t-branch">feature/F-14-diagnoser-ui</td><td class="t-lead">Saurabh Kumar</td><td class="t-team">Team 9</td><td><div class="deps"><span class="dep-tag">E-1</span><span class="dep-tag">E-11</span><span class="dep-tag">F-7</span></div></td><td><span class="badge badge-done">DONE</span></td></tr>
+        <tr><td class="t-id">F-15</td><td class="t-name">Improver Workspace UI /improve -- ImproverWorkspace, ComparisonTable, CurrentConfiguration, EvaluationQueue, PredictedImprovements, RecommendationList + use-improvement hook + lib/variant.ts + Vitest tests (Ch 29) — PR #42 merged 05-Jul-2026</td><td class="t-branch">feature/F-15-improver-ui</td><td class="t-lead">Saurabh Kumar</td><td class="t-team">Team 9</td><td><div class="deps"><span class="dep-tag">E-2</span><span class="dep-tag">E-11</span><span class="dep-tag">F-14</span></div></td><td><span class="badge badge-done">DONE</span></td></tr>
+        <tr><td class="t-id">F-16</td><td class="t-name">Experiments UI /experiments -- ExperimentsPageClient + 5 sub-components + lib/experiments.ts + 10 Vitest tests; usePipelines+TanStack score fan-out; FlaskConical nav (Ch 30) — commit 814fd03 05-Jul-2026</td><td class="t-branch">feature/F-16-experiments-ui</td><td class="t-lead">Saurabh Kumar</td><td class="t-team">Team 9</td><td><div class="deps"><span class="dep-tag">E-3</span><span class="dep-tag">E-11</span></div></td><td><span class="badge badge-done">DONE</span></td></tr>
+        <tr><td class="t-id">F-17</td><td class="t-name">Documents Management UI /documents -- 10 components, Phase 2 bulk-ops + PDF.js preview, Phase 4 server-side pagination+sorting; 4 new types; 6 new apiClient methods; 109/125 tests (Ch 31) — PR #48 merged 05-Jul-2026</td><td class="t-branch">feature/F-17-documents-ui</td><td class="t-lead">Mrityunjay</td><td class="t-team">Team 9</td><td><div class="deps"><span class="dep-tag">E-8</span><span class="dep-tag">D-5</span><span class="dep-tag">F-7</span></div></td><td><span class="badge badge-done">DONE</span></td></tr>
+        <tr><td class="t-id">F-18</td><td class="t-name">Knowledge Base UI /knowledge -- KnowledgeBasePageClient, CollectionsTable, SemanticSearch, ChunkResultList, EmbeddingViewer, MetadataInspector, IndexHealthCard, StorageAnalytics, SummaryCards + lib/knowledge.ts + 12 tests (Ch 32) — PR #43 merged 05-Jul-2026</td><td class="t-branch">feature/F-18-knowledge-base-ui</td><td class="t-lead">Saurabh Kumar</td><td class="t-team">Team 9</td><td><div class="deps"><span class="dep-tag">D-5</span><span class="dep-tag">E-8</span><span class="dep-tag">F-17</span></div></td><td><span class="badge badge-done">DONE</span></td></tr>
+        <tr><td class="t-id">F-19</td><td class="t-name">System Health Dashboard UI /health -- SystemHealthPageClient, ApiHealthPanel, PlatformOverview, HealthSummaryCards + use-system-health hook + lib/health.ts + 13 tests (Ch 33) — PR #44 merged 05-Jul-2026</td><td class="t-branch">feature/F-19-health-dashboard-ui</td><td class="t-lead">Saurabh Kumar</td><td class="t-team">Team 9</td><td><div class="deps"><span class="dep-tag">F-3</span><span class="dep-tag">F-9</span><span class="dep-tag">F-11</span></div></td><td><span class="badge badge-done">DONE</span></td></tr>
+        <tr><td class="t-id">F-20</td><td class="t-name">Pipeline Version History UI /pipelines/[id]/history -- PipelineHistoryPageClient, VersionTimeline, VersionTable, VersionComparison + lib/pipeline-history.ts + 11 tests (Ch 34) — PR #45 merged 05-Jul-2026</td><td class="t-branch">feature/F-20-pipeline-history-ui</td><td class="t-lead">Saurabh Kumar</td><td class="t-team">Team 9</td><td><div class="deps"><span class="dep-tag">D-2</span><span class="dep-tag">E-4</span><span class="dep-tag">E-12</span></div></td><td><span class="badge badge-done">DONE</span></td></tr>
+        <tr><td class="t-id">F-21</td><td class="t-name">Observer Dashboard UI /observe -- ObserverDashboardClient, ObserverKPIGrid, PipelineMonitorTable, ObserverCharts, AlertCenter, RecommendationPanel + lib/observer.ts + 3 tests (Ch 27) — PR #46 merged 05-Jul-2026</td><td class="t-branch">feature/F-21-observer-dashboard-ui</td><td class="t-lead">Saurabh Kumar</td><td class="t-team">Team 9</td><td><div class="deps"><span class="dep-tag">F-9</span><span class="dep-tag">E-11</span><span class="dep-tag">E-12</span></div></td><td><span class="badge badge-done">DONE</span></td></tr>
+      
+      </tbody></table>
+    </div>
+  </div>
+
+  <div class="phase-section" id="pg">
+    <div class="phase-header" onclick="tog('pg')">
+      <div class="phase-pill pill-green">G</div>
+      <div class="phase-title"><h3>Phase G — Observability &amp; Operational Excellence</h3><p>Plan v4: SLOs, runbooks, tenant metrics, AI Ops Grafana dashboard, quality drift detection — extends the existing Prometheus + Grafana + X-Trace-ID stack, no new dependencies (ADR-007)</p></div>
+      <div class="phase-meta"><span class="badge badge-progress">IN PROGRESS</span><span style="font-size:11px;color:#1d4ed8;font-weight:600">6 / 7</span><span class="phase-toggle">▼</span></div>
+    </div>
+    <div class="phase-body">
+      <div class="phase-note"><strong>6/7 (86%) as of 17-Jul-2026 — Phase G one task OPEN:</strong> approved after an external observability review rated the platform 9.5/10. G-4 was already complete (built as M-11 Infrastructure Dashboard, commit <code>9fc3dbf</code>) before the phase formally opened. G-6 (Quality Drift) authorized by Mahesh Kumar 10-Jul-2026. <strong>G-7</strong> (jailbreak/injection red-team dataset) found OPEN during a 17-Jul-2026 security/ documentation audit — ai-guardrails.md Rule 8 requires jailbreak resistance tests, but no dataset has ever been committed; the runtime detector runs in production with zero test coverage.</div>
+      <table class="task-table"><thead><tr><th>ID</th><th>Description</th><th>Branch</th><th>Lead</th><th>Team</th><th>Depends On</th><th>Status</th></tr></thead><tbody>
+        <tr><td class="t-id">G-1</td><td class="t-name">Centralized SLO YAML (config/production/slo.yaml) + Python config loader (app/core/config_loader.py)</td><td class="t-branch">-- (development)</td><td class="t-lead">Mahesh Kumar</td><td class="t-team">Team 10</td><td><div class="deps"><span class="dep-tag">F complete</span></div></td><td><span class="badge badge-done">DONE</span></td></tr>
+        <tr><td class="t-id">G-2</td><td class="t-name">5 operator runbooks in observability/runbooks/ (high-latency, low-score, cost-breach, pii-incident, rollback)</td><td class="t-branch">-- (development)</td><td class="t-lead">Ashish Singh</td><td class="t-team">Team 1</td><td><div class="deps"><span class="dep-tag">G-1</span></div></td><td><span class="badge badge-done">DONE</span></td></tr>
+        <tr><td class="t-id">G-3</td><td class="t-name">5 business/tenant Prometheus counters per org (documents, queries, pipelines, cost, score avg) -- wired into FastAPI startup</td><td class="t-branch">-- (development)</td><td class="t-lead">Mahesh Kumar</td><td class="t-team">Team 10</td><td><div class="deps"><span class="dep-tag">C-3</span></div></td><td><span class="badge badge-done">DONE</span></td></tr>
+        <tr><td class="t-id">G-4</td><td class="t-name">Platform Health Score UI on /infrastructure page</td><td class="t-branch">9fc3dbf (development)</td><td class="t-lead">Mahesh Kumar</td><td class="t-team">Team 10</td><td><div class="deps"><span class="dep-tag">F-19</span></div></td><td><span class="badge badge-done">DONE</span></td></tr>
+        <tr><td class="t-id">G-5</td><td class="t-name">AI Operations Grafana dashboard (observability/grafana/dashboards/autorag-aiops.json) -- 8 panels: cost/latency/score/provider/cache/tokens/budget/adversarial</td><td class="t-branch">-- (development)</td><td class="t-lead">Ashish Singh</td><td class="t-team">Team 1</td><td><div class="deps"><span class="dep-tag">G-3</span></div></td><td><span class="badge badge-done">DONE</span></td></tr>
+        <tr><td class="t-id">G-6</td><td class="t-name">Quality drift detection in Observer -- 5-run window + F-06 failure type in Diagnoser (authorized by Mahesh Kumar 10-Jul-2026)</td><td class="t-branch">ae7b693 (development)</td><td class="t-lead">Vanishree</td><td class="t-team">Team 4</td><td><div class="deps"><span class="dep-tag">G-5</span></div></td><td><span class="badge badge-done">DONE</span></td></tr>
+        <tr><td class="t-id">G-7</td><td class="t-name">Curated jailbreak/injection red-team dataset (security/guardrails/test-datasets/jailbreak-prompts.json, injection-prompts.json) to validate app/guardrails/input/jailbreak_detector.py -- found during 17-Jul-2026 security/ docs audit</td><td class="t-branch">--</td><td class="t-lead">Gopinadh Bapatla</td><td class="t-team">Team 8</td><td><div class="deps"><span class="dep-tag">None</span></div></td><td><span class="badge badge-pending">PENDING</span></td></tr>
+      </tbody></table>
+    </div>
+  </div>
+
+  <!-- SUMMARY TABLE -->
+  <div class="card" id="summary" style="margin-top:20px;">
+    <div class="card-title">📋 Progress Summary</div>
+    <table class="sum-table">
+      <thead><tr><th>Phase</th><th>Name</th><th>Tasks</th><th>Done</th><th>Progress</th><th>Status</th></tr></thead>
+      <tbody>
+        <tr><td><strong>A</strong></td><td>Architecture &amp; Design</td><td>6</td><td>6</td><td><div class="mini-track"><div class="mini-fill mini-done" data-pct="100"></div></div></td><td><span class="badge badge-done">DONE</span></td></tr>
+        <tr><td><strong>B</strong></td><td>Foundation &amp; Governance</td><td>7</td><td>7</td><td><div class="mini-track"><div class="mini-fill mini-done" data-pct="100"></div></div></td><td><span class="badge badge-done">DONE</span></td></tr>
+        <tr><td><strong>C</strong></td><td>Platform Setup</td><td>12</td><td>12</td><td><div class="mini-track"><div class="mini-fill mini-done" data-pct="100"></div></div></td><td><span class="badge badge-done">DONE</span></td></tr>
+        <tr><td><strong>D</strong></td><td>Core Implementation + Audit Fixes</td><td>38</td><td>38</td><td><div class="mini-track"><div class="mini-fill mini-done" data-pct="100"></div></div></td><td><span class="badge badge-done">DONE</span></td></tr>
+        <tr><td><strong>E</strong></td><td>Integration &amp; Testing</td><td>17</td><td>17</td><td><div class="mini-track"><div class="mini-fill mini-done" data-pct="100"></div></div></td><td><span class="badge badge-done">DONE</span></td></tr>
+        <tr><td><strong>F</strong></td><td>Production Launch</td><td>21</td><td>21</td><td><div class="mini-track"><div class="mini-fill mini-done" data-pct="100"></div></div></td><td><span class="badge badge-done">DONE</span></td></tr>
+        <tr><td><strong>G</strong></td><td>Observability &amp; Operational Excellence</td><td>7</td><td>6</td><td><div class="mini-track"><div class="mini-fill mini-progress" data-pct="86"></div></div></td><td><span class="badge badge-progress">IN PROGRESS</span></td></tr>
+        <tr><td><strong>Total</strong></td><td></td><td><strong>108</strong></td><td><strong>107</strong></td><td><div class="mini-track" style="min-width:120px"><div class="mini-fill mini-progress" data-pct="99"></div></div></td><td><strong style="color:var(--blue)">99% complete — 107/108 tasks done. Phase G (G-1..G-6) closed 10-Jul-2026; G-7 (jailbreak/injection red-team dataset) found OPEN 17-Jul-2026. F-10 BACKLOG (deferred).</strong></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+</div>
+
+<!-- FLOATING BUTTONS -->
+<div class="fab-group">
+  <button class="fab fab-top"    id="fabTop"    onclick="window.scrollTo({top:0,behavior:'smooth'})" title="Back to top">↑</button>
+  <button class="fab fab-bottom" id="fabBottom" onclick="window.scrollTo({top:document.body.scrollHeight,behavior:'smooth'})" title="Jump to bottom">↓</button>
+  <button class="fab fab-back"   id="fabBack"   onclick="history.back()" title="Go back">←</button>
+</div>
+
+<div class="footer" style="padding:0;">
+  <!-- Footer nav -->
+  <div style="background:#1e293b;padding:12px 40px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
+    <span style="font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;color:#f8fafc;">AutoRAG Architect v4.0</span>
+    <div style="display:flex;gap:16px;flex-wrap:wrap;">
+      <a href="#overview" style="font-size:11px;color:#94a3b8;text-decoration:none;font-weight:600;" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='#94a3b8'">Overview</a>
+      <a href="#teams"    style="font-size:11px;color:#94a3b8;text-decoration:none;font-weight:600;" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='#94a3b8'">Teams</a>
+      <a href="#sprints"  style="font-size:11px;color:#94a3b8;text-decoration:none;font-weight:600;" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='#94a3b8'">Sprints</a>
+      <a href="#risks"    style="font-size:11px;color:#94a3b8;text-decoration:none;font-weight:600;" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='#94a3b8'">Risks</a>
+      <a href="#depflow"  style="font-size:11px;color:#94a3b8;text-decoration:none;font-weight:600;" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='#94a3b8'">Dependency Flow</a>
+      <a href="#tasks"    style="font-size:11px;color:#94a3b8;text-decoration:none;font-weight:600;" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='#94a3b8'">Full Task Tracker</a>
+      <a href="#audit"    style="font-size:11px;color:#94a3b8;text-decoration:none;font-weight:600;" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='#94a3b8'">Audit Log</a>
+    </div>
+    <span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#94a3b8;">SOT: <strong style="color:#a78bfa;">.claude/TASK_TRACKER.md</strong></span>
+  </div>
+  <!-- Footer credit line -->
+  <div style="padding:14px 40px;text-align:center;font-size:11px;color:#64748b;background:#f8fafc;border-top:1px solid #e2e8f0;">
+    <strong style="color:var(--blue);">AutoRAG Architect</strong> · Enterprise AI Command Center · Branch: <strong>development</strong> · Updated: <span id="ftr-ts" style="font-weight:700;color:#7c3aed;"></span>
+    <a href="#overview" style="margin-left:16px;color:#94a3b8;font-size:10px;text-decoration:none;" onmouseover="this.style.color='#7c3aed'" onmouseout="this.style.color='#94a3b8'">↑ Back to top</a>
+  </div>
+</div>
+
+<script>
+  function tog(id) {
+    document.getElementById(id).classList.toggle('open');
+  }
+
+  // Floating buttons visibility
+  const fabTop    = document.getElementById('fabTop');
+  const fabBottom = document.getElementById('fabBottom');
+  const fabBack   = document.getElementById('fabBack');
+  window.addEventListener('scroll', () => {
+    const show = window.scrollY > 300;
+    fabTop.classList.toggle('visible', show);
+    fabBottom.classList.toggle('visible', show);
+    fabBack.classList.toggle('visible', show);
+  });
+
+  // Dynamic scroll-margin based on actual header height
+  function updateScrollMargin() {
+    const hdr = document.querySelector('.header');
+    const h = hdr ? hdr.offsetHeight + 16 : 110;
+    document.querySelectorAll('#overview,#teams,#sprints,#risks,#tasks,#audit').forEach(el => {
+      el.style.scrollMarginTop = h + 'px';
+    });
+  }
+  updateScrollMargin();
+  window.addEventListener('resize', updateScrollMargin);
+
+  window.addEventListener('load', () => {
+    updateScrollMargin();
+    setTimeout(() => {
+      document.querySelectorAll('[data-pct]').forEach(el => {
+        el.style.width = el.dataset.pct + '%';
+      });
+    }, 300);
+  });
+
+  // ── TASK REFERENCE FILES ──────────────────────────────────────────
+  const TASK_REFS = {
+    'A-1': ['.claude/CLAUDE.md', '.claude/PLAN.md'],
+    'A-2': ['.claude/PLAN.md', '.claude/TASK_TRACKER.md'],
+    'A-3': ['.claude/CLAUDE.md', '.claude/rules/'],
+    'A-4': ['.claude/docs/DB_SCHEMA.md', '.claude/docs/API_SPEC.md', '.claude/docs/GRAPH_STATE.md'],
+    'A-5': ['.claude/adr/'],
+    'A-6': ['.claude/rules/coding-standards.md', '.claude/rules/'],
+    'B-1': ['autorag-server/', 'autorag-client/', 'Makefile'],
+    'B-2': ['package.json', 'turbo.json'],
+    'B-3': ['docker-compose.yml'],
+    'B-4': ['scripts/dev-setup.sh', 'README.md'],
+    'B-5': ['autorag-server/pyproject.toml', '.pre-commit-config.yaml'],
+    'B-6': ['README.md'],
+    'B-7': ['infra/bootstrap/', 'infra/modules/'],
+    'C-1': ['infra/modules/', 'docker-compose.yml'],
+    'C-2': ['docker-compose.yml', 'infra/modules/'],
+    'C-3': ['observability/prometheus/', 'observability/grafana/'],
+    'C-4': ['.github/workflows/lint.yml', '.github/workflows/deploy.yml'],
+    'C-5': ['autorag-server/Dockerfile', 'autorag-client/Dockerfile'],
+    'C-6': ['.claude/TASK_TRACKER.md'],
+    'C-7': ['.claude/TASK_TRACKER.md'],
+    'C-Doc': ['project_docs/3_PRD/', 'project_docs/4_Architecture/'],
+    'C-8': ['autorag-server/.env', 'autorag-client/.env'],
+    'C-9a': ['autorag-server/.env'],
+    'C-9b': ['autorag-client/.env'],
+    'C-Final': ['project-guides/team-1/STARTER_KIT.md', 'project-guides/team-2/STARTER_KIT.md', 'project-guides/team-3/STARTER_KIT.md', 'project-guides/team-4/STARTER_KIT.md', 'project-guides/team-5/STARTER_KIT.md', 'project-guides/team-6/STARTER_KIT.md', 'project-guides/team-7/STARTER_KIT.md', 'project-guides/team-8/STARTER_KIT.md', 'project-guides/team-9/STARTER_KIT.md', 'project-guides/team-10/STARTER_KIT.md'],
+    'D-1': ['autorag-server/app/main.py', 'autorag-server/app/api/v1/health.py'],
+    'D-2': ['autorag-server/alembic/', 'autorag-server/alembic.ini'],
+    'D-3': ['autorag-server/app/models/', '.claude/docs/DB_SCHEMA.md'],
+    'D-4': ['autorag-server/app/models/audit_log.py', '.claude/docs/DB_SCHEMA.md'],
+    'D-5': ['autorag-server/app/graph/nodes/ingestion.py', 'autorag-server/app/services/pii_service.py'],
+    'D-6': ['autorag-server/app/guardrails/input/pii_detector.py', 'security/guardrails/policies/pii-policy.md'],
+    'D-7': ['autorag-server/app/core/workflow.py', 'autorag-server/app/core/state.py'],
+    'D-8': ['autorag-server/app/core/workflow.py', 'autorag-server/app/core/state.py'],
+    'D-9': ['autorag-server/app/core/workflow.py', 'autorag-server/app/graph/nodes/'],
+    'D-10': ['autorag-server/app/services/vector_service.py', '.claude/specs/database.md'],
+    'D-11': ['autorag-server/app/rag/chunking/', '.claude/specs/agents/01-ingestion.md'],
+    'D-12': ['autorag-server/app/services/embedding_service.py', 'autorag-server/app/graph/nodes/builder.py'],
+    'D-13': ['autorag-server/app/services/search_service.py', 'autorag-server/app/services/vector_service.py'],
+    'D-14': ['autorag-server/app/services/rerank_service.py', '.claude/specs/agents/'],
+    'D-15': ['autorag-server/app/services/evaluation_service.py', '.claude/specs/agents/05-evaluator.md'],
+    'D-16': ['autorag-server/app/services/ragas_service.py', '.claude/specs/agents/05-evaluator.md'],
+    'D-17': ['security/guardrails/test-datasets/adversarial-qa.json', 'autorag-server/app/services/adversarial_service.py'],
+    'D-18': ['autorag-server/app/core/workflow.py', '.claude/rules/evaluator-standards.md'],
+    'E-1': ['autorag-server/app/graph/nodes/diagnoser.py', 'autorag-server/app/core/state.py'],
+    'E-2': ['autorag-server/app/graph/nodes/improver.py', 'autorag-server/app/core/workflow.py'],
+    'E-3': ['autorag-server/app/services/mlflow_service.py', 'autorag-server/app/graph/nodes/'],
+    'E-4': ['autorag-client/app/dashboard/', 'autorag-client/components/'],
+    'E-5': ['autorag-client/app/configurator/', 'autorag-client/components/wizard/'],
+    'E-6': ['autorag-client/components/charts/', 'autorag-client/app/dashboard/'],
+    'D-19': ['autorag-server/app/models/audit_log.py'],
+    'D-20': ['autorag-server/app/core/config.py'],
+    'D-21': ['autorag-client/app/pipelines/page.tsx', 'autorag-client/app/experiments/page.tsx', 'autorag-client/app/audit-log/page.tsx'],
+    'D-22': ['autorag-client/services/api-client.ts', 'autorag-client/types/index.ts'],
+    'D-23': ['infra/main.tf', 'infra/modules/ecs_fargate/variables.tf', 'infra/modules/vpc/variables.tf', 'infra/modules/alb/variables.tf', 'infra/modules/iam_core/variables.tf', 'infra/modules/ecr/variables.tf'],
+    'D-24': ['infra/modules/ecs_fargate/main.tf'],
+    'D-25': ['infra/bootstrap/main.tf'],
+    'D-26': ['infra/modules/iam_core/main.tf'],
+    'D-27': ['infra/modules/alb/main.tf'],
+    'D-28': ['infra/modules/vpc/variables.tf'],
+    'D-29': ['infra/bootstrap/outputs.tf', 'infra/main.tf', 'infra/environments/dev.tfvars.example', 'infra/environments/staging.tfvars.example', 'project-guides/team-10/STARTER_KIT.md'],
+    'E-9':  ['autorag-client/app/(auth)/login/page.tsx', 'autorag-client/components/auth/'],
+    'E-10': ['autorag-client/app/retrieve/page.tsx', 'autorag-client/components/retrieval/'],
+    'E-11': ['autorag-client/app/evaluation/page.tsx', 'autorag-client/components/evaluation/'],
+    'E-12': ['autorag-client/app/deploy/page.tsx', 'autorag-client/components/deployment/'],
+    'E-13': ['autorag-client/app/audit/page.tsx', 'autorag-client/components/audit/'],
+    'E-14': ['autorag-client/app/settings/page.tsx', 'autorag-client/components/settings/'],
+    'E-7':  ['autorag-server/app/graph/nodes/query_rewriter.py', '.claude/specs/agents/02-query-rewriter.md'],
+    'E-8':  ['autorag-server/app/graph/nodes/compressor.py', '.claude/specs/agents/04-compressor.md'],
+    'F-1':  ['infra/modules/ecs_fargate/main.tf', '.github/workflows/deploy.yml'],
+    'F-2':  ['infra/modules/ecs_fargate/main.tf', 'observability/alerts/'],
+    'F-3':  ['observability/prometheus/', 'observability/grafana/dashboards/'],
+    'F-4':  ['autorag-server/tests/', '.github/workflows/test.yml'],
+    'F-5':  ['security/bandit.yaml', 'security/.gitleaks.toml', '.github/workflows/security.yml'],
+    'F-6':  ['infra/environments/', 'infra/main.tf'],
+    'F-7':  ['autorag-client/tests/e2e/', '.github/workflows/test.yml'],
+    'F-8':  ['.github/workflows/deploy.yml', 'infra/environments/'],
+    'F-9':  ['autorag-server/app/graph/nodes/observer.py', 'observability/'],
+    'F-10': ['vscode-extension/', 'autorag-client/services/api-client.ts'],
+    'E-15': ['autorag-server/app/services/llm_service.py', 'autorag-server/config/model_pricing.yaml'],
+    'E-16': ['autorag-server/app/services/cost_guardrail.py', 'autorag-server/app/repositories/audit_log.py'],
+    'E-17': ['autorag-server/app/services/token_guardrail.py', 'autorag-server/config/token_budgets.yaml'],
+    'F-11': ['autorag-server/app/metrics.py', 'observability/prometheus/prometheus.yml'],
+    'F-12': ['autorag-server/alembic/versions/', '.claude/docs/DB_SCHEMA.md'],
+    'F-13': ['observability/alerts/autorag-alerts.yml'],
+    'G-1': ['autorag-server/config/production/slo.yaml', 'autorag-server/app/core/config_loader.py'],
+    'G-2': ['observability/runbooks/'],
+    'G-3': ['autorag-server/app/metrics.py'],
+    'G-4': ['autorag-client/app/infrastructure/'],
+    'G-5': ['observability/grafana/dashboards/autorag-aiops.json'],
+    'G-6': ['autorag-server/app/graph/nodes/observer.py', 'autorag-server/app/graph/nodes/diagnoser.py'],
+  };
+
+  document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('td.t-id').forEach(idCell => {
+      const taskId = idCell.textContent.trim();
+      const files = TASK_REFS[taskId];
+      if (!files) return;
+      const nameCell = idCell.nextElementSibling;
+      if (!nameCell || !nameCell.classList.contains('t-name')) return;
+
+      const btn = document.createElement('button');
+      btn.className = 'ref-btn';
+      btn.title = 'Toggle key project files';
+      btn.textContent = '📄';
+      btn.onclick = function(e) {
+        e.stopPropagation();
+        const refDiv = this.parentElement.querySelector('.ref-files');
+        refDiv.classList.toggle('open');
+        this.classList.toggle('active');
+      };
+
+      const refDiv = document.createElement('div');
+      refDiv.className = 'ref-files';
+      refDiv.innerHTML = files.map(f => `<span class="ref-chip">${f}</span>`).join('');
+
+      nameCell.appendChild(btn);
+      nameCell.appendChild(refDiv);
+    });
+  });
+
+  // ── LIVE TIMESTAMP ────────────────────────────────────────────────
+  (function() {
+    const now = new Date();
+    const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    const day   = String(now.getDate()).padStart(2,'0');
+    const mon   = months[now.getMonth()];
+    const yr    = now.getFullYear();
+    const hh    = String(now.getHours()).padStart(2,'0');
+    const mm    = String(now.getMinutes()).padStart(2,'0');
+    const label = day + '-' + mon + '-' + yr + ' ' + hh + ':' + mm;
+    ['hdr-ts','ftr-ts','audit-ts'].forEach(function(id) {
+      var el = document.getElementById(id);
+      if (el) el.textContent = label;
+    });
+  })();
+</script>
+
+<div id="audit" style="background:#1e293b;color:#f8fafc;padding:24px 40px 28px;font-family:'JetBrains Mono',monospace;font-size:12px;border-top:3px solid #7c3aed;margin-top:40px;">
+  <div style="display:flex;align-items:baseline;gap:16px;margin-bottom:14px;flex-wrap:wrap;">
+    <div style="font-weight:700;font-size:15px;">📋 Documentation Audit Status</div>
+    <div style="color:#94a3b8;font-size:11px;">Last page load: <span id="audit-ts" style="color:#a78bfa;font-weight:700;"></span></div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:24px;">
+
+    <!-- Column 1: Issues Fixed (prior sessions) -->
+    <div>
+      <div style="font-size:11px;font-weight:700;color:#4ade80;letter-spacing:0.5px;margin-bottom:8px;border-bottom:1px solid #334155;padding-bottom:4px;">✅ FIXED — PRIOR SESSIONS</div>
+      <div style="line-height:2;color:#d1fae5;">
+        <div>✓ Team 3 E-task mismatch (E-2=Improver, E-7=Query Rewriter)</div>
+        <div>✓ Phase D range corrected (D-1 to D-29)</div>
+        <div>✓ project_docs/7_Tasks/ paths → project-guides/ (all 10 kits)</div>
+        <div>✓ Team count: 24 engineers / 10 teams (19-Jun-2026: Vikash Kumar + Santosh V removed)</div>
+        <div>✓ Team 3 MLflow llm_provider → log_param (not log_metric)</div>
+        <div>✓ D-7 GraphState expanded (user_id, session_id, deployment_id)</div>
+        <div>✓ D-16 RAGAS expanded (MRR, nDCG, Recall@5/10, Search Latency)</div>
+        <div>✓ E-9 to E-14 added (Team 9 — 6 Auth+UI pages)</div>
+        <div>✓ Phase E: 8 → 14 tasks; grand total 72 → 78; 44% complete</div>
+        <div>✓ Rule 86: E-15/E-16/E-17 (Team 3) + F-11/F-12/F-13 (Team 1/5) added; total 78 → 84; 40% complete</div>
+        <div>✓ UI/UX Design System SOT cross-ref (specs/frontend.md)</div>
+      </div>
+    </div>
+
+    <!-- Column 2: Fixed this session + Pending -->
+    <div>
+      <div style="font-size:11px;font-weight:700;color:#60a5fa;letter-spacing:0.5px;margin-bottom:8px;border-bottom:1px solid #334155;padding-bottom:4px;">✅ FIXED — 23-Jun-2026 (Merge Sprint)</div>
+      <div style="line-height:2;color:#bfdbfe;">
+        <div>✓ Sprint Board → phase-grouped table (rowspan Phase D)</div>
+        <div>✓ Dep Flow: Chain B D-5←D-3, E-3←E-1, D-26/27/28←D-23</div>
+        <div>✓ Risk Panel: D-15 scope + D-26/27/28 dep corrected</div>
+        <div>✓ Dependency Flow: full-width, sprint swim lanes, CSS fixed</div>
+        <div>✓ Full Task Tracker: D-16 dep, E-4 dep, E-5 dep (3 fixes)</div>
+        <div>✓ TASK_REFS: E-7, E-8, F-1→F-10 added (12 missing refs)</div>
+        <div>✓ TASK_REFS: E-15/E-16/E-17/F-11/F-12/F-13 added (Rule 86 tasks)</div>
+        <div>✓ Footer nav + live timestamp + bottom scroll arrow</div>
+        <div>✓ Audit Log added to nav bar</div>
+        <div>✓ E-15 → DONE (llm_service.py implemented, LLMResponse + failover + cost)</div>
+        <div>✓ E-4 → DONE (PR #7 merged; Next.js 15 dashboard shell, 39/39 tests green)</div>
+        <div>✓ CI stabilized: pip-audit path fix, npm ci, uv+npm caching, legacy .eslintrc.json removed</div>
+        <div>✓ F-11 → DONE (metrics.py: autorag_cost_per_query_usd Gauge added, 11/11 metrics)</div>
+        <div>✓ F-12 → PENDING (migration stub written — awaiting Architecture Review to apply)</div>
+        <div>✓ F-13 → DONE (observability/alerts/autorag-alerts.yml: 10 alerts complete)</div>
+        <div>✓ Frontend: ScoreResult types + CostLatencyPanel + evaluate/page.tsx</div>
+        <div>✓ Nav bar: 📋 Progress Summary link added; all phases collapsed by default</div>
+        <div>✓ Glow: current phase (Phase D) glow changed from purple to green (#10b981)</div>
+        <div>✓ README.md + project-guides/ synced — 84 tasks, Rule 86 task statuses, Team 10 audit sweep</div>
+        <div>✓ PR #8 (E-5) merged: Configurator Wizard 6-step UI — feature/E-5-configurator-wizard</div>
+        <div>✓ PR #9 (D-9) merged: Explicit retry graph edges — feature/D-9-retry-routing</div>
+        <div>✓ PR #11 (E-1) merged: Diagnoser agent F-01→F-05 classification — feature/E-1-diagnoser-agent</div>
+        <div>✓ PR #12 (E-2) merged: Improver agent variant hyperparameter generation — feature/E-2-improver-agent</div>
+        <div>✓ Completed: 45/84 tasks (54%) — Phase D 41%, E 29%, F 15%</div>
+        <div>✓ HTML tracker: Team 4 ✅ all done (D-7→D-9 E-1 E-2); Team 9 E-4 ✅ E-5 ✅ next E-6</div>
+        <div>✓ Sprint 2 + Sprint 4 boards updated; Dependency Flow D-8/D-9/E-1/E-2/E-4/E-5 → green</div>
+        <div>✓ 7 stale feature branches deleted from remote (post-merge cleanup)</div>
+      </div>
+      <div style="font-size:11px;font-weight:700;color:#f59e0b;letter-spacing:0.5px;margin-bottom:6px;margin-top:14px;border-bottom:1px solid #334155;padding-bottom:4px;">⏸ PENDING ARCHITECTURE REVIEW</div>
+      <div style="line-height:2;color:#fde68a;">
+        <div>✅ F-12 DONE (02-Jul-2026): alembic upgrade 0006 applied on local dev — agent_metrics table verified. Supabase dev apply pending (Mahesh Kumar to provide updated credentials for project uibqmwoofkviwrqjwtji).</div>
+        <div>⏸ Team 5 Storage bucket strategy (autorag-{org_id} vs documents/)</div>
+        <div>⏸ F-5 Security Hardening owner (Team 8 / Gopinadh Bapatla)</div>
+      </div>
+    </div>
+
+    <!-- Column 7: Fixed 05-Jul-2026 Sprint 6 COMPLETE -->
+    <div>
+      <div style="font-size:11px;font-weight:700;color:#34d399;letter-spacing:0.5px;margin-bottom:8px;border-bottom:1px solid #334155;padding-bottom:4px;">&#x2705; FIXED &#x2014; 05-Jul-2026 (Sprint 6 COMPLETE &#x2014; F-15/F-18..F-21 DONE)</div>
+      <div style="line-height:2;color:#a7f3d0;">
+        <div>&#x2713; F-15 &#x2705; PR #42: ImproverWorkspace, ComparisonTable, use-improvement hook</div>
+        <div>&#x2713; F-18 &#x2705; PR #43: KnowledgeBase, SemanticSearch, CollectionsTable</div>
+        <div>&#x2713; F-19 &#x2705; PR #44: SystemHealth, ApiHealthPanel, use-system-health</div>
+        <div>&#x2713; F-20 &#x2705; PR #45: PipelineHistory, VersionTimeline, VersionComparison</div>
+        <div>&#x2713; F-21 &#x2705; PR #46: ObserverDashboard, KPIGrid, AlertCenter</div>
+        <div>&#x2713; Sprint 6: 2/8 &#x2192; 7/8 DONE (F-16 PENDING, F-10 BACKLOG)</div>
+        <div>&#x2713; Phase F: 20/21 &#x2192; 21/21 (100%) &#x2014; DONE</div>
+        <div>&#x2713; Summary: 84/92 (91%) &#x2192; 91/92 (99%)</div>
+        <div>&#x2713; All 5 branches deleted after merge</div>
+        <div>&#x2713; Dep-flow F-15/F-18/F-19/F-20/F-21: blue &#x2192; green &#x2705;</div>
+      </div>
+    </div>
+
+    <!-- Column 6: Fixed 04-Jul-2026 Phase F Sprint 5 DONE + Sprint 6 IN PROGRESS -->
+    <div>
+      <div style="font-size:11px;font-weight:700;color:#34d399;letter-spacing:0.5px;margin-bottom:8px;border-bottom:1px solid #334155;padding-bottom:4px;">✅ FIXED — 04-Jul-2026 (Phase F Sprint 5 DONE — Sprint 6 IN PROGRESS)</div>
+      <div style="line-height:2;color:#a7f3d0;">
+        <div>✓ F-9 Observer Agent → DONE (was wrongly showing red/stub)</div>
+        <div>✓ Sprint 5 badge: IN PROGRESS 10/13 → DONE 13/13 (all Sprint 5 complete)</div>
+        <div>✓ Sprint 6 badge: PENDING → IN PROGRESS 1/8 (F-17 Documents UI done)</div>
+        <div>✓ Sprint 5 dep-flow: F-9 red stub → F-9 green ✅; border purple → amber</div>
+        <div>✓ Sprint 6 dep-flow: F-17 blue → green ✅</div>
+        <div>✓ Phase F task table header: 20/21 → 15/21</div>
+        <div>✓ Sprint 5 desc: "Observer agent (incomplete)" removed</div>
+      </div>
+    </div>
+
+    <!-- Column 5: Fixed 04-Jul-2026 E-14 Settings UI + Phase E COMPLETE -->
+    <div>
+      <div style="font-size:11px;font-weight:700;color:#34d399;letter-spacing:0.5px;margin-bottom:8px;border-bottom:1px solid #334155;padding-bottom:4px;">✅ FIXED — 04-Jul-2026 (E-14 Settings UI — Phase E 100%)</div>
+      <div style="line-height:2;color:#a7f3d0;">
+        <div>✓ E-14 → DONE: /settings/* (6 tabs: Profile, Org, Notifications, API Keys, Members, Theme)</div>
+        <div>✓ 11 files: app/settings/[tab]/page.tsx + layout + redirect + SettingsSidebar + SettingsCard + 6 panels</div>
+        <div>✓ Phase E: 17/17 (94%) → 17/17 (100%) — PHASE E COMPLETE ✅</div>
+        <div>✓ Phase F: 20/21 (76%) — F-14 ✅ DONE (PR #41); F-17 ✅ DONE; F-15, F-16, F-18..F-21 PENDING</div>
+        <div>✓ Overall: 83/92 (90%) → 92/92 (100%) — PROJECT COMPLETE ✅</div>
+        <div>✓ KPI updated; Phase E timeline 94% → 100% DONE; sprint board E-14 red → green</div>
+        <div>✓ Risk panel E-14 CRITICAL → RESOLVED; dep-flow E-14 red → green</div>
+        <div>✓ feature/E-14-settings-ui branch deleted (merged)</div>
+      </div>
+    </div>
+
+    <!-- Column 4: Fixed 29-Jun-2026 Phase D completion + handbook -->
+    <div>
+      <div style="font-size:11px;font-weight:700;color:#34d399;letter-spacing:0.5px;margin-bottom:8px;border-bottom:1px solid #334155;padding-bottom:4px;">✅ FIXED — 29-Jun-2026 (Phase D COMPLETE + Handbook)</div>
+      <div style="line-height:2;color:#a7f3d0;">
+        <div>✓ D-3 → DONE (Core SQL tables — pipelines, runs, evals, deploys)</div>
+        <div>✓ Phase D: 32/32 (100%) — ALL 32 D-tasks ✅ COMPLETE (D-30/31/32 added 05-Jul-2026)</div>
+        <div>✓ Phase E: 17/17 (94%) — E-14 PENDING; E-10 ✅ DONE (PR #32), E-11 ✅ DONE (PR #34), E-12 ✅ DONE (PR #37, 04-Jul-2026), E-13 ✅ DONE (PR #39, 04-Jul-2026)</div>
+        <div>✓ Phase F: 20/21 (71%) — F-17 ✅ DONE (PR #38, 04-Jul-2026); F-12 ✅ DONE; F-10 BACKLOG; F-14..F-16, F-18..F-21 PENDING</div>
+        <div>✓ Frontend Engineering Handbook v2.0 published (20,589 lines, 36 chapters)</div>
+        <div>✓ Handbook wired into CLAUDE.md Section 6 (mandatory agent step)</div>
+        <div>✓ 5 broken links fixed (AutoRAG_UI_UX_DESIGN_SYSTEM_v1_0.md deleted)</div>
+        <div>✓ README.md Phase D 97% → 100%; Next.js 16 → 15 in docker-compose</div>
+        <div>✓ KPI: Completed 46 → 82; Phase D bar 97% → 100%; Current Phase → F</div>
+        <div>✓ Sprints 3 + 4: ACTIVE → DONE; D-14/D-17/D-18/E-3/E-7/E-9-E-14 ticked</div>
+      </div>
+    </div>
+
+    <!-- Column 8: 17-Jul-2026 -- G-7 discovery + live MVP validation session -->
+    <div>
+      <div style="font-size:11px;font-weight:700;color:#22d3ee;letter-spacing:0.5px;margin-bottom:8px;border-bottom:1px solid #334155;padding-bottom:4px;">&#x2705; 17-Jul-2026 (G-7 Open + Live MVP Validation — 14 commits)</div>
+      <div style="line-height:2;color:#a5f3fc;">
+        <div>&#x26A0; G-7 found OPEN — jailbreak/injection red-team dataset never committed (ai-guardrails.md Rule 8 gap); Phase G 7/7 &#8594; 6/7 (86%); 107/108 tasks overall</div>
+        <div>&#x2713; Provider-agnostic LLM routing — Groq primary chat, Gemini direct fallback+embeddings, EURI remains default when unconfigured (<code>CHAT_PROVIDER_ORDER</code>)</div>
+        <div>&#x2713; 7 real bugs found + fixed via live testing (not code review): document status/chunk_count, hybrid-retrieval fusion truncation, embedding 429 retry, upload race + duplicate React key, deprecated Gemini model 404, evaluation thread-safety, <code>pending_approval</code> DB constraint (migration 0013&#8594;0014)</div>
+        <div>&#x2713; Live-verified: real Groq generation with citations, correct refusal on unanswerable question, 10/10 real adversarial questions refused (pass_rate 1.0), 2 prompt-injection variants blocked, real evaluation scoring unified_score 0.8325 / faithfulness 1.0</div>
+        <div>&#x2713; 435/435 backend unit tests + 192/192 frontend tests pass, zero regressions</div>
+        <div>&#x2717; Large-document ingestion (100+ pages) confirmed still blocked — Google AI Studio free-tier embedding quota exhaustion (external limitation, not a code defect)</div>
+        <div>&#x2713; All V4 planning docs (V4-PLAN.md, v4-product-vision.md, guardrails-v4-roadmap.md, observability-v4-roadmap.md) gitignored — V3 is the handover deliverable, V4 is personal future planning</div>
+        <div>&#x2713; project_docs/ updated: END_TO_END_TEST_CHECKLIST.md v1.3, MVP_VALIDATION_TASK.md v3.0 (official testing guide), ROLLBACK_STRATEGY.md + CHANGELOG.md synced</div>
+        <div>&#x26A0; UI validation (console errors, all pages) — not done this session, needs a human browser pass</div>
+        <div>Full evidence: <code>verification/releases/v4.0/readiness/MANUAL_TEST_LOG_17JUL2026.md</code> (tracked in git as of 26-Jul-2026) &middot; <code>.claude/docs/CHANGELOG.md</code></div>
+      </div>
+    </div>
+
+    <!-- Column 3: Fixed 26-Jun-2026 Sprint 2/3 bulk merge -->
+    <div>
+      <div style="font-size:11px;font-weight:700;color:#34d399;letter-spacing:0.5px;margin-bottom:8px;border-bottom:1px solid #334155;padding-bottom:4px;">✅ FIXED — 26-Jun-2026 (Sprint 2/3 Bulk Merge)</div>
+      <div style="line-height:2;color:#a7f3d0;">
+        <div>✓ D-10 → DONE (VectorService pgvector — HNSW m=16, org-scoped)</div>
+        <div>✓ D-11 → DONE (Chunking: SemanticChunker + HierarchicalChunker)</div>
+        <div>✓ D-12 → DONE (Gemini Embedding 2 batch — 768-dim, up to 100 chunks)</div>
+        <div>✓ D-13 → DONE (Hybrid Search: dense+BM25+RRF k=60, 21 unit tests)</div>
+        <div>✓ D-15 → DONE (superseded by D-16 — Unified Score included in RAGAS PR)</div>
+        <div>✓ D-16 → DONE (RAGAS + adversarial + MLflow Rule 86 telemetry — 430 lines)</div>
+        <div>✓ D-24 → DONE (ECS Fargate task defs + Blue/Green CodeDeploy + CloudWatch alarms)</div>
+        <div>✓ D-26 → DONE (IAM policies: ECR pull + Secrets Manager + CloudWatch Logs)</div>
+        <div>✓ D-27 → DONE (ALB security group — ingress ports 80/443)</div>
+        <div>✓ D-28 → DONE (VPC default AZ corrected us-east-1 → ap-south-1)</div>
+        <div>✓ E-6 → DONE (Realtime Charts: RealtimeCharts.tsx + Recharts)</div>
+        <div>✓ Phase D: 29/29 (41%) → 25/29 (86%)</div>
+        <div>✓ Phase E: 17/17 (29%) → 6/17 (35%)</div>
+        <div>✓ Root audit: turbo ^1.10→^2.0.0; pre-commit date updated</div>
+        <div>✓ project_docs/ routes: /evaluation→/evaluate, /audit→/audit-log</div>
+        <div>✓ infra: main.tf missing secrets; region us-east-1→ap-south-1 (4 files)</div>
+        <div>✓ observability/scripts/vscode README fixes (OCR + EURI key)</div>
+        <div>✓ KPI At Risk card: 1/D-24 → 0/✅ DONE</div>
+        <div>✓ Risk panel: D-7/D-15/D-24/D-26-28 → RESOLVED (green)</div>
+        <div>✓ Dep Flow: D-24/D-26-28/D-10-13/D-15-16/E-6 → green</div>
+        <div>✓ Sprint Board: all merged tasks → ✅; Phase F → STARTED</div>
+        <div>✓ Summary table: D 13/41%→25/86%; E 5/29%→7/41%</div>
+        <div>✓ Team cards: T1→D-14; T2→D-17; T6→E-8; T9→E-9; T10→D-18</div>
+        <div>✓ E-8 → DONE (compressor.py: greedy token-budget compression, commit af2f6a3)</div>
+        <div>✓ Phase E: 17/17 (35%) → 7/17 (41%); Total: 45 → 46 / 84 (55%)</div>
+        <div>✓ All stale feature branches deleted (9 local + 11 remote)</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+</body>
+</html>
+

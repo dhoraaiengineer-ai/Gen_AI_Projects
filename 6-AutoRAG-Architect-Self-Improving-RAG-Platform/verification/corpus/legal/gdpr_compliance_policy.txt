@@ -1,0 +1,86 @@
+DATA PROTECTION AND GDPR COMPLIANCE POLICY
+AutoRAG Solutions Pte Ltd | Version 2.3 | Legal & Compliance | Updated: June 2026
+
+1. SCOPE AND APPLICABILITY
+
+This policy applies to all personal data processed by AutoRAG Solutions in the course of its business operations, including data relating to customers, employees, vendors, and prospects. It applies to all employees, contractors, and third parties who process personal data on behalf of the company.
+
+The company is subject to multiple data protection regimes depending on the data subjects' jurisdiction:
+- GDPR (EU/EEA residents)
+- PDPA (Singapore residents)
+- DPDP Act 2023 (Indian residents)
+- CCPA (California residents where applicable)
+
+This policy takes the most protective standard across all applicable laws as its baseline.
+
+2. DATA PROTECTION PRINCIPLES
+
+The company processes personal data in accordance with the following principles:
+
+Lawfulness, fairness, and transparency: Personal data is processed on a valid legal basis (consent, contract, legal obligation, legitimate interest, or vital interests). Data subjects are informed of processing through privacy notices.
+
+Purpose limitation: Data collected for one purpose is not used for incompatible purposes without a new legal basis. The purpose of each data collection is documented in the data register.
+
+Data minimisation: Only the minimum personal data necessary for the stated purpose is collected and retained. Collection of sensitive categories of data (health, biometric, financial) requires explicit consent and a documented necessity assessment.
+
+Accuracy: The company maintains reasonable procedures to keep personal data accurate and up to date. Data subjects may request correction at any time.
+
+Storage limitation: Personal data is retained only for as long as necessary for its purpose, or as required by law. Retention periods are defined in the Data Retention Schedule (Annex A).
+
+Integrity and confidentiality: Personal data is protected against unauthorized access, accidental loss, destruction, or damage through appropriate technical and organizational measures.
+
+3. LEGAL BASES FOR PROCESSING
+
+Customer data: Processed under contract (for service delivery) and legitimate interest (for service improvement and fraud prevention).
+
+Marketing data: Processed under consent. Unsubscribe requests are honored within 10 business days. Consent records are maintained with timestamp and source.
+
+Employee data: Processed under contract and legal obligation (for employment law compliance, tax reporting, and health and safety).
+
+AI training data: No customer personal data is used to train AI models without explicit consent and a documented Data Protection Impact Assessment (DPIA).
+
+4. SPECIAL CATEGORIES OF DATA
+
+The company processes special categories of data (health, ethnic origin, biometric) only where:
+- The data subject has given explicit consent, AND
+- A DPIA has been completed and approved by the Data Protection Officer, AND
+- Appropriate additional safeguards are in place (pseudonymization, encryption at rest and in transit, restricted access).
+
+Processing of health data for employee records (sick leave, insurance claims) is conducted under the legal obligation and employment law bases.
+
+5. DATA SUBJECT RIGHTS
+
+All data subjects have the following rights, which must be fulfilled within 30 days of a verified request:
+
+Right of access: Data subjects may request a copy of all personal data held about them. The company provides this in machine-readable format (JSON or CSV) at no charge.
+
+Right to rectification: Data subjects may request correction of inaccurate or incomplete personal data.
+
+Right to erasure: Data subjects may request deletion of personal data where: the purpose for which it was collected is complete, consent is withdrawn, or processing is unlawful. Erasure requests from former employees are subject to the statutory retention period for payroll and tax records (7 years in Singapore).
+
+Right to data portability: Data subjects may request their data in a structured, commonly used format to transfer to another controller. This applies only to data processed on the basis of consent or contract.
+
+Right to object: Data subjects may object to processing based on legitimate interest. The company must cease processing unless compelling legitimate grounds override the data subject's interests.
+
+Requests must be submitted to dpo@autorag-solutions.com. Identity verification is required before fulfilling access or erasure requests.
+
+6. DATA BREACH PROCEDURE
+
+Upon discovery of a personal data breach:
+- The discovering employee must notify the Data Protection Officer (DPO) within 2 hours.
+- The DPO will assess severity using the ENISA severity scale within 4 hours.
+- If the breach is likely to result in risk to individuals: regulatory authorities must be notified within 72 hours of the company becoming aware (GDPR Article 33; PDPA equivalent).
+- If the breach is likely to result in high risk to individuals: affected data subjects must be notified without undue delay.
+- All breaches, regardless of severity, are recorded in the Breach Register.
+
+7. AUTORAG-SPECIFIC CONTROLS
+
+The AutoRAG platform implements the following data protection controls specific to its AI operations:
+
+PII Masking: All documents are scanned by the AutoRAG PII Detection and Masking Function before ingestion into the vector store or processing by any LLM. Detected PII categories (email, phone, national ID, credit card, named persons) are replaced with [MASKED_TYPE] tokens. The masking report is retained for 90 days.
+
+Retrieval Safety: The retrieval pipeline includes a safety check that verifies retrieved chunks do not contain residual unmasked PII before including them in LLM context.
+
+Audit Logging: All access to personal data stored in the system is logged in the INSERT-only audit_log table with: timestamp, user ID, action type, and x_trace_id. Audit logs are retained for 5 years.
+
+Data Residency: Customer data is stored in Supabase data centers in Singapore (ap-southeast-1) by default. Customers requiring EU data residency may request storage in the EU (eu-central-1) region subject to separate agreement.

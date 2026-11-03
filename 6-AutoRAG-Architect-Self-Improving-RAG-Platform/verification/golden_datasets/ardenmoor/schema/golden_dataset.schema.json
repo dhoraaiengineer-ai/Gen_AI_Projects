@@ -1,0 +1,115 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "AutoRAG Golden Dataset — ardenmoor package",
+  "description": "Schema for one benchmark question in the ardenmoor golden dataset package (30 questions, 24-Jul-2026). Corpus: evaluation/golden_datasets/ardenmoor/source/Ardenmoor_Annual_Report_FY2025.pdf, a fictional 113-page test annual report for a non-existent company (Ardenmoor Industries Corporation, NYSE: ARDX), used for manual ingestion testing and the MVP demo. This package is one of several under evaluation/golden_datasets/ — see evaluation/golden_datasets/benchmark_registry.json for the full list.",
+  "type": "object",
+  "required": [
+    "id",
+    "version",
+    "category",
+    "difficulty",
+    "question",
+    "ground_truth_answer",
+    "reference_context",
+    "source_document",
+    "section",
+    "page_number",
+    "review_status"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^GT-[0-9]{3}$"
+    },
+    "version": {
+      "type": "string"
+    },
+    "category": {
+      "type": "string",
+      "enum": [
+        "Company Overview",
+        "Business Segments & Products",
+        "Financial Statements",
+        "Financial Ratios & KPIs",
+        "Governance & Leadership",
+        "Risk Management",
+        "Sustainability (ESG)",
+        "Corporate Actions"
+      ]
+    },
+    "subcategory": {
+      "type": "string"
+    },
+    "question_type": {
+      "type": "string",
+      "enum": [
+        "Fact",
+        "Definition",
+        "List",
+        "Process",
+        "Comparison",
+        "Configuration",
+        "Calculation",
+        "Troubleshooting",
+        "Multi-hop",
+        "Summarization"
+      ]
+    },
+    "difficulty": {
+      "type": "string",
+      "enum": ["Easy", "Medium", "Hard"]
+    },
+    "question": {
+      "type": "string",
+      "minLength": 1
+    },
+    "ground_truth_answer": {
+      "type": "string",
+      "minLength": 1
+    },
+    "reference_context": {
+      "type": "string",
+      "minLength": 1
+    },
+    "source_document": {
+      "type": "string"
+    },
+    "section": {
+      "type": "string"
+    },
+    "page_number": {
+      "type": ["integer", "null"]
+    },
+    "keywords": {
+      "type": "array",
+      "items": { "type": "string" },
+      "minItems": 5,
+      "maxItems": 10
+    },
+    "expected_citations": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "page": { "type": ["integer", "null"] },
+          "section": { "type": "string" }
+        }
+      }
+    },
+    "evaluation_notes": {
+      "type": "string"
+    },
+    "review_status": {
+      "type": "string",
+      "enum": ["generated", "reviewed", "approved"]
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date"
+    },
+    "updated_at": {
+      "type": "string",
+      "format": "date"
+    }
+  }
+}

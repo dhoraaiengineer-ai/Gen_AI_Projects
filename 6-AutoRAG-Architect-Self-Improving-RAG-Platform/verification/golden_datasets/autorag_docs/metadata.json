@@ -1,0 +1,38 @@
+{
+  "dataset_name": "AutoRAG Documentation",
+  "dataset_id": "autorag_docs",
+  "version": "1.0.0",
+  "questions": 20,
+  "difficulty": {
+    "easy": 8,
+    "medium": 8,
+    "hard": 4
+  },
+  "categories": [
+    "Agents",
+    "Architecture",
+    "Deployment",
+    "Evaluation",
+    "Ingestion",
+    "Monitoring",
+    "Retrieval",
+    "Security"
+  ],
+  "source_documents": [
+    "project_docs/3_PRD/AutoRAG_PRD_v4_0.md",
+    "project_docs/4_Architecture/AutoRAG_Architecture_v4_0.md",
+    "project_docs/5_HLD/AutoRAG-HLD-v4_0.md",
+    "project_docs/6_LLD/AutoRAG-LLD-v4_0.md",
+    ".claude/CLAUDE.md",
+    ".claude/specs/agents/05-evaluator.md",
+    "autorag-server/app/services/evaluation_service.py"
+  ],
+  "created_at": "2026-07-24",
+  "updated_at": "2026-07-24",
+  "schema_version": "1.0.0",
+  "schema_path": "evaluation/golden_datasets/autorag_docs/schema/golden_dataset.schema.json",
+  "data_path": "evaluation/golden_datasets/autorag_docs/generated/golden_dataset.json",
+  "review_status_summary": {
+    "generated": 20
+  }
+}

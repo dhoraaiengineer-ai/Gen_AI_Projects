@@ -1,0 +1,19 @@
+# AutoRAG — LLM Provider Pricing
+# Rule 86: pricing MUST be loaded from this file at startup — never hardcoded in Python.
+
+cost_per_token_usd:
+  gemini-flash-3.5: 0.000000075
+  kimi-k2.6: 0.000000100
+  gemini-3.5: 0.000000150
+  # 17-Jul-2026: direct-provider bypass keys are "{family}:{real_model_id}"
+  # (see resolve_chat_provider_chain() in app/core/config.py) -- add an entry
+  # here whenever you set a *_CHAT_MODEL, or cost falls back to the generic
+  # default rate in llm_service.py's _compute_cost(). Blended estimate below,
+  # not pulled from a live rate card -- verify against Groq's real pricing
+  # page before trusting cost totals for budget/guardrail decisions.
+  "groq:llama-3.3-70b-versatile": 0.000000068
+  # gemini-flash-latest returns substantial hidden reasoning tokens
+  # (thought_signature) even for trivial prompts -- live-confirmed 17-Jul-2026,
+  # 61 of 62 total tokens on a 1-word reply -- blended estimate, not a live
+  # rate card entry; verify before trusting cost totals for budget decisions.
+  "gemini:gemini-flash-latest": 0.000000075

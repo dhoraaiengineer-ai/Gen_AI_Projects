@@ -1,0 +1,57 @@
+INCIDENT REPORT — AUTORAG PLATFORM
+Incident ID: INC-2026-0034
+Severity: SEV-2 (Major)
+Status: Resolved
+Date/Time of Incident: 14 May 2026, 14:23 SGT
+Date/Time Resolved: 14 May 2026, 16:47 SGT
+Total Duration: 2 hours 24 minutes
+Reported by: Observer Agent (automated alert) + on-call engineer Ravi Sharma
+
+INCIDENT SUMMARY
+
+The AutoRAG API experienced elevated p95 response latency (peak: 7.2 seconds) for retrieval queries during a 2.4-hour window. Approximately 23% of retrieval queries during the incident window returned results in excess of the 3-second SLA. No data was lost. No deployments were affected. The ingestion pipeline was not impacted.
+
+TIMELINE
+
+14:23 SGT — Prometheus alert fires: "API p95 latency > 3s for 5 consecutive minutes". PagerDuty pages on-call engineer.
+14:26 SGT — On-call engineer Ravi Sharma acknowledges alert. Incident ticket INC-2026-0034 created in Jira.
+14:31 SGT — Initial investigation: API gateway health check passing. Worker ECS tasks all in healthy state. Redis queue depth normal (< 5 pending jobs).
+14:38 SGT — Database investigation begins. CloudWatch logs show Supabase pgvector similarity search queries averaging 2,800ms (normal: 180ms).
+14:45 SGT — Root cause identified: a new vector table (autorag_{pipeline_id}_{version}) created by a large batch ingestion (2,800 documents, 180,000 chunks) had not had its HNSW index built. All similarity searches were falling back to sequential scan (O(n) rather than O(log n)).
+14:52 SGT — Engineering Lead Priya Nair looped in. Decision: rebuild index in-place without taking the pipeline offline.
+15:02 SGT — Index rebuild initiated via Supabase SQL editor: CREATE INDEX CONCURRENTLY idx_chunks_embedding ON autorag_{pipeline_id}_{version} USING hnsw (embedding vector_cosine_ops) WITH (m=16, ef_construction=64);
+16:40 SGT — Index build complete. pgvector query latency drops to 95ms.
+16:44 SGT — API p95 latency returns to normal (peak 1.2 seconds). Prometheus alert resolves.
+16:47 SGT — Incident resolved. Post-mortem scheduled for 15 May 2026.
+
+ROOT CAUSE ANALYSIS
+
+The Builder Agent creates vector tables for new pipeline versions but does not automatically trigger HNSW index creation after bulk ingestion. This is a known gap documented in JIRA ticket ARCH-445 (backlog since v2.3). When more than approximately 50,000 vectors exist without an index, pgvector's sequential scan performance degrades to the point of breaching the 3-second SLA.
+
+The bulk ingestion of 2,800 documents was the first ingestion of this scale on the production platform. Previous largest ingestion was 400 documents (30,000 vectors), which was below the degradation threshold.
+
+IMPACT
+
+Affected customers: 3 (organizations with active retrieval queries during the incident window)
+Queries exceeding SLA: approximately 340 queries (23% of traffic during incident window)
+User-visible impact: increased response times; no errors returned to users; auto-retry by the frontend reduced user-perceived impact
+Revenue impact: not applicable (within SLA grace period per contract terms)
+
+REMEDIATION ACTIONS
+
+Immediate (completed):
+- HNSW index created on the affected vector table
+- Incident resolved; affected customers notified via email
+
+Short-term (within 1 week, Owner: Platform Team):
+- Builder Agent updated to trigger HNSW index creation automatically after any ingestion that creates more than 10,000 vectors
+- Added a monitoring check: if a vector table has more than 10,000 rows and no HNSW index, fire a warning alert
+- Runbook updated with this scenario (Scenario 5: Missing Vector Index)
+
+Long-term (Q3 2026, Owner: Engineering Lead):
+- Evaluate pgvector IVFFlat index as an alternative for extremely large collections (>1M vectors)
+- Implement pre-flight index check in the Evaluator Agent before beginning a retrieval benchmark
+
+LESSONS LEARNED
+
+The incident highlighted that the platform's automated index management was not production-ready for large document corpora. The fix is straightforward but the gap should have been caught in the ingestion agent's definition of done. Going forward, Builder Agent task completion requires a passing index health check.

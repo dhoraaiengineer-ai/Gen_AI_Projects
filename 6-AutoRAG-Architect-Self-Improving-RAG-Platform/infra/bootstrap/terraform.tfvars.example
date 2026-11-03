@@ -1,0 +1,18 @@
+# AutoRAG Architect v4.0 — Bootstrap Variable Values
+# Copy this file to terraform.tfvars and fill in real values.
+# NEVER commit terraform.tfvars — it is blocked by .gitignore
+
+aws_region   = "ap-south-1"
+environment  = "dev"
+project_name = "autorag"
+
+# Supabase — get from: https://supabase.com → Project Settings → API
+supabase_url    = "https://your-project-id.supabase.co"
+supabase_key    = "your-service-role-key"
+supabase_db_url = "postgresql://postgres:password@db.your-project-id.supabase.co:5432/postgres"
+
+# AI Providers — all LLM calls route through EURI (OpenAI-compatible gateway)
+# EURI provides unified access to: Gemini Flash 3.5 → KiMi K2.6 → Gemini 3.5 failover chain
+# Get from project lead (Mahesh Kumar)
+euri_api_key   = "your-euri-api-key"
+cohere_api_key = "your-cohere-api-key"

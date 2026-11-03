@@ -1,0 +1,93 @@
+name: "Project 6 · Security Checks"
+
+# Stage 1 (parallel with lint.yml): gitleaks + bandit + pip-audit
+# Runs on every push to main/development/testing and daily at 02:00 UTC
+# Config files: security/.gitleaks.toml, security/bandit.yaml
+
+on:
+  push:
+    branches: [main]
+    paths: ["6-AutoRAG-Architect-Self-Improving-RAG-Platform/**", ".github/workflows/p6-*.yml"]
+  pull_request:
+    paths: ["6-AutoRAG-Architect-Self-Improving-RAG-Platform/**", ".github/workflows/p6-*.yml"]
+  schedule:
+    - cron: "0 2 * * *"   # daily 02:00 UTC
+  workflow_dispatch:
+
+defaults:
+  run:
+    working-directory: 6-AutoRAG-Architect-Self-Improving-RAG-Platform
+
+jobs:
+
+  # ── Job 1: gitleaks — secret scanning ─────────────────────────────
+  gitleaks:
+    name: "Secret Scanning (gitleaks)"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # full history required for gitleaks commit scanning
+      - name: Run gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        with:
+          config-path: 6-AutoRAG-Architect-Self-Improving-RAG-Platform/security/.gitleaks.toml
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # ── Job 2: bandit — Python SAST ───────────────────────────────────
+  bandit:
+    name: "Python SAST (bandit)"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install bandit
+        run: pip install bandit[toml]
+      - name: Run bandit
+        run: |
+          bandit -r autorag-server/app \
+            -c security/bandit.yaml \
+            --severity-level medium \
+            --confidence-level medium \
+            -f json -o bandit-report.json
+      - name: Upload bandit report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: bandit-report
+          path: 6-AutoRAG-Architect-Self-Improving-RAG-Platform/bandit-report.json
+          retention-days: 7
+
+  # ── Job 3: pip-audit — dependency vulnerability scan ──────────────
+  pip-audit:
+    name: "Dependency Audit (pip-audit)"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install uv + pip-audit
+        run: pip install uv pip-audit
+      - name: Install backend dependencies
+        run: |
+          cd autorag-server
+          uv sync --all-groups
+      - name: Run pip-audit
+        run: |
+          cd autorag-server
+          uv pip freeze | pip-audit --requirement /dev/stdin \
+            --format json \
+            --output "$GITHUB_WORKSPACE/pip-audit-report.json"
+      - name: Upload pip-audit report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pip-audit-report
+          path: pip-audit-report.json
+          retention-days: 7

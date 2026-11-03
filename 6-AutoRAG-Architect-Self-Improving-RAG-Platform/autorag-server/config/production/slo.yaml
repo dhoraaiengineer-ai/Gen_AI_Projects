@@ -1,0 +1,53 @@
+# AutoRAG Architect -- SLO Configuration (G-1 / Plan v4)
+# Rule 86: all thresholds loaded from this file at startup -- never hardcoded in Python.
+# SoT for deployment gates, alert thresholds, cost budgets, and Unified Score evaluation.
+# Load via: from app.core.config_loader import slo_config
+#
+# Environment-specific overrides: set env vars (MAX_QUERY_COST_USD etc.) which take
+# precedence over these defaults per Rule 86 cost-budget env var table.
+
+version: "1.0"
+updated: "2026-07-10"
+
+# ── Deployment Gate ────────────────────────────────────────────────────────────
+deployment_gate:
+  unified_score_min: 0.85         # Auto-deploy threshold
+  unified_score_hitl: 0.70        # HITL required when score falls below this
+  faithfulness_hard_floor: 0.50   # Hard block regardless of total score
+  adversarial_pass_rate: 1.0      # 100% required -- any fabricated answer blocks
+
+# ── SLO Targets ───────────────────────────────────────────────────────────────
+slo_targets:
+  p95_latency_ms: 3000            # Auto-rollback trigger: > 3s
+  error_rate_pct: 0.01            # Auto-rollback trigger: > 1%
+  unified_score_drop: 0.10        # Auto-rollback trigger: drop > 0.10 in canary window
+  recall_at_5: 0.85               # Alert only -- not a rollback trigger
+  faithfulness_min: 0.80          # Alert only (production target; hard floor is 0.50 above)
+  pipeline_build_time_s: 300      # 5 min per 1000 docs -- alert only
+  monthly_availability_pct: 99.5  # Error budget basis -- 3.6 hours / month
+
+# ── Cost Budgets (production defaults; override with env vars per Rule 86) ────
+cost_budgets:
+  max_query_cost_usd: 0.01          # Per single query
+  max_eval_cost_usd: 0.60           # Per evaluation run
+  max_pipeline_build_usd: 2.00      # Per full pipeline build
+  max_monthly_cost_increase_pct: 0.20  # HITL required above this threshold
+
+# ── Token Limits ──────────────────────────────────────────────────────────────
+token_limits:
+  max_prompt_tokens: 32000
+  max_completion_tokens: 4096
+  max_context_tokens: 64000
+
+# ── Burn Rate Thresholds ──────────────────────────────────────────────────────
+burn_rate:
+  critical_1h: 14.4   # Page + auto-rollback (monthly SLO exhausted in 2 days)
+  warning_30m: 6.0    # Notify Team 6
+  info_6h: 1.0        # Log to audit trail
+
+# ── RAG Quality KPIs ──────────────────────────────────────────────────────────
+rag_kpis:
+  context_precision_min: 0.75
+  answer_relevancy_min: 0.80
+  context_recall_min: 0.80
+  embedding_dimensions: 768   # Frozen contract -- do not change without Architecture Review

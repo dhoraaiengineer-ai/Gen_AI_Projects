@@ -1,0 +1,74 @@
+ANNUAL REPORT SUMMARY — AUTORAG SOLUTIONS PTE LTD
+Financial Year 2025 | Approved by Board: 15 March 2026
+
+CHAIRMAN'S MESSAGE
+
+FY2025 was a transformational year for AutoRAG Solutions. We completed the migration to our v3.0 platform, expanded our customer base by 140%, and achieved profitability for the first time in the company's history. The transition from a services-led to a product-led model is now complete, and we enter FY2026 with strong unit economics and a clear path to scale.
+
+FINANCIAL HIGHLIGHTS
+
+Revenue
+  Total Revenue: SGD 8.4 million (FY2024: SGD 3.5 million; growth: 140%)
+  - Software as a Service (SaaS) subscriptions: SGD 6.1 million (73% of revenue)
+  - Professional services and implementation: SGD 1.8 million (21% of revenue)
+  - Training and certification programs: SGD 0.5 million (6% of revenue)
+
+Gross Profit
+  Gross Profit: SGD 5.9 million
+  Gross Margin: 70.2% (FY2024: 58.4%)
+  Improvement driven by: infrastructure cost optimization (Supabase migration reduced DB costs by 35%), reduced LLM API costs through caching and prompt optimization (saved SGD 0.4 million vs. prior year run rate).
+
+Operating Expenses
+  Total OpEx: SGD 5.6 million
+  - Research and Development: SGD 2.8 million (33% of revenue)
+  - Sales and Marketing: SGD 1.5 million (18% of revenue)
+  - General and Administrative: SGD 1.3 million (15% of revenue)
+
+Net Income
+  Net Income: SGD 0.3 million (first profitable year; FY2024 net loss: SGD 1.2 million)
+  EBITDA: SGD 0.6 million
+  Cash and cash equivalents at year end: SGD 4.1 million
+
+OPERATIONAL METRICS
+
+Customer Metrics
+  Total customers at year end: 47 (FY2024: 19)
+  Enterprise customers (>SGD 100k ARR): 12
+  Net Revenue Retention (NRR): 124%
+  Customer Acquisition Cost (CAC): SGD 28,000
+  Average Contract Value (ACV): SGD 178,000
+
+Product Metrics
+  Pipelines deployed on platform: 312 (FY2024: 87)
+  Average Unified Score across all production pipelines: 0.89
+  Documents ingested into platform: 2.1 million
+  Retrieval queries processed: 18.4 million
+  Average p95 retrieval latency: 1.8 seconds (below 3-second SLA)
+  Platform uptime: 99.7% (target: 99.5%)
+
+AI Model Efficiency
+  Gemini Flash 3.5 handled 94% of production LLM calls
+  KiMi K2.6 fallback activated 4.8% of the time (primarily during Gemini rate limiting events in Q3)
+  Average cost per retrieval query: USD 0.004 (down from USD 0.011 in FY2024)
+
+RISK FACTORS
+
+LLM Dependency: The company relies on third-party LLM providers (Gemini, KiMi). Significant price increases, service disruptions, or changes in provider terms could adversely affect operating costs and service reliability. The multi-provider failover architecture mitigates availability risk but not price risk.
+
+Regulatory Risk: Increasing AI regulation across the EU (AI Act), Singapore (Model AI Governance Framework), and India (DPDP) may require additional compliance investments. The company has allocated SGD 0.4 million in FY2026 for regulatory compliance capabilities.
+
+Competition: The enterprise RAG platform market is growing rapidly with well-funded competitors. The company's key differentiators are the autonomous Unified Score optimization loop and the LangGraph-based deterministic orchestration, which competitors have not replicated.
+
+OUTLOOK FOR FY2026
+
+Revenue target: SGD 18 million (target growth: 115%)
+Key growth drivers:
+  - Launch of AutoRAG Enterprise tier with dedicated infrastructure and SLA guarantees
+  - Expansion into the Middle East and Southeast Asian markets
+  - Launch of AutoRAG for Healthcare vertical with HIPAA compliance certification
+  - Partnership with two global systems integrators announced in Q1 2026
+
+Planned investments:
+  - Engineering headcount: grow from 28 to 55 engineers
+  - Obtain SOC 2 Type II certification (target: Q3 2026)
+  - Launch partner certification program for implementation partners

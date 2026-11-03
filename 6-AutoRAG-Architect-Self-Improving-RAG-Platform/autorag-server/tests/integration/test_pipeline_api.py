@@ -1,0 +1,23 @@
+"""Integration tests for pipeline REST endpoints — real Supabase PostgreSQL."""
+# TODO (Team 3): implement — Spec: .claude/specs/api-design.md § pipelines
+# Uses pytest-asyncio + httpx AsyncClient; real DB, no mocks
+
+import pytest
+from httpx import AsyncClient
+
+
+@pytest.mark.asyncio
+class TestPipelineEndpoints:
+    async def test_create_pipeline_returns_201(self, client: AsyncClient) -> None: ...
+    async def test_get_pipeline_scoped_by_org(self, client: AsyncClient) -> None: ...
+    async def test_list_pipelines_paginated(self, client: AsyncClient) -> None: ...
+    async def test_cross_org_access_blocked(self, client: AsyncClient) -> None: ...
+
+
+@pytest.mark.asyncio
+class TestEvaluationEndpoints:
+    async def test_evaluate_returns_job_id(self, client: AsyncClient) -> None: ...
+    async def test_score_returns_unified_score(self, client: AsyncClient) -> None: ...
+    async def test_low_faithfulness_not_deploy_eligible(
+        self, client: AsyncClient
+    ) -> None: ...

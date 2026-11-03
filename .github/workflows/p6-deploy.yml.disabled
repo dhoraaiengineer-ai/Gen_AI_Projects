@@ -1,0 +1,213 @@
+name: Deploy — AutoRAG Architect v4.0
+
+# ⚠️ RENAMED 16-Jul-2026 (was deploy.disabled.yml): GitHub Actions loads every
+# .yml/.yaml file under .github/workflows/ regardless of extra dots in the name,
+# so the old filename was NOT actually disabled and would have run on the next
+# push to staging/main. It also builds autorag-server/Dockerfile.worker and
+# deploys to an ECS service (autorag-worker) that were never implemented — this
+# codebase runs LangGraph nodes in-process via FastAPI BackgroundTasks, not as a
+# separate worker service (see app/routes/ingest.py). Restore this to deploy.yml
+# only after either building the real worker image/service, or stripping the
+# worker-specific steps (build+push worker image, deploy-staging worker step).
+#
+# SECOND BLOCKER found 21-Jul-2026 (independent of the worker issue above):
+# Stage 8's "Blue/Green deploy via CodeDeploy" step sets AppSpec
+# TargetService.Properties.TaskDefinition to needs.build.outputs.image-backend
+# -- an ECR *image URI*. CodeDeploy's ECS AppSpec requires a registered ECS
+# *task definition ARN* there, not an image URI, and no step here ever
+# registers a new task definition revision (e.g. via `aws ecs
+# register-task-definition` or the `amazon-ecs-render-task-definition` +
+# `amazon-ecs-deploy-task-definition` actions) referencing the newly-built
+# image. Add that registration step (rendering infra/modules/ecs_fargate's
+# container definition with the new SHA-tagged image) before restoring.
+#
+# Stages 4–8 of the 8-stage CI/CD gate chain
+# Only triggers on push to staging or main branches
+# Feature branches: never deploy — only lint + test
+#
+# REQUIRED UPSTREAM WORKFLOWS (configure as required status checks in GitHub):
+#   🔴 1. lint.yml       — ruff + mypy + ESLint + TypeScript (MUST pass first)
+#   🔴 2. security.yml   — gitleaks + bandit + pip-audit     (MUST pass first)
+#   🟠 3. test.yml       — pytest + Vitest + integration      (MUST pass second)
+#   🟡 4. infra.yml      — terraform validate + plan          (MUST pass third)
+#   🟢 5. deploy.yml     — THIS FILE — build + ECS staging + approval + prod
+#
+# Workflow execution order enforced via GitHub branch protection rules:
+# Settings → Branches → Require status checks → add all 4 upstream jobs
+
+on:
+  push:
+    branches: [staging, main]
+
+env:
+  PYTHON_VERSION: "3.11"
+  NODE_VERSION: "20"
+  AWS_REGION: "ap-south-1"
+  ECR_REGISTRY: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.ap-south-1.amazonaws.com
+  IMAGE_TAG: ${{ github.sha }}
+
+jobs:
+
+  # ── Stage 4: Docker Build + Push to ECR ───────────────────────────
+  build:
+    name: "Stage 4 — Build + ECR Push"
+    runs-on: ubuntu-latest
+    outputs:
+      image-backend: ${{ steps.meta-backend.outputs.image }}
+      image-worker: ${{ steps.meta-worker.outputs.image }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build + push backend image (immutable SHA tag)
+        id: meta-backend
+        run: |
+          IMAGE="${{ env.ECR_REGISTRY }}/autorag-server:${{ env.IMAGE_TAG }}"
+          docker build -t $IMAGE -f autorag-server/Dockerfile autorag-server/
+          docker push $IMAGE
+          echo "image=$IMAGE" >> $GITHUB_OUTPUT
+          echo "✅ Backend image: $IMAGE"
+
+      - name: Build + push worker image (immutable SHA tag)
+        id: meta-worker
+        run: |
+          IMAGE="${{ env.ECR_REGISTRY }}/autorag-worker:${{ env.IMAGE_TAG }}"
+          docker build -t $IMAGE -f autorag-server/Dockerfile.worker autorag-server/
+          docker push $IMAGE
+          echo "image=$IMAGE" >> $GITHUB_OUTPUT
+          echo "✅ Worker image: $IMAGE"
+
+  # ── Stage 5: Deploy to ECS Staging ───────────────────────────────
+  deploy-staging:
+    name: "Stage 5 — ECS Staging Deploy"
+    runs-on: ubuntu-latest
+    needs: build
+    environment: staging
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Deploy backend to ECS staging
+        run: |
+          aws ecs update-service \
+            --cluster autorag-staging \
+            --service autorag-api \
+            --force-new-deployment \
+            --region ${{ env.AWS_REGION }}
+
+      - name: Deploy worker to ECS staging
+        run: |
+          aws ecs update-service \
+            --cluster autorag-staging \
+            --service autorag-worker \
+            --force-new-deployment \
+            --region ${{ env.AWS_REGION }}
+
+      - name: Wait for ECS stability (staging)
+        run: |
+          aws ecs wait services-stable \
+            --cluster autorag-staging \
+            --services autorag-api autorag-worker \
+            --region ${{ env.AWS_REGION }}
+
+  # ── Stage 6: Smoke Tests against Staging ─────────────────────────
+  smoke-test:
+    name: "Stage 6 — Smoke Test (Staging)"
+    runs-on: ubuntu-latest
+    needs: deploy-staging
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Health check — /health
+        run: |
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
+            -H "X-Trace-ID: smoke-${{ env.IMAGE_TAG }}" \
+            "${{ secrets.STAGING_API_URL }}/health")
+          if [ "$STATUS" != "200" ]; then
+            echo "❌ Health check failed: HTTP $STATUS"
+            exit 1
+          fi
+          echo "✅ Health check passed: HTTP $STATUS"
+
+      - name: Smoke test — /api/v1/experiments
+        run: |
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
+            -H "X-Trace-ID: smoke-${{ env.IMAGE_TAG }}" \
+            "${{ secrets.STAGING_API_URL }}/api/v1/experiments")
+          if [ "$STATUS" != "200" ]; then
+            echo "❌ Smoke test failed: HTTP $STATUS"
+            exit 1
+          fi
+          echo "✅ Smoke test passed"
+
+  # ── Stage 7: Manual Approval Gate (main branch only) ─────────────
+  manual-approval:
+    name: "Stage 7 — Manual Approval Gate"
+    runs-on: ubuntu-latest
+    needs: smoke-test
+    if: github.ref == 'refs/heads/main'
+    environment: production-approval   # named reviewer required in GitHub env settings
+    steps:
+      - name: Awaiting named reviewer approval
+        run: echo "✅ Approved — proceeding to production Blue/Green deploy."
+
+  # ── Stage 8: Blue/Green Deploy to ECS Production ─────────────────
+  deploy-production:
+    name: "Stage 8 — ECS Production (Blue/Green)"
+    runs-on: ubuntu-latest
+    needs: manual-approval
+    if: github.ref == 'refs/heads/main'
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Blue/Green deploy via CodeDeploy
+        run: |
+          aws deploy create-deployment \
+            --application-name autorag-production \
+            --deployment-group-name autorag-bg-group \
+            --revision revisionType=AppSpecContent,appSpecContent="{
+              \"version\": 1,
+              \"Resources\": [{
+                \"TargetService\": {
+                  \"Type\": \"AWS::ECS::Service\",
+                  \"Properties\": {
+                    \"TaskDefinition\": \"${{ needs.build.outputs.image-backend }}\",
+                    \"LoadBalancerInfo\": {
+                      \"ContainerName\": \"autorag-api\",
+                      \"ContainerPort\": 8000
+                    }
+                  }
+                }
+              }]
+            }" \
+            --region ${{ env.AWS_REGION }}
+
+      - name: Production deployed
+        run: |
+          echo "✅ Production deploy triggered"
+          echo "   SHA: ${{ env.IMAGE_TAG }}"
+          echo "   Auto-rollback: active for 10 minutes"
+          echo "   Triggers: error_rate > 1% OR p95 > 3s OR Unified Score drop > 0.10"

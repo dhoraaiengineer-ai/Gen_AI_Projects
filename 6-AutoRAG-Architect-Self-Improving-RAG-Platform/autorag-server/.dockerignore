@@ -1,0 +1,44 @@
+# 🛡️ AutoRAG ARCHITECT: 9-AGENT LOOP 🛡️
+# BACKEND DOCKERIGNORE v3.0
+# Rule 70: secrets never enter the build context | Rule 45: no env files in image
+
+# Git
+.git
+.gitignore
+.gitattributes
+
+# Secrets — must never be baked into the image
+.env
+.env.*
+!.env.example
+
+# Python bytecode + tool caches
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Virtual envs / uv cache
+.venv/
+venv/
+env/
+.uv/
+
+# Tests (not needed in production image)
+tests/
+
+# Dev tooling artifacts
+*.log
+logs/
+scratch/
+
+# IDE / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Leftover from v2 (Qdrant)
+qdrant_storage/

@@ -1,0 +1,111 @@
+name: "Project 6 · Lint & Type Checks"
+
+on:
+  push:
+    branches: [main]
+    paths: ["6-AutoRAG-Architect-Self-Improving-RAG-Platform/**", ".github/workflows/p6-*.yml"]
+  pull_request:
+    paths: ["6-AutoRAG-Architect-Self-Improving-RAG-Platform/**", ".github/workflows/p6-*.yml"]
+  workflow_dispatch:
+
+defaults:
+  run:
+    working-directory: 6-AutoRAG-Architect-Self-Improving-RAG-Platform
+
+env:
+  PYTHON_VERSION: "3.11"
+  NODE_VERSION: "20"
+
+jobs:
+  lint:
+    name: Backend + Frontend Lint
+    runs-on: ubuntu-latest
+
+    steps:
+      # ─────────────────────────────────────────────
+      # Checkout Repository
+      # ─────────────────────────────────────────────
+
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      # ─────────────────────────────────────────────
+      # Python Setup
+      # ─────────────────────────────────────────────
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install UV
+        run: pip install uv
+
+      - name: Cache uv dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/uv
+          key: uv-${{ runner.os }}-${{ hashFiles('6-AutoRAG-Architect-Self-Improving-RAG-Platform/autorag-server/uv.lock') }}
+          restore-keys: uv-${{ runner.os }}-
+
+      - name: Install Backend Dependencies
+        run: |
+          cd autorag-server
+          uv sync --all-groups
+
+      - name: Ruff Lint Check
+        run: |
+          cd autorag-server
+          uv run ruff check app
+
+      - name: Ruff Format Check
+        run: |
+          cd autorag-server
+          uv run ruff format --check .
+
+      - name: Backend Type Check (mypy)
+        run: |
+          cd autorag-server
+          uv run mypy app --ignore-missing-imports
+
+      - name: Alert/Metric Consistency Check
+        # Added 24-Jul-2026 (R-051, release audit): fails the build if any
+        # Prometheus alert rule (observability/alerts/autorag-alerts.yml)
+        # references a metric name not declared+wired in app/metrics.py.
+        # Catches the UnifiedScoreDrop class of bug (a dead alert querying a
+        # metric that never existed) at PR time instead of during a manual
+        # audit months later.
+        run: |
+          cd autorag-server
+          uv run python ../scripts/check-alert-metrics.py
+
+      # ─────────────────────────────────────────────
+      # Node.js Setup
+      # ─────────────────────────────────────────────
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "npm"
+          cache-dependency-path: 6-AutoRAG-Architect-Self-Improving-RAG-Platform/autorag-client/package-lock.json
+
+      - name: Install Frontend Dependencies
+        run: |
+          cd autorag-client
+          npm ci
+
+      - name: Frontend ESLint
+        run: |
+          cd autorag-client
+          npm run lint
+
+      - name: Frontend Type Check
+        run: |
+          cd autorag-client
+          npm run typecheck
+
+      - name: Frontend Production Build Validation
+        run: |
+          cd autorag-client
+          npm run build

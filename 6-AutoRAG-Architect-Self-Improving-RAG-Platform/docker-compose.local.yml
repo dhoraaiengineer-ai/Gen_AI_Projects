@@ -1,0 +1,53 @@
+# 🛡️ AutoRAG ARCHITECT: 9-AGENT LOOP 🛡️
+# LOCAL DEV STACK v4.0 — OFFLINE OVERRIDE
+#
+# Override file, not standalone. Layers a local, pgvector-enabled Postgres
+# mirror on top of the cloud-default docker-compose.yml, and points
+# autorag-server at it instead of Supabase Cloud. Use for offline development
+# or isolated testing where you deliberately want an empty, disposable
+# database — not for day-to-day work (your data won't match the Supabase
+# dev tier everyone else, and non-Docker `uvicorn --reload`, uses).
+#
+# Run with:
+#   docker compose -f docker-compose.yml -f docker-compose.local.yml up
+
+services:
+
+  postgres:
+    image: pgvector/pgvector:pg15
+    container_name: autorag-postgres-local
+
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-autorag}
+
+    ports:
+      - "5432:5432"
+
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-autorag}"
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+    restart: unless-stopped
+
+  autorag-server:
+    environment:
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-autorag}
+
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  postgres_data:
+    driver: local

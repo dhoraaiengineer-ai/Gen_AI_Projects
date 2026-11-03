@@ -1,0 +1,37 @@
+{
+  "$schema": "https://claude.ai/schemas/settings.json",
+  "outputStyle": "Explanatory",
+  "commands": {
+    "allow": [
+      "Bash(npm run *)",
+      "Bash(make *)",
+      "Bash(git *)",
+      "Read",
+      "Write",
+      "Edit",
+      "Glob",
+      "Grep"
+    ],
+    "deny": ["rm -rf", "curl"]
+  },
+  "files": {
+    "deny": [".env", "secrets/**"]
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "pwsh -NoProfile -File .claude/hooks/lint-on-edit.ps1"
+          },
+          {
+            "type": "command",
+            "command": "pwsh -NoProfile -File .claude/hooks/auto-memory-log.ps1"
+          }
+        ]
+      }
+    ]
+  }
+}

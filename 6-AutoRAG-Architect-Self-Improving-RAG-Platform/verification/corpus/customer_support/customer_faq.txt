@@ -1,0 +1,55 @@
+AUTORAG ARCHITECT — CUSTOMER FAQ
+Version 2.4 | Customer Success Team | Updated: June 2026
+
+GETTING STARTED
+
+Q: What is AutoRAG Architect?
+A: AutoRAG Architect is an enterprise platform for building, evaluating, and deploying Retrieval-Augmented Generation (RAG) pipelines. It automates the process of connecting your documents to an AI that can answer questions about them, with a built-in quality scoring system (Unified Score) and an autonomous improvement loop that continuously optimizes your pipeline.
+
+Q: What documents can I upload?
+A: Currently supported formats: PDF (up to 100 MB, up to 500 pages), Microsoft Word DOCX (up to 50 MB), plain text TXT (up to 10 MB), Markdown MD (up to 10 MB), and Excel XLSX (up to 20 MB). Scanned PDFs without embedded text (image-only PDFs) are not currently supported. Support for PPTX and image documents with OCR is planned for Q3 2026.
+
+Q: How many documents can I have in one pipeline?
+A: The Standard plan supports up to 200 documents per pipeline. The Enterprise plan supports unlimited documents per pipeline (subject to storage quota). If you need to increase the limit on the Standard plan, contact your Customer Success Manager.
+
+Q: How long does it take to ingest a document?
+A: Most documents are fully ingested and ready for queries within 30 to 90 seconds. Large documents (over 200 pages) or batch uploads of 50+ documents may take up to 10 minutes. You can monitor ingestion progress in the Documents section of the dashboard.
+
+PIPELINE CONFIGURATION
+
+Q: What is the difference between semantic, hierarchical, and late chunking?
+A: Semantic chunking splits documents at natural sentence and paragraph boundaries based on meaning — best for general prose, reports, and FAQs. Hierarchical (parent/child) chunking creates two levels of chunks: large parent chunks (whole sections) and small child chunks (paragraphs) — best for structured documents like policies, contracts, and handbooks. Late chunking embeds the full document first before splitting — best for technical documentation where context from the surrounding document is critical to interpret individual paragraphs.
+
+Q: What Unified Score should I target?
+A: For production deployment, you need a Unified Score of at least 0.85. Scores between 0.70 and 0.84 require manual approval from a designated approver in your organization. Scores below 0.70 will trigger an automatic improvement cycle. We recommend starting with the default settings (hierarchical chunking, hybrid retrieval, Cohere reranker) which typically achieve scores of 0.82 to 0.90 on well-structured enterprise documents.
+
+Q: What is Faithfulness and why is it a hard block at 0.50?
+A: Faithfulness measures whether the AI's answers are grounded in the retrieved documents, rather than generated from the model's general knowledge (hallucination). A Faithfulness score below 0.50 means the AI is generating content that is not supported by your documents — this is a critical quality failure that we never allow to reach production, regardless of how well the pipeline scores on other metrics.
+
+Q: Can I use my own LLM?
+A: Not in the current version. The platform uses Gemini Flash 3.5 as the primary model with KiMi K2.6 as a fallback. Support for custom LLM endpoints (OpenAI-compatible APIs) is on the roadmap for Q4 2026.
+
+SECURITY AND DATA
+
+Q: Is my data used to train your AI models?
+A: No. Your documents and queries are never used to train any AI model. Your data is isolated to your organization's workspace and is not shared with any other customer. The LLM calls use your documents as context for answering questions — the models themselves are not modified.
+
+Q: What happens to my documents when I delete them?
+A: When you delete a document, it is immediately removed from the vector index. The raw file is deleted from storage within 24 hours. If you delete an entire pipeline, all associated vectors and document files are deleted within 24 hours. Deleted data cannot be recovered — please ensure you have your own backup of documents before deletion.
+
+Q: Can I connect AutoRAG to my own database?
+A: Not directly. You upload documents through the ingestion interface or API. If you need to ingest content from a database, the recommended approach is to export the relevant data as structured text or CSV files and upload those. A direct database connector is planned for the Enterprise tier in H2 2026.
+
+Q: Is the platform SOC 2 certified?
+A: We are currently pursuing SOC 2 Type II certification, targeted for Q3 2026. We have completed the SOC 2 readiness assessment and have all key controls in place. In the meantime, we can provide our security questionnaire responses and architecture documentation on request.
+
+BILLING AND PLANS
+
+Q: How is pricing calculated?
+A: Pricing is based on three dimensions: (1) number of pipelines, (2) monthly retrieval query volume, and (3) storage used. The Standard plan includes 3 pipelines, 50,000 queries per month, and 10 GB storage. The Enterprise plan is custom-priced. Contact sales@autorag-solutions.com for a quote.
+
+Q: What happens if I exceed my query limit?
+A: On the Standard plan, queries above the monthly limit are charged at SGD 0.002 per query (billed at the end of the month). We will send an email alert when you reach 80% and 95% of your limit. You can upgrade your plan or purchase additional query credits at any time through the billing portal.
+
+Q: Can I get a trial?
+A: Yes. A 14-day free trial is available with full feature access, limited to 1 pipeline, 500 queries, and 1 GB storage. No credit card is required to start a trial. At the end of the trial, your pipeline and documents are preserved for 30 days while you decide whether to subscribe.

@@ -1,0 +1,18 @@
+# dev.tfvars.example — copy to dev.tfvars, fill values, NEVER commit
+# terraform plan -var-file=environments/dev.tfvars
+
+environment       = "dev"
+aws_region        = "ap-south-1"
+certificate_arn   = "arn:aws:acm:ap-south-1:<account>:certificate/<id>"
+
+# ECR image tags -- MUST be immutable SHA (never "latest")
+backend_image_url = "<account>.dkr.ecr.ap-south-1.amazonaws.com/autorag-api-dev:<git-sha>"
+worker_image_url  = "<account>.dkr.ecr.ap-south-1.amazonaws.com/autorag-worker-dev:<git-sha>"
+
+# Secret ARNs -- copy from: terraform -chdir=infra/bootstrap output
+# e.g. secret_arn_supabase_url = "arn:aws:secretsmanager:ap-south-1:<account>:secret:autorag/dev/supabase_url-<suffix>"
+secret_arn_supabase_url    = "<bootstrap-output: secret_arn_supabase_url>"
+secret_arn_supabase_key    = "<bootstrap-output: secret_arn_supabase_key>"
+secret_arn_supabase_db_url = "<bootstrap-output: secret_arn_supabase_db_url>"
+secret_arn_euri_api_key    = "<bootstrap-output: secret_arn_euri_api_key>"
+secret_arn_cohere_api_key  = "<bootstrap-output: secret_arn_cohere_api_key>"

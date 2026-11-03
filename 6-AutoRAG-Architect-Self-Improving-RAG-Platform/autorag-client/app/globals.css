@@ -1,0 +1,589 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ---- Design System Tokens (Warm Stone/Amber/Orange, 26-Jul-2026)
+   Retheme starting with /dashboard, page-by-page per explicit direction --
+   supersedes the 25-Jul-2026 blue/indigo reskin. Structure unchanged: light
+   is the default, dark is a real opt-in via the `.dark` class (next-themes,
+   ThemeProvider in app/layout.tsx) — only the hue values changed. ---- */
+:root {
+  /* Sidebar palette (light chrome) */
+  --sidebar-0: #F5F1EA;
+  --sidebar-1: #F5F1EA;
+  --sidebar-2: #FAF8F5;
+  /* Workspace palette (light, default) */
+  --ws-0: #FAF8F5;
+  --ws-1: #ffffff;
+  --ws-2: #F5F1EA;
+  --ws-3: #FDF3E7;
+  /* Brand */
+  --brand-1: #F59E0B;
+  --brand-2: #EA580C;
+  /* Semantic status — kept independent of the brand palette (functional signals) */
+  --ds-success: #10B981;
+  --ds-warning: #F59E0B;
+  --ds-error:   #EF4444;
+  --ds-cyan:    #06B6D4;
+  /* Text (dark-on-light workspace) */
+  --text-1: #1C1917;
+  --text-2: #44403C;
+  --text-3: #57534E;
+  --text-4: #F59E0B;
+  /* Font */
+  --font-head: 'Space Grotesk', sans-serif;
+  /* Radius */
+  --r-sm: 8px; --r-md: 16px; --r-lg: 24px; --r-xl: 32px;
+  /* Motion */
+  --m-fast: 150ms; --m-normal: 250ms;
+  /* shadcn/ui CSS vars — light (default) */
+  --background:       40 33% 97%;
+  --foreground:       24 10% 10%;
+  --card:             0 0% 100%;
+  --card-foreground:  24 10% 10%;
+  --popover:          0 0% 100%;
+  --popover-foreground: 24 10% 10%;
+  --primary:          38 92% 50%;
+  --primary-foreground: 0 0% 100%;
+  --secondary:        48 100% 96%;
+  --secondary-foreground: 24 10% 10%;
+  --muted:            60 5% 96%;
+  --muted-foreground: 24 6% 35%;
+  --accent:           48 96% 89%;
+  --accent-foreground: 24 10% 10%;
+  --destructive:      0 84% 60%;
+  --destructive-foreground: 210 40% 98%;
+  --border:           20 6% 90%;
+  --input:            20 6% 90%;
+  --ring:             38 92% 50%;
+  --radius: 0.5rem;
+  color-scheme: light;
+}
+
+.dark {
+  /* Sidebar palette (dark) */
+  --sidebar-0: #0f172a;
+  --sidebar-1: #0f172a;
+  --sidebar-2: #1e293b;
+  /* Workspace palette (dark, opt-in) */
+  --ws-0: #0f172a;
+  --ws-1: #0f172a;
+  --ws-2: #1e293b;
+  --ws-3: #1e293b;
+  /* Brand */
+  --brand-1: #818cf8;
+  --brand-2: #a78bfa;
+  /* Semantic status — unchanged across themes */
+  --ds-success: #10B981;
+  --ds-warning: #F59E0B;
+  --ds-error:   #EF4444;
+  --ds-cyan:    #06B6D4;
+  /* Text (light-on-dark workspace) */
+  --text-1: #f8fafc;
+  --text-2: #e2e8f0;
+  --text-3: #cbd5e1;
+  --text-4: #a5b4fc;
+  /* shadcn/ui CSS vars — dark (opt-in) */
+  --background:       222 47% 11%;
+  --foreground:       210 40% 98%;
+  --card:             217 33% 17%;
+  --card-foreground:  210 40% 98%;
+  --popover:          217 33% 17%;
+  --popover-foreground: 210 40% 98%;
+  --primary:          234 89% 74%;
+  --primary-foreground: 222 47% 11%;
+  --secondary:        215 25% 27%;
+  --secondary-foreground: 210 40% 98%;
+  --muted:            217 33% 17%;
+  --muted-foreground: 215 20% 65%;
+  --accent:           215 25% 27%;
+  --accent-foreground: 210 40% 98%;
+  --destructive:      0 63% 31%;
+  --destructive-foreground: 210 40% 98%;
+  --border:           215 25% 27%;
+  --input:            215 25% 27%;
+  --ring:              234 89% 74%;
+  color-scheme: dark;
+}
+
+html {
+  font-size: 14px; /* global type scale: 1rem = 14px, scales all Tailwind rem classes */
+}
+
+html,
+body {
+  /* Light-first workspace (ADR-010, implements ADR-008). Separation comes
+     from the Glass Card surface + border-based layering against a light
+     canvas — warm cream/papaya, not the earlier dark-navy Glass Card. */
+  background-color: var(--ws-0);
+  color: var(--text-1);
+}
+
+/* Dot-grid background — faint engineering grid */
+.bg-dot-grid {
+  background-image: radial-gradient(circle, rgba(100, 65, 31, 0.12) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+.dark .bg-dot-grid {
+  background-image: radial-gradient(circle, rgba(255, 254, 249, 0.08) 1px, transparent 1px);
+}
+
+/* ══════════════════════════════════════════════════════════════
+   SOT SURFACE SYSTEM (frontend_design.md §5–7)
+   All redesigned screens use these — do not restyle per screen.
+
+   24-Jul-2026 (ADR-010): implements ADR-008's light-first decision with the
+   earth-tone palette. Every shared class now reads CSS vars instead of
+   hardcoded hex, so the same class definition serves both `:root` (light)
+   and `.dark` without duplicated override blocks. The .d2-* classes remain
+   aliases of these base classes so dashboard components that reference them
+   by name don't need individual edits.
+   ══════════════════════════════════════════════════════════════ */
+@layer components {
+  /* ── Surface hierarchy: 2 personalities, 5 elevation tiers.
+       Sidebar (global nav, always chrome)   var(--sidebar-1)
+       Navbar / PageHeaderBar (app chrome)   var(--sidebar-2)
+       Operations workspace (monitoring)     var(--ws-1)   .page-bg
+       Builder workspace (reading/editing)   var(--ws-3)   .page-bg-builder
+       Cards (Configurator/Documents/etc.)   var(--card)   .glass-card/.panel-card/.d2-card
+       KPI tiles (recessed, below Cards)     var(--ws-2)   .kpi-tile/.d2-kpi-tile
+       Hero (the one command element/page)   gradient      .d2-hero
+     Two "personalities": Operations Mode (Dashboard, Observer, Audit,
+     Deployments -- AppShell mode="operations", the default) stays on the
+     primary canvas; Builder Mode (Configurator, Documents, Knowledge Base,
+     Retrieval Explorer -- AppShell mode="builder") gets a slightly warmer
+     workspace tone for reading/editing-heavy work. See components/layout/AppShell.tsx. */
+
+  /* Operations Mode workspace (default) — Dashboard, Observer, Audit, Deployments. */
+  .page-bg {
+    background: var(--ws-1);
+  }
+
+  /* Builder Mode workspace — Configurator, Documents, Knowledge Base, Retrieval Explorer. */
+  .page-bg-builder {
+    background: var(--ws-3);
+  }
+
+  /* Cards tier — primary/statement card (Glass Card). 26-Jul-2026: border
+     darkened from a near-invisible hairline to a genuinely visible stone
+     edge, with an amber glow on hover -- "make card borders slightly dark
+     and fancy" (explicit request). */
+  .glass-card {
+    position: relative;
+    background: hsl(var(--card));
+    border: 1px solid rgba(87, 83, 78, 0.22);
+    border-radius: 1.5rem;
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06), 0 8px 24px -12px rgba(15, 23, 42, 0.12);
+    transition: border-color 150ms ease, box-shadow 150ms ease;
+  }
+  .glass-card:hover {
+    border-color: rgba(245, 158, 11, 0.35);
+    box-shadow: 0 2px 8px rgba(15, 23, 42, 0.08), 0 16px 32px -12px rgba(245, 158, 11, 0.2);
+  }
+  /* Accent command-rail on the left edge -- opt-in via .glass-card-rail
+     on surfaces that are the primary/command element of a page (e.g. a hero). */
+  .glass-card-rail::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0.75rem;
+    bottom: 0.75rem;
+    width: 4px;
+    border-radius: 9999px;
+    background: var(--brand-1);
+  }
+
+  /* Cards tier — standard panel card (frontend_design.md §5) */
+  .panel-card {
+    background: hsl(var(--card));
+    border: 1px solid rgba(87, 83, 78, 0.22);
+    border-radius: 1.25rem;
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06), 0 8px 24px -12px rgba(15, 23, 42, 0.12);
+    transition: box-shadow 150ms ease, border-color 150ms ease;
+  }
+  .panel-card:hover {
+    box-shadow: 0 2px 8px rgba(15, 23, 42, 0.08), 0 16px 32px -12px rgba(245, 158, 11, 0.18);
+    border-color: rgba(245, 158, 11, 0.35);
+  }
+
+  /* KPI tile tier -- recessed below Cards. 4px colored top accent is drawn
+     by StatCard.tsx's own overlay span (color varies per metric), not this
+     shared class -- keep the border uniform here to avoid a gray sliver
+     showing behind that overlay. */
+  .kpi-tile {
+    position: relative;
+    background: var(--ws-2);
+    border: 1px solid rgba(87, 83, 78, 0.2);
+    border-radius: 1rem;
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.05);
+    transition: box-shadow 150ms ease, border-color 150ms ease;
+    overflow: hidden;
+  }
+  .kpi-tile:hover {
+    border-color: rgba(245, 158, 11, 0.3);
+    box-shadow: 0 2px 8px rgba(15, 23, 42, 0.08);
+  }
+
+  /* Subtle input/list-row surface -- secondary surface tone */
+  .surface-subtle {
+    background: hsl(var(--foreground) / 0.03);
+    border: 1px solid hsl(var(--border) / 0.5);
+  }
+
+  /* Colored accent rule preceding a section heading -- gives every section
+     header the same accent color identity as the hero's rail. */
+  .section-rule {
+    display: inline-block;
+    width: 3px;
+    height: 14px;
+    border-radius: 9999px;
+    background: var(--brand-1);
+  }
+
+  /* Eyebrow label (SOT §3 type scale). Weight-based hierarchy (DESIGN.md:
+     "weight, not opacity, carries hierarchy") -- no mid-gray. */
+  .eyebrow {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    font-weight: 700;
+    color: var(--text-3);
+  }
+
+  /* ── Aliases: dashboard components already reference these class names
+     from the original Design 2 pilot; they now just point at the base
+     classes above so nothing needs renaming component-side. ── */
+  .d2-canvas { background: var(--ws-1); }
+  /* Hero — top of the ladder among cards: reads unambiguously as the page's
+     one command element, not just another panel. */
+  .d2-hero {
+    position: relative;
+    background-color: hsl(var(--card));
+    background-image: linear-gradient(180deg, rgba(245, 158, 11, 0.10) 0%, transparent 45%), linear-gradient(180deg, var(--sidebar-2), hsl(var(--card)));
+    border: 1px solid rgba(87, 83, 78, 0.25);
+    border-top-color: rgba(245, 158, 11, 0.3);
+    border-radius: 1.5rem;
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06), 0 8px 24px -12px rgba(15, 23, 42, 0.12);
+  }
+  .d2-hero::before { content: ""; position: absolute; left: 0; top: 0.75rem; bottom: 0.75rem; width: 4px; border-radius: 9999px; background: var(--brand-1); box-shadow: 0 0 12px 1px rgba(245,158,11,0.4); }
+  /* 26-Jul-2026: given a genuinely visible stone border + amber glow on
+     hover ("make card borders slightly dark and fancy", explicit request) --
+     was borderless (25-Jul-2026 shadow-only pass), pure shadow alone read as
+     flat against this theme's near-white page background. */
+  .d2-card { background: hsl(var(--card)); border: 1px solid rgba(87, 83, 78, 0.22); border-radius: 1rem; box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 14px 32px -10px rgba(15, 23, 42, 0.22); transition: border-color 200ms ease, box-shadow 200ms ease; }
+  .d2-card:hover { border-color: rgba(245, 158, 11, 0.4); box-shadow: 0 4px 8px rgba(15, 23, 42, 0.08), 0 26px 48px -14px rgba(245, 158, 11, 0.35); }
+  .d2-kpi-tile { position: relative; background: var(--ws-2); border: 1px solid rgba(87, 83, 78, 0.2); border-radius: 1rem; box-shadow: 0 1px 3px rgba(15, 23, 42, 0.05); transition: border-color 150ms ease, box-shadow 150ms ease; overflow: hidden; }
+  .d2-kpi-tile:hover { border-color: rgba(245, 158, 11, 0.3); box-shadow: 0 2px 8px rgba(15, 23, 42, 0.08); }
+  .d2-section-rule { display: inline-block; width: 3px; height: 14px; border-radius: 9999px; background: var(--brand-1); }
+  .d2-eyebrow { font-size: 10px; text-transform: uppercase; letter-spacing: 0.15em; font-weight: 700; color: var(--text-3); }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   DASHBOARD SHELL
+   ══════════════════════════════════════════════════════════════ */
+.ds-shell {
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  grid-template-rows: 60px 1fr;
+  min-height: 100vh;
+}
+.ds-sidebar-col { grid-row: 1 / span 2; overflow: hidden; }
+
+/* Glass card — workspace surface */
+.ds-card {
+  background: hsl(var(--card));
+  border: 1px solid hsl(var(--border) / 0.5);
+  border-radius: 14px;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06), 0 8px 24px -12px rgba(15, 23, 42, 0.12);
+  padding: 20px;
+  transition: transform 250ms ease, box-shadow 250ms ease, border-color 250ms ease;
+}
+.ds-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(245, 158, 11, 0.30);
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06), 0 16px 32px -12px rgba(245, 158, 11, 0.18);
+}
+/* Subtle panel within card */
+.ds-panel {
+  background: hsl(var(--foreground) / 0.03);
+  border: 1px solid hsl(var(--border) / 0.5);
+  border-radius: 10px;
+}
+
+/* ── AI Core animation keyframes ────────────────────────── */
+@keyframes pulseDot {
+  0%  { box-shadow: 0 0 0 0 rgba(16,185,129,0.55); }
+  70% { box-shadow: 0 0 0 7px rgba(16,185,129,0); }
+  100%{ box-shadow: 0 0 0 0 rgba(16,185,129,0); }
+}
+@keyframes spinCW  { to { transform: rotate(360deg);  } }
+@keyframes spinCCW { to { transform: rotate(-360deg); } }
+@keyframes coreBreathe {
+  0%, 100% { transform: scale(1); }
+  50%       { transform: scale(1.08); }
+}
+@keyframes orbitParticle {
+  from { transform: rotate(0deg)   translateX(105px) rotate(0deg);    }
+  to   { transform: rotate(360deg) translateX(105px) rotate(-360deg); }
+}
+
+/* AI Core element classes -- decorative/status accents, kept independent of
+   the brand palette (same rationale as status colors above). */
+.ai-ring {
+  position: absolute; border-radius: 50%;
+  border: 1px solid rgba(245,158,11,0.28);
+}
+.ai-ring-1 { width: 220px; height: 220px; border-style: dashed; animation: spinCW  18s linear infinite; }
+.ai-ring-2 { width: 170px; height: 170px;                       animation: spinCCW 26s linear infinite; }
+.ai-ring-3 { width: 120px; height: 120px; border-color: rgba(6,182,212,0.35); }
+.ai-orb {
+  width: 88px; height: 88px; border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #fde68a, #f59e0b 45%, #c2410c 100%);
+  box-shadow: 0 0 40px 6px rgba(194,65,12,0.45), 0 0 90px 20px rgba(245,158,11,0.25);
+  animation: coreBreathe 3.6s ease-in-out infinite;
+  display: flex; align-items: center; justify-content: center;
+  z-index: 2; position: relative;
+}
+.ai-particle {
+  position: absolute; width: 5px; height: 5px; border-radius: 50%;
+}
+.ai-p1 { background: #06B6D4; box-shadow: 0 0 8px 2px rgba(6,182,212,0.8);   animation: orbitParticle 6s  linear infinite; }
+.ai-p2 { background: #EA580C; box-shadow: 0 0 8px 2px rgba(234,88,12,0.8); animation: orbitParticle 8s  linear infinite reverse; }
+.ai-p3 { background: #34d399; box-shadow: 0 0 8px 2px rgba(52,211,153,0.8);  animation: orbitParticle 10s linear infinite; }
+
+/* Status pulse dot */
+.status-dot-pulse {
+  width: 7px; height: 7px; border-radius: 50%; background: #10B981;
+  animation: pulseDot 2.2s ease-out infinite;
+  display: inline-block;
+}
+
+/* Pipeline track connector */
+.pipe-track {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 16px 8px; position: relative;
+}
+.pipe-track::before {
+  content: ''; position: absolute; left: 36px; right: 36px; top: 34px; height: 2px;
+  background: linear-gradient(90deg, #10B981, #10B981 55%, var(--ws-2) 55%);
+}
+.pipe-step { display: flex; flex-direction: column; align-items: center; gap: 10px; position: relative; z-index: 1; flex: 1; }
+.pipe-dot  {
+  width: 12px; height: 12px; border-radius: 50%; border: 2px solid var(--ws-0);
+  background: #10B981; box-shadow: 0 0 0 3px rgba(16,185,129,0.20);
+}
+.pipe-step-current .pipe-dot {
+  background: var(--brand-1); box-shadow: 0 0 0 4px rgba(245,158,11,0.25);
+  animation: pulseDot 1.8s ease-out infinite;
+}
+.pipe-step-pending .pipe-dot { background: var(--ws-2); border-color: hsl(var(--border)); }
+
+@media (max-width: 1180px) {
+  .ds-shell { grid-template-columns: 1fr; }
+  .ds-sidebar-col { display: none; }
+}
+
+/* Card fade-in */
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-in {
+  animation: fade-in 300ms ease-out both;
+}
+
+/* Tabular numbers for metrics */
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   Login page's prior "premium animation system" (Aurora blobs, orb
+   drifts, animated card border/button gradient, agent-ring rotation,
+   engineering grid) removed 18-Jul-2026 alongside the login redesign —
+   the current static split-screen login has no decorative motion. /login
+   keeps its own dark/animated treatment as a documented exception
+   (frontend_design.md §16, ADR-008/ADR-010) — it is NOT affected by the
+   light-first default and does not render the theme toggle.
+   See app/(auth)/login/page.tsx.
+   ══════════════════════════════════════════════════════════════ */
+
+/* ── Vignette overlay ──────────────────────────────────────
+   Light theme uses a much softer vignette than the old dark version
+   would allow (a dark radial on a light canvas reads as murky, not
+   atmospheric) — the .dark override restores a stronger one. */
+.vignette {
+  background: radial-gradient(ellipse at center, transparent 60%, rgba(15, 23, 42, 0.05) 100%);
+}
+.dark .vignette {
+  background: radial-gradient(ellipse at center, transparent 60%, rgba(0, 0, 0, 0.25) 100%);
+}
+
+/* ══════════════════════════════════════════════════════════════
+   Marketing landing page utilities (app/(marketing)/)
+   Deliberately keeps its own blue/indigo/purple/orange visual
+   identity, distinct from the earth-tone tokens above — same
+   documented exception pattern as the /login page (see
+   frontend_design.md §16). Additive only; does not touch any
+   :root token defined above.
+   ══════════════════════════════════════════════════════════════ */
+.bg-light-mesh {
+  background-color: #f8fafc;
+  background-image:
+    radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.12) 0px, transparent 50%),
+    radial-gradient(at 100% 0%, rgba(236, 72, 153, 0.08) 0px, transparent 50%),
+    radial-gradient(at 100% 100%, rgba(14, 165, 233, 0.1) 0px, transparent 50%),
+    radial-gradient(at 0% 100%, rgba(168, 85, 247, 0.08) 0px, transparent 50%);
+}
+
+.bg-grid-light {
+  background-size: 32px 32px;
+  background-image:
+    linear-gradient(to right, rgba(148, 163, 184, 0.1) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(148, 163, 184, 0.1) 1px, transparent 1px);
+}
+
+.bg-dots-light {
+  background-image: radial-gradient(rgba(148, 163, 184, 0.2) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+.glass-panel-light {
+  background: rgba(255, 255, 255, 0.82);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(226, 232, 240, 0.9);
+  box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.04), 0 2px 6px -1px rgba(15, 23, 42, 0.02);
+}
+
+.glass-panel-interactive {
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(226, 232, 240, 0.9);
+  box-shadow: 0 4px 16px -2px rgba(15, 23, 42, 0.03);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.glass-panel-interactive:hover {
+  background: #ffffff;
+  border-color: rgba(245, 158, 11, 0.4);
+  box-shadow: 0 12px 32px -8px rgba(245, 158, 11, 0.12), 0 4px 12px -2px rgba(15, 23, 42, 0.05);
+  transform: translateY(-2px);
+}
+
+.text-gradient-primary {
+  background: linear-gradient(135deg, #f59e0b 0%, #ea580c 50%, #f59e0b 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.text-gradient-brand {
+  background: linear-gradient(135deg, #ea580c 0%, #f59e0b 50%, #059669 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+@keyframes floatGlow {
+  0%, 100% { transform: translateY(0px) scale(1); opacity: 0.6; }
+  50% { transform: translateY(-10px) scale(1.05); opacity: 0.85; }
+}
+.animate-float-glow {
+  animation: floatGlow 6s ease-in-out infinite;
+}
+
+@keyframes marketingFadeIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+/* Renamed from .animate-fade-in 25-Jul-2026 — that name collided with the
+   dashboard's own @keyframes fade-in rule above (line ~381); cascade order
+   meant this definition silently won everywhere, including dashboard
+   components that expected the 300ms/translateY(8px) version. See
+   components/evaluation/, components/dashboard/KPICard.tsx, etc. for the
+   (correct, untouched) dashboard usage of the original .animate-fade-in. */
+.animate-fade-in-marketing {
+  animation: marketingFadeIn 0.15s ease-out;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   Landing page dark-canvas exception (Hero / Architecture / Stats-Analytics)
+   .claude/docs/frontend_design.md — Landing Page Dark Exception section.
+   Same documented-exception pattern as /login (§16) — additive only.
+   ══════════════════════════════════════════════════════════════ */
+.bg-dark-mesh {
+  background-color: #0f172a;
+  background-image: radial-gradient(ellipse at 50% 0%, #1e293b 0%, #080d1a 70%);
+}
+
+.dark-surface-card {
+  background: #11182c;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 8px 32px -12px rgba(245, 158, 11, 0.12), 0 2px 8px -2px rgba(0, 0, 0, 0.4);
+}
+
+.text-dark-body {
+  color: #d5d8e2;
+}
+
+/* Golden blinking border & glow — active orchestrator node */
+@keyframes pulseGold {
+  0%, 100% {
+    border-color: rgba(245, 158, 11, 0.95);
+    box-shadow: 0 0 16px rgba(245, 158, 11, 0.45);
+  }
+  50% {
+    border-color: rgba(251, 191, 36, 0.4);
+    box-shadow: 0 0 6px rgba(245, 158, 11, 0.15);
+  }
+}
+.animate-pulse-gold {
+  animation: pulseGold 2s ease-in-out infinite;
+}
+
+/* Smooth 30s slow rotation — orbital ring */
+@keyframes spinSlow {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+.animate-spin-slow {
+  animation: spinSlow 30s linear infinite;
+}
+
+@keyframes reverseSpin {
+  from { transform: rotate(360deg); }
+  to { transform: rotate(0deg); }
+}
+.animate-reverse-spin {
+  animation: reverseSpin 24s linear infinite;
+}
+
+/* Subtle vertical floating effect */
+@keyframes floatSlow {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-8px); }
+}
+.animate-float-slow {
+  animation: floatSlow 5s ease-in-out infinite;
+}
+
+/* Smooth fade-in-up transition */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-in-up {
+  animation: fadeInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* ── prefers-reduced-motion guard (Rule 25 mandatory) ────── */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

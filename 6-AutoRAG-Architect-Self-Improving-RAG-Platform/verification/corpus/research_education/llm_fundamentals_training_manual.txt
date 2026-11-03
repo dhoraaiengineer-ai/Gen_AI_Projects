@@ -1,0 +1,118 @@
+LLM FUNDAMENTALS — TRAINING MANUAL FOR AI ENGINEERS
+AutoRAG Learning & Development | Module 3 of 6 | June 2026
+Version 1.1 | Internal Training Only — Synthetic Document
+
+LEARNING OBJECTIVES
+
+After completing this module, engineers will be able to:
+1. Explain the Transformer architecture and why attention mechanisms enable long-range dependencies
+2. Describe the three phases of LLM training: pre-training, instruction fine-tuning, and RLHF
+3. Explain the key trade-offs between model size, inference speed, and context length
+4. Configure an LLM API call with appropriate temperature, top-p, and max-token parameters
+5. Implement prompt engineering best practices for RAG applications
+
+MODULE 1: TRANSFORMER ARCHITECTURE
+
+1.1 Attention Is All You Need
+
+The Transformer architecture, introduced by Vaswani et al. (2017), replaced recurrent neural networks (RNNs) as the dominant architecture for language modeling. The core innovation is the self-attention mechanism, which allows each token in a sequence to attend to every other token simultaneously, regardless of their relative position.
+
+In contrast, RNNs process tokens sequentially: to attend to a token 50 positions earlier, the gradient must flow backward through 50 time steps. This creates the vanishing gradient problem and makes it computationally expensive to model long-range dependencies. Transformers eliminate this bottleneck entirely.
+
+Self-attention computes three vectors for each token: a query (Q), a key (K), and a value (V). The attention score between two tokens is the dot product of the first token's query and the second token's key, scaled by the square root of the vector dimension, and then passed through a softmax. The resulting attention weights are applied to the value vectors to produce the output.
+
+1.2 Multi-Head Attention
+
+Rather than computing a single attention score, Transformers use multiple attention heads operating in parallel. Each head learns to attend to different aspects of the input: one head might capture subject-verb agreement, another might capture coreference (linking pronouns to their antecedents), and another might capture positional relationships.
+
+Modern production models use 32 to 128 attention heads. The outputs from all heads are concatenated and passed through a linear projection before moving to the next layer.
+
+1.3 Positional Encoding
+
+Because self-attention is position-invariant (it treats all tokens the same regardless of their order), positional information must be explicitly added. Early models used fixed sinusoidal positional encodings. Modern models use learned positional embeddings (BERT) or Rotary Position Embedding (RoPE), which encodes relative positions rather than absolute ones and scales better to longer contexts.
+
+MODULE 2: LLM TRAINING PHASES
+
+2.1 Pre-Training (Phase 1)
+
+Pre-training teaches the model language: grammar, facts, reasoning patterns, world knowledge. The model is trained on a massive corpus (typically trillions of tokens from the web, books, code, and scientific papers) using next-token prediction: given all previous tokens, predict the next one.
+
+Pre-training is extremely compute-intensive. GPT-3 required approximately 3.14 x 10^23 FLOPs. Gemini Ultra required significantly more. At this scale, even a single pre-training run costs millions of dollars in compute.
+
+The output of pre-training is a base model. Base models are capable but not particularly useful in practice: they continue text plausibly but don't follow instructions reliably.
+
+2.2 Instruction Fine-Tuning (Phase 2)
+
+Instruction fine-tuning teaches the model to follow instructions. A dataset of (instruction, response) pairs is created — either by humans or by a larger, already-instruction-tuned model — and the base model is fine-tuned on this data.
+
+After instruction fine-tuning, the model is dramatically more useful: it answers questions, writes code, summarizes documents, and follows system prompts. However, it may still produce harmful outputs or fail to refuse unsafe requests.
+
+2.3 Reinforcement Learning from Human Feedback (Phase 3)
+
+RLHF aligns the model with human preferences. The process has two stages: (1) a separate reward model is trained on human preference data (which response to A vs B is better?), and (2) the instruction-tuned model is further trained using Proximal Policy Optimization (PPO) to maximize the reward model's score.
+
+RLHF improves helpfulness, harmlessness, and honesty. Constitutional AI (CAI), developed by Anthropic, extends RLHF by using AI feedback instead of human feedback for the preference data, using a set of principles (the "constitution") to guide what counts as a better response.
+
+MODULE 3: MODEL PARAMETERS AND INFERENCE
+
+3.1 Model Size vs. Capability
+
+Model size (number of parameters) correlates strongly with capability on knowledge-intensive tasks. However, smaller models fine-tuned on domain-specific data often outperform larger general models on that domain.
+
+Scaling laws (Hoffmann et al., 2022 — the "Chinchilla" paper) established that for a given compute budget, training a smaller model on more data is more efficient than training a larger model on less data. The optimal ratio is approximately 20 tokens per parameter.
+
+3.2 Context Length
+
+Context length (also called context window) is the maximum number of tokens the model can attend to simultaneously. Modern models support 32k to 1M tokens. Longer context is useful for RAG (fitting more retrieved chunks) and for processing long documents without chunking.
+
+However, attention is O(n^2) in context length: doubling the context quadruples the compute required for each forward pass. Techniques like Flash Attention and sliding window attention reduce this cost.
+
+For RAG applications, context length determines the maximum amount of retrieved content that can be included in a single prompt. At 1,000 tokens per chunk and a 32k context window, you can fit approximately 25 chunks — but the LLM prompt and system instructions also consume tokens, so practical limits are lower.
+
+3.3 Inference Parameters
+
+Temperature (0.0 to 2.0): Controls the randomness of token selection. Temperature 0.0 is deterministic (always the highest-probability token). Temperature 1.0 samples from the raw probability distribution. Higher values increase randomness. For factual RAG applications, use temperature 0.1 to 0.3 to reduce hallucination.
+
+Top-p (0.0 to 1.0): Also called nucleus sampling. Instead of sampling from all possible tokens, restricts sampling to the top-p fraction of the cumulative probability distribution. Top-p = 0.9 means only tokens comprising the top 90% of probability mass are considered. Combined with temperature, this prevents very unlikely tokens from appearing.
+
+Max tokens: Hard limit on the number of tokens the model can generate in a single response. Set this based on your expected response length plus a safety margin. Very large max_tokens values increase worst-case latency.
+
+MODULE 4: PROMPT ENGINEERING FOR RAG
+
+4.1 System Prompt Structure
+
+A well-structured system prompt for a RAG application has five components:
+1. Role: what the AI is (a helpful assistant for answering questions about AutoRAG Architect)
+2. Scope: what it knows (only information from the provided document context)
+3. Format: how to structure responses (cite source documents, be concise)
+4. Constraints: what not to do ("Do not invent facts if the context is empty")
+5. Fallback: what to say when context is insufficient ("I don't have information on that topic in my knowledge base")
+
+Component 4 — the negative constraint — is mandatory in AutoRAG's prompt standards. Without it, LLMs will frequently hallucinate plausible-sounding answers for questions where the context is empty or irrelevant.
+
+4.2 Few-Shot Prompting
+
+Providing 2 to 5 examples of correct question-answer pairs in the prompt (few-shot prompting) substantially improves answer quality, especially for domain-specific formatting requirements. Few-shot examples should represent the distribution of query types: factual lookups, policy explanations, how-to questions, and negative examples (where the correct answer is "I don't know").
+
+4.3 Context Window Management
+
+In RAG applications, the retrieved chunks compete with the prompt and expected response for the available context window. Budget your context carefully:
+- System prompt: 200 to 500 tokens
+- User query: 50 to 200 tokens
+- Retrieved chunks: 60 to 70% of remaining window
+- Response space: 500 to 2000 tokens (reserve via max_tokens)
+
+If retrieved chunks exceed the budget, prioritize by reranker score: include the highest-scoring chunks first and truncate the rest rather than truncating individual chunks mid-sentence.
+
+MODULE 5: QUICK REFERENCE
+
+| Concept | Key Number | Notes |
+|---------|-----------|-------|
+| GPT-4 parameters | ~1.8T (estimated) | Not officially confirmed |
+| Gemini Flash 3.5 context | 1M tokens | Production context limit |
+| Gemini Embedding 2 dimensions | 768 | AutoRAG production standard |
+| BM25 alpha for hybrid retrieval | 0.3 to 0.5 | Tune for domain |
+| RAG temperature setting | 0.1 to 0.3 | Low for factual queries |
+| Minimum Faithfulness (standard) | 0.50 | Hard deployment block |
+| Minimum Faithfulness (clinical) | 0.90 | Healthcare deployment block |
+| Unified Score for deployment | 0.85 | AutoRAG production gate |

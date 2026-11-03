@@ -1,0 +1,11 @@
+# token_budgets.yaml — Token limits for TokenGuardrail enforcement
+# Loaded at startup via app/core/config.py → settings.max_prompt_tokens etc.
+# Override per-environment using env vars (MAX_PROMPT_TOKENS, MAX_COMPLETION_TOKENS, MAX_CONTEXT_TOKENS).
+#
+# Guardrail order: TokenGuardrail → CostGuardrail → LLMService
+# TokenGuardrail fires BEFORE the LLM call — prevents token explosions before cost explosions.
+
+max_prompt_tokens: 32000
+max_completion_tokens: 4096
+max_context_tokens: 64000
+max_chunk_tokens: 1024

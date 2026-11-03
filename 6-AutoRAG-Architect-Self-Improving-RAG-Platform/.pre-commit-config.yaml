@@ -1,0 +1,50 @@
+# AutoRAG Architect v4.0 — Pre-commit Hook Configuration
+# Updated: 03-Jul-2026
+# Install: uv add --group=dev pre-commit && pre-commit install
+# Run manually: pre-commit run --all-files
+
+repos:
+  # ── Stack Drift Check — blocks commits with stale v2.4 stack refs ──────────
+  - repo: local
+    hooks:
+      - id: stack-sync-check
+        name: "AutoRAG Stack Sync (no stale v2.4 refs)"
+        language: script
+        entry: scripts/check-stack-sync.sh
+        pass_filenames: false
+        always_run: true
+
+  # ── Python: ruff lint + format ────────────────────────────────────────────
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.6.9
+    hooks:
+      - id: ruff
+        args: [--fix]
+        files: ^autorag-server/
+      - id: ruff-format
+        files: ^autorag-server/
+
+  # ── Python: mypy type check ───────────────────────────────────────────────
+  - repo: local
+    hooks:
+      - id: mypy
+        name: mypy (autorag-server)
+        language: system
+        entry: bash -c 'cd autorag-server && uv run mypy app --ignore-missing-imports --config-file pyproject.toml'
+        pass_filenames: false
+        files: ^autorag-server/.*\.py$
+
+  # ── General: trailing whitespace + end-of-file newlines ───────────────────
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.6.0
+    hooks:
+      - id: no-commit-to-branch
+        args: [--branch, main, --branch, staging]
+      - id: trailing-whitespace
+        exclude: "\\.(md|txt)$"
+      - id: end-of-file-fixer
+        exclude: "\\.(md|txt)$"
+      - id: check-yaml
+      - id: check-json
+      - id: check-merge-conflict
+      - id: detect-private-key

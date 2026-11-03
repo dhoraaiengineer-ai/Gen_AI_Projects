@@ -1,0 +1,103 @@
+AUTORAG ARCHITECT — SALES PLAYBOOK
+Version 1.3 | Sales Team | Confidential | Updated: May 2026
+
+1. PRODUCT OVERVIEW FOR SALES
+
+AutoRAG Architect is an enterprise SaaS platform that lets organizations build AI systems that can answer questions from their own documents — accurately, with source citations, and with automatic quality verification.
+
+The key differentiator is the Unified Score system: an autonomous optimization loop that continuously improves retrieval quality without manual tuning. Competitors require weeks of engineering effort to optimize RAG pipelines; AutoRAG does it automatically.
+
+Primary use cases:
+  - Internal knowledge management: employees asking questions of HR policies, IT runbooks, and internal wikis
+  - Customer support: AI-powered support agents trained on product documentation and FAQs
+  - Regulatory compliance: legal and compliance teams querying policies and regulatory documents
+  - Technical documentation: engineering teams querying API specs, runbooks, and architecture guides
+  - Financial analysis: finance teams querying reports, contracts, and financial statements
+
+2. IDEAL CUSTOMER PROFILE (ICP)
+
+Primary ICP:
+  - Company size: 500 to 10,000 employees
+  - Industry: Technology, Financial Services, Healthcare, Professional Services
+  - Signals: Currently using basic ChatGPT plugins or early RAG prototypes; frustrated with hallucinations or poor retrieval accuracy; have a dedicated AI/ML or data engineering team
+  - Budget: Annual contract value USD 50,000 to USD 500,000
+  - Geography: Singapore, India, Southeast Asia (primary); UAE, UK (secondary expansion markets)
+
+Secondary ICP:
+  - Mid-market companies (100 to 499 employees) with a strong AI-first culture
+  - Global systems integrators building RAG capabilities for their clients
+
+Disqualify if:
+  - They need a general-purpose chatbot without document grounding (recommend a competitor or ChatGPT)
+  - They have fewer than 100 employees with no dedicated AI team
+  - They cannot provide documents in digital format (scanned paper archives without OCR)
+
+3. DISCOVERY QUESTIONS
+
+Pain-focused questions (ask in first call):
+  - "How are your employees currently finding information across your internal documents?"
+  - "How much time does your team spend answering repetitive questions that could be answered by documentation?"
+  - "Have you tried building a RAG or chatbot solution? What went wrong?"
+  - "How important is citation accuracy — do you need to know exactly which document an answer came from?"
+
+Technical qualification questions (ask in second call with technical champion):
+  - "What document formats do you need to support?"
+  - "How many documents and pages are we talking about?"
+  - "Do you have compliance or data residency requirements we need to design around?"
+  - "What does your current AI/ML stack look like?"
+
+Economic buyer questions:
+  - "What would it mean for your team if retrieval accuracy improved from 60% to 90%?"
+  - "How many hours per week do your subject matter experts spend answering questions that a RAG system could answer?"
+  - "What's your timeline for having something in production?"
+
+4. COMPETITIVE POSITIONING
+
+vs. Building in-house:
+  - Building a production-quality RAG pipeline from scratch takes 3 to 6 months of engineering time
+  - AutoRAG delivers a production-ready pipeline in hours to days
+  - AutoRAG includes built-in evaluation, monitoring, and improvement that most in-house builds lack
+  - Total cost of ownership is lower: no engineering maintenance burden
+
+vs. Generic vector database tools (Pinecone, Weaviate):
+  - Vector databases are components, not complete solutions
+  - AutoRAG provides the full stack: ingestion, chunking, embedding, retrieval, generation, evaluation, and deployment
+  - AutoRAG's Unified Score evaluation is not available in raw vector database offerings
+
+vs. Other RAG platforms:
+  - Most competitors require manual hyperparameter tuning; AutoRAG automates this
+  - AutoRAG's adversarial testing catches hallucinations before they reach production
+  - AutoRAG's LangGraph orchestration provides deterministic, auditable pipeline behavior
+
+5. PRICING GUIDE
+
+Standard Plan: SGD 4,500 per month (or SGD 48,000 per year with 11% discount)
+  - 3 pipelines, 50,000 queries/month, 10 GB storage
+  - Community support (Slack, 48-hour response)
+  - Best for: teams piloting or in early production
+
+Professional Plan: SGD 12,000 per month (or SGD 128,000 per year)
+  - 10 pipelines, 200,000 queries/month, 50 GB storage
+  - Priority support (email, 8-hour response SLA)
+  - HITL approval workflows, MLflow integration
+  - Best for: established production deployments
+
+Enterprise Plan: Custom pricing (minimum SGD 300,000 per year)
+  - Unlimited pipelines, custom query volume, custom storage
+  - Dedicated infrastructure (single-tenant option)
+  - 4-hour support SLA with named CSM
+  - Custom data residency, SAML SSO, audit export API
+  - SOC 2 Type II compliance documentation (available Q3 2026)
+
+Typical deal size: SGD 80,000 to SGD 250,000 ACV. Deals above SGD 200,000 ACV require VP of Sales co-signature.
+
+6. OBJECTION HANDLING
+
+Objection: "We can build this ourselves."
+Response: "Many of our customers said the same thing. The challenge isn't building a prototype — it's getting from prototype to production quality. The Unified Score system and autonomous optimization loop typically takes teams 6+ months to build and another 3 months to stabilize. Our customers get that in their first week. Would it be worth a 30-minute technical deep-dive to show you the gap between a basic RAG setup and what we've built?"
+
+Objection: "We're worried about our data security."
+Response: "Data security is our top priority. Your data never leaves your organization's isolated workspace. We don't use customer data to train any models. We're currently pursuing SOC 2 Type II certification (target Q3 2026) and can provide our full security documentation and architecture diagrams to your security team. Would a security review call with our CTO be helpful?"
+
+Objection: "We're already using [competitor]."
+Response: "That's great to hear. Many of our customers were using [competitor] before switching. The most common reason is accuracy — specifically that their Faithfulness scores were too low and they were getting hallucinated answers. How are you currently measuring retrieval accuracy? We can run a benchmark comparison on your actual documents in about 2 hours."

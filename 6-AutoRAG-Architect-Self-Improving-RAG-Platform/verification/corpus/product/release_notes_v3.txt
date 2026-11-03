@@ -1,0 +1,72 @@
+RELEASE NOTES — AUTORAG ARCHITECT
+Version 3.0.0 | Released: 01 July 2026
+
+OVERVIEW
+
+This is a major release that introduces the complete 9-agent autonomous loop, replaces the previous technology stack with Supabase and Gemini, and delivers the v3.0 Unified Score system with full HITL approval workflows.
+
+BREAKING CHANGES
+
+Database: All data has been migrated from AWS RDS PostgreSQL and Qdrant to Supabase PostgreSQL and Supabase Vector. Previous vector table names are deprecated. New naming convention: autorag_{pipeline_id}_{version}.
+
+LLM Provider: Claude and GPT-4o have been replaced by Gemini Flash 3.5 (primary) and KiMi K2.6 (fallback). All prompt templates have been updated for the new models. Existing custom prompt templates must be reviewed and migrated.
+
+PII Masking: Presidio has been replaced by the custom AutoRAG PII Detection and Masking Functions. The masking output format has changed; masked tokens now use [MASKED_TYPE] format (e.g., [MASKED_EMAIL], [MASKED_PHONE]).
+
+API: Endpoint /api/v1/evaluate is deprecated and replaced by /api/v1/pipelines/{id}/run. The response schema has changed; see API Specification v1.0 for the updated contract.
+
+NEW FEATURES
+
+v3.0 — Autonomous 9-Agent Loop
+All 9 LangGraph agents are now production-ready:
+  - Ingestion Agent now supports late chunking in addition to semantic and hierarchical strategies
+  - Query Rewriter uses 5-shot prompting for significantly improved query quality
+  - Context Compressor uses extractive summarization to reduce context by up to 60% without quality loss
+  - Evaluator runs all 3 evaluation layers (Unified Score, RAGAS, Adversarial) in parallel for 3x faster evaluation
+  - Observer monitors 6 signals: Unified Score drift, p95 latency, error rate, cost per query, chunk hit rate, provider switch frequency
+  - Diagnoser classifies failures into 5 types with remediation hints
+  - Improver generates up to 3 variant configurations per improvement cycle
+  - Deployer supports blue/green promotion with automatic rollback
+
+v3.0 — HITL Approval Workflow
+Human-in-the-loop approval gates are now fully operational:
+  - Email notifications via SendGrid with one-click approve/reject links
+  - WhatsApp notifications via Wati for mobile approvals
+  - 24-hour approval window with automatic expiry and escalation
+  - Full audit trail of all approval decisions
+
+v3.0 — Observer Dashboard
+New /observe page in the dashboard provides:
+  - Real-time pipeline quality monitoring
+  - Alert center with severity classification
+  - Cost tracking and budget threshold warnings
+  - Automatic improvement recommendations when quality drops
+
+v3.0 — Experiments Tracking
+The /experiments page provides comparison views across pipeline variants:
+  - Side-by-side metric comparison
+  - Historical score trends over time
+  - Champion/challenger analysis
+  - MLflow integration for experiment tracking
+
+BUG FIXES
+
+- Fixed: Hierarchical chunking produced duplicate chunks when documents had nested headings more than 3 levels deep.
+- Fixed: Cohere reranker returned incorrect relevance scores for queries containing Unicode characters.
+- Fixed: Observer incorrectly flagged healthy pipelines as degraded when a single evaluation produced a transient low score.
+- Fixed: HITL approval tokens were not invalidated after use, allowing replay attacks. Tokens are now single-use and expire after the first validation.
+- Fixed: Pipeline version numbers were not incremented correctly when the Improver deployed a variant configuration.
+
+KNOWN ISSUES
+
+- Late chunking is slower than semantic chunking by approximately 40% due to full-document embedding. This is expected behavior and will be optimized in v3.1.
+- The /experiments page does not support comparison of more than 10 pipeline variants simultaneously. Larger comparison sets cause UI performance degradation.
+
+UPGRADE GUIDE
+
+1. Back up existing pipeline configurations before upgrading.
+2. Run the migration script: uv run python scripts/migrate_v2_to_v3.py --dry-run first, then without --dry-run.
+3. Update all environment variables per the v3.0 .env.example template.
+4. Apply new Alembic migrations: uv run alembic upgrade head.
+5. Redeploy all ECS services with the new v3.0 Docker images.
+6. Validate with make test before cutting over production traffic.

@@ -1,0 +1,50 @@
+# prometheus.local.yml — AutoRAG Architect
+# LOCAL DEVELOPMENT CONFIG v4.0
+#
+# Used by: docker-compose.yml (prometheus service)
+# Targets: container names (Docker internal DNS — not ECS IPs)
+#
+# ⚠️  DO NOT use this file in staging or production.
+#     For ECS targets use prometheus.yml.example as the base and fill in real endpoints.
+#
+# Reload without restart:
+#   curl -X POST http://localhost:9090/-/reload
+
+global:
+  scrape_interval: 15s          # how often to scrape targets
+  evaluation_interval: 15s      # how often to evaluate alert rules
+  scrape_timeout: 10s
+
+# Alert rules — same file as staging/production
+rule_files:
+  - "/etc/prometheus/autorag-alerts.yml"
+
+scrape_configs:
+
+  # ── FastAPI backend (/metrics exposed by prometheus-fastapi-instrumentator) ──
+  - job_name: "autorag-api"
+    static_configs:
+      - targets: ["autorag-server:8000"]
+        labels:
+          service: "autorag-api"
+          environment: "local"
+    metrics_path: "/metrics"
+    scrape_interval: 15s
+
+  # ── Redis metrics (via redis_exporter sidecar) ────────────────────────────
+  - job_name: "autorag-redis"
+    static_configs:
+      - targets: ["redis-exporter:9121"]
+        labels:
+          service: "autorag-redis"
+          environment: "local"
+    metrics_path: "/metrics"
+    scrape_interval: 30s
+
+  # ── Prometheus self-monitoring ────────────────────────────────────────────
+  - job_name: "prometheus"
+    static_configs:
+      - targets: ["localhost:9090"]
+        labels:
+          service: "prometheus"
+          environment: "local"

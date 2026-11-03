@@ -1,0 +1,93 @@
+STANDARD OPERATING PROCEDURE — DOCUMENT INGESTION
+SOP-ENG-007 | Version 1.2 | Engineering / Platform Team | Updated: June 2026
+
+1. PURPOSE
+
+This SOP defines the end-to-end procedure for ingesting enterprise documents into the AutoRAG Architect vector store. It covers document preparation, ingestion API usage, validation, and troubleshooting for operators and developers managing document ingestion workflows.
+
+2. SUPPORTED DOCUMENT FORMATS
+
+Currently supported file types and their size limits:
+  - PDF (.pdf): Up to 100 MB, up to 500 pages
+  - Microsoft Word (.docx): Up to 50 MB
+  - Plain text (.txt): Up to 10 MB
+  - Markdown (.md): Up to 10 MB
+  - Microsoft Excel (.xlsx): Up to 20 MB (each sheet treated as a separate chunk group)
+
+Not currently supported: .doc (legacy Word), .pptx, .odt, image-only PDFs (scanned documents without OCR).
+
+3. PRE-INGESTION CHECKLIST
+
+Before uploading documents, verify:
+  [ ] Document does not contain real customer PII (the masking function will run, but avoid unnecessary risk)
+  [ ] Document is in a supported format and within size limits
+  [ ] The target pipeline_id exists and is in "ready" or "indexed" status
+  [ ] Organization has sufficient storage quota (check /api/v1/organizations/{id}/usage)
+  [ ] File name does not contain special characters; use underscores and hyphens only
+
+4. INGESTION PROCEDURE
+
+Step 1: Authenticate
+Obtain a valid JWT by calling POST /auth/token with your organization credentials. The token is valid for 1 hour. Store it securely; do not log it.
+
+Step 2: Upload the document
+Call POST /api/v1/ingest with Content-Type: multipart/form-data.
+Required form fields:
+  - file: the document binary
+  - pipeline_id: UUID of the target pipeline
+  - metadata: JSON string containing at minimum { "source": "internal" | "external", "classification": "public" | "internal" | "confidential" }
+
+Example using curl:
+  curl -X POST https://api.autorag-solutions.com/api/v1/ingest \
+    -H "Authorization: Bearer <TOKEN>" \
+    -H "X-Organization-ID: <ORG_ID>" \
+    -F "file=@/path/to/document.pdf" \
+    -F 'pipeline_id=<PIPELINE_UUID>' \
+    -F 'metadata={"source":"internal","classification":"internal"}'
+
+Response: { "document_id": "<uuid>", "job_id": "<uuid>", "status": "queued" }
+
+Step 3: Monitor ingestion progress
+Poll GET /api/v1/jobs/{job_id} every 5 seconds until status is "completed" or "failed".
+Expected duration: 10-60 seconds per document depending on size and chunking strategy.
+
+Step 4: Verify ingestion
+Call GET /api/v1/documents/{document_id} and confirm:
+  - status is "indexed"
+  - chunk_count is greater than 0
+  - embedding_status is "complete"
+
+5. CHUNKING STRATEGY SELECTION GUIDE
+
+Use semantic chunking for: narrative documents, reports, whitepapers, general prose. This strategy uses sentence boundaries and semantic similarity to determine chunk boundaries. Recommended chunk_size: 512 tokens, chunk_overlap: 50 tokens.
+
+Use hierarchical (parent/child) chunking for: structured documents with clear sections (handbooks, policies, legal contracts). Parent chunks are section-level (1000-2000 tokens); child chunks are paragraph-level (200-400 tokens). This enables both high-recall parent retrieval and precise child retrieval.
+
+Use late chunking for: technical documentation, API specs, and code-heavy documents where context from the full document is needed to interpret individual sections. This method embeds the full document first and then splits.
+
+6. COMMON INGESTION ERRORS AND REMEDIATION
+
+ERROR: "PII_DETECTED_HIGH_CONFIDENCE"
+Meaning: The masking function detected high-confidence PII. The document was processed but sensitive tokens were masked.
+Action: Review the masking_report field in the document detail response to see what was masked. Confirm masking is acceptable before using this document in production retrieval.
+
+ERROR: "DOCUMENT_TOO_LARGE"
+Meaning: File exceeds the size limit for its type.
+Action: Split the document into smaller files or compress if PDF. Contact the platform team if a size limit increase is needed.
+
+ERROR: "UNSUPPORTED_FORMAT"
+Meaning: File extension or MIME type is not in the supported list.
+Action: Convert the document to a supported format (e.g., convert .doc to .docx using LibreOffice).
+
+ERROR: "EMBEDDING_QUOTA_EXCEEDED"
+Meaning: The organization has exceeded its monthly embedding token quota.
+Action: Check quota usage via /api/v1/organizations/{id}/usage. Contact billing to increase quota or wait until the next billing cycle resets on the 1st of the month.
+
+7. BATCH INGESTION
+
+For ingesting more than 20 documents at once, use the batch ingestion script at autorag-server/scripts/batch_ingest.py:
+  uv run python scripts/batch_ingest.py --dir /path/to/documents --pipeline-id <UUID> --workers 4
+
+The script ingests documents in parallel (up to --workers concurrent uploads), retries failed uploads up to 3 times with exponential backoff, and produces a CSV report of results at batch_ingest_results_{timestamp}.csv.
+
+Do not exceed 10 concurrent uploads without pre-approval from the Platform team; excessive concurrency may trigger API rate limiting.

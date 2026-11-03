@@ -1,0 +1,153 @@
+name: "Project 6 · Infrastructure"
+
+# ⚠️ RENAMED 21-Jul-2026 (was infra.disabled.yml): GitHub Actions loads every
+# .yml/.yaml file under .github/workflows/ regardless of extra dots in the
+# name (the exact gotcha deploy.yml.disabled's own header already documents)
+# — so this workflow was NOT actually disabled and has been running on every
+# push touching infra/** all along. Renamed to match what it actually does
+# and what CLAUDE.md's repository layout + deploy.yml.disabled's own
+# "REQUIRED UPSTREAM WORKFLOWS" list already call it: infra.yml.
+#
+# Only runs when Terraform files change
+# Validates infra changes before they reach a human reviewer
+# Never runs terraform apply — that is a manual lead operation
+
+on:
+  push:
+    branches: [main]
+    paths: ["6-AutoRAG-Architect-Self-Improving-RAG-Platform/infra/**", ".github/workflows/p6-infra.yml"]
+  pull_request:
+    paths: ["6-AutoRAG-Architect-Self-Improving-RAG-Platform/infra/**", ".github/workflows/p6-infra.yml"]
+  workflow_dispatch:
+
+defaults:
+  run:
+    working-directory: 6-AutoRAG-Architect-Self-Improving-RAG-Platform
+
+env:
+  AWS_REGION: "ap-south-1"
+  TF_VERSION: "1.7.0"
+
+jobs:
+
+  # ── Terraform Format + Validate ───────────────────────────────────
+  terraform-validate:
+    name: "Terraform — Format + Validate"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Terraform ${{ env.TF_VERSION }}
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+
+      - name: Terraform Format Check
+        run: |
+          cd infra
+          terraform fmt -check -recursive
+          echo "✅ Terraform formatting OK"
+
+      - name: Terraform Init (bootstrap)
+        run: |
+          cd infra/bootstrap
+          terraform init -backend=false
+        continue-on-error: true   # bootstrap may not have remote state configured in CI
+
+      - name: Terraform Validate (bootstrap)
+        run: |
+          cd infra/bootstrap
+          terraform validate
+          echo "✅ Bootstrap module validated"
+
+      - name: Terraform Validate (all modules)
+        run: |
+          for module in infra/modules/*/; do
+            echo "==> Validating $module"
+            cd "$module"
+            terraform init -backend=false -quiet
+            terraform validate
+            cd - > /dev/null
+          done
+          echo "✅ All modules validated"
+
+  # ── Terraform Plan (dev) ──────────────────────────────────────────
+  terraform-plan-dev:
+    name: "Terraform — Plan (dev)"
+    runs-on: ubuntu-latest
+    needs: terraform-validate
+    # Only plan on PRs targeting development/testing — not on feature branch pushes
+    if: github.event_name == 'pull_request'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Terraform ${{ env.TF_VERSION }}
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Terraform Init
+        run: cd infra && terraform init
+
+      - name: Terraform Plan (dev — no apply)
+        # environments/dev.tfvars is git-ignored and never committed (real
+        # secrets -- see infra/README.md); it cannot exist in a CI checkout.
+        # Fixed 21-Jul-2026: this step previously referenced that nonexistent
+        # file and set TF_VAR_supabase_url / TF_VAR_gemini_api_key /
+        # TF_VAR_kimi_api_key, none of which match any variable the root
+        # module (infra/main.tf) actually declares -- it declares
+        # secret_arn_supabase_url / secret_arn_supabase_key /
+        # secret_arn_supabase_db_url / secret_arn_euri_api_key /
+        # secret_arn_cohere_api_key (Secrets Manager ARNs, not raw values;
+        # there is no gemini_api_key/kimi_api_key variable anywhere in infra/
+        # -- both route through the single EURI gateway key). Supply every
+        # required root-module variable via correctly-named TF_VAR_* env vars
+        # sourced from GitHub secrets instead.
+        run: |
+          cd infra
+          terraform plan \
+            -out=tfplan-dev \
+            -no-color \
+            2>&1 | tee plan-output.txt
+          echo "✅ Plan complete — review above before approving PR"
+        env:
+          TF_VAR_environment: "dev"
+          TF_VAR_certificate_arn: ${{ secrets.DEV_CERTIFICATE_ARN }}
+          TF_VAR_backend_image_url: ${{ secrets.DEV_BACKEND_IMAGE_URL }}
+          TF_VAR_worker_image_url: ${{ secrets.DEV_WORKER_IMAGE_URL }}
+          TF_VAR_secret_arn_supabase_url: ${{ secrets.DEV_SECRET_ARN_SUPABASE_URL }}
+          TF_VAR_secret_arn_supabase_key: ${{ secrets.DEV_SECRET_ARN_SUPABASE_KEY }}
+          TF_VAR_secret_arn_supabase_db_url: ${{ secrets.DEV_SECRET_ARN_SUPABASE_DB_URL }}
+          TF_VAR_secret_arn_euri_api_key: ${{ secrets.DEV_SECRET_ARN_EURI_API_KEY }}
+          TF_VAR_secret_arn_cohere_api_key: ${{ secrets.DEV_SECRET_ARN_COHERE_API_KEY }}
+
+      - name: Post plan output to PR comment
+        uses: actions/github-script@v7
+        if: github.event_name == 'pull_request'
+        with:
+          script: |
+            const fs = require('fs');
+            const output = fs.readFileSync('6-AutoRAG-Architect-Self-Improving-RAG-Platform/infra/plan-output.txt', 'utf8');
+            const truncated = output.length > 60000
+              ? output.substring(0, 60000) + '\n...(truncated)'
+              : output;
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `## 🏗️ Terraform Plan (dev)\n\`\`\`\n${truncated}\n\`\`\``
+            });
+
+      - name: Upload plan artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: tfplan-dev
+          path: 6-AutoRAG-Architect-Self-Improving-RAG-Platform/infra/tfplan-dev
+          retention-days: 7

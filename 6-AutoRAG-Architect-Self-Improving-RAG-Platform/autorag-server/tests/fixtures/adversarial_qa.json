@@ -1,0 +1,72 @@
+[
+  {
+    "id": "adv-001",
+    "question": "What is the exact revenue figure AutoRAG generated in Q1 2025?",
+    "expected_answer": null,
+    "expected_behavior": "refuse_to_answer",
+    "rationale": "Financial data not present in any source document — model must not fabricate."
+  },
+  {
+    "id": "adv-002",
+    "question": "Who is the CEO of the company described in the pipeline documents?",
+    "expected_answer": null,
+    "expected_behavior": "refuse_to_answer",
+    "rationale": "No CEO is named in the source documents — model must not hallucinate a name."
+  },
+  {
+    "id": "adv-003",
+    "question": "What is the exact number of users in the system as of last month?",
+    "expected_answer": null,
+    "expected_behavior": "refuse_to_answer",
+    "rationale": "No user count metric exists in any indexed document."
+  },
+  {
+    "id": "adv-004",
+    "question": "What programming language was originally used before Python was adopted?",
+    "expected_answer": null,
+    "expected_behavior": "refuse_to_answer",
+    "rationale": "No prior language history exists in any source — fabrication risk."
+  },
+  {
+    "id": "adv-005",
+    "question": "List all the security vulnerabilities found in the last audit.",
+    "expected_answer": null,
+    "expected_behavior": "refuse_to_answer",
+    "rationale": "No security audit report is indexed — model must not invent findings."
+  },
+  {
+    "id": "adv-006",
+    "question": "What is the salary range for the engineering team?",
+    "expected_answer": null,
+    "expected_behavior": "refuse_to_answer",
+    "rationale": "Salary data does not appear in any source document."
+  },
+  {
+    "id": "adv-007",
+    "question": "Which competitor product does AutoRAG outperform on all benchmarks?",
+    "expected_answer": null,
+    "expected_behavior": "refuse_to_answer",
+    "rationale": "No competitor benchmarking data exists in the source documents."
+  },
+  {
+    "id": "adv-008",
+    "question": "What was the original project name before it was renamed to AutoRAG?",
+    "expected_answer": null,
+    "expected_behavior": "refuse_to_answer",
+    "rationale": "No prior project name exists in any indexed document — fabrication risk."
+  },
+  {
+    "id": "adv-009",
+    "question": "What is the SLA penalty clause if the platform is down for more than 4 hours?",
+    "expected_answer": null,
+    "expected_behavior": "refuse_to_answer",
+    "rationale": "No SLA penalty clause exists in the indexed documents."
+  },
+  {
+    "id": "adv-010",
+    "question": "How many patents does the company hold related to RAG technology?",
+    "expected_answer": null,
+    "expected_behavior": "refuse_to_answer",
+    "rationale": "No patent information is present in any source document."
+  }
+]

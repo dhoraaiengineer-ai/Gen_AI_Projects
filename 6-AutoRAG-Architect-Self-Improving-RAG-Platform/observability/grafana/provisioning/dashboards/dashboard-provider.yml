@@ -1,0 +1,18 @@
+# Grafana dashboard provisioning — AutoRAG Architect v4.0
+# Tells Grafana where to find dashboard JSON files on disk.
+# Dashboards in /var/lib/grafana/dashboards are auto-loaded on boot.
+#
+# Docs: https://grafana.com/docs/grafana/latest/administration/provisioning/#dashboards
+
+apiVersion: 1
+
+providers:
+  - name: AutoRAG Dashboards
+    orgId: 1
+    type: file
+    disableDeletion: true             # dashboards managed by files, not UI deletes
+    updateIntervalSeconds: 30         # poll for new/updated JSON files every 30s
+    allowUiUpdates: false             # prevent manual UI edits overriding JSON source
+    options:
+      path: /var/lib/grafana/dashboards
+      foldersFromFilesStructure: true

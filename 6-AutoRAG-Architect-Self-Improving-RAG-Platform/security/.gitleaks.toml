@@ -1,0 +1,118 @@
+# AutoRAG Architect — Gitleaks Secret Scanning Config
+# Version: v4.0 | Updated: 21-Jul-2026
+#
+# Gitleaks scans git history and staged files for accidentally committed secrets.
+# Run locally: gitleaks detect --source . --config security/.gitleaks.toml
+# CI: runs in .github/workflows/security.yml on every push + daily schedule
+
+[allowlist]
+  description = "Global allowlist — test values and placeholder patterns"
+  regexes = [
+    '''your[-_].*[-_]key''',
+    '''your[-_].*[-_]here''',
+    # Terraform example variable values
+    '''your-.*-project-id''',
+  ]
+  paths = [
+    # .env.example templates (root, autorag-server, autorag-client) were removed
+    # 16-Jul-2026 -- leads distribute real, pre-filled .env files directly, no
+    # placeholder template is ever committed. Only Terraform's .tfvars.example
+    # files remain real, committed placeholder files (infra config, not app
+    # secrets) -- see CLAUDE.md Repository Layout for the current .env policy.
+    '''infra/environments/.*\.example''',
+    '''infra/bootstrap/terraform\.tfvars\.example''',
+    '''observability/prometheus/prometheus\.yml\.example''',
+    # Test fixtures may contain obviously fake data
+    '''autorag-server/tests/fixtures/''',
+    # This config file itself
+    '''security/.gitleaks.toml''',
+  ]
+
+# ── Supabase ──────────────────────────────────────────────────────────
+[[rules]]
+  id = "supabase-service-role-key"
+  description = "Supabase service role key (JWT — gives full DB access)"
+  regex = '''eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9\.[A-Za-z0-9+/=]{50,}'''
+  tags = ["supabase", "jwt", "high"]
+
+[[rules]]
+  id = "supabase-service-role-sbp"
+  description = "Supabase service-role API key (sbp_ prefix — personal access token format)"
+  regex = '''sbp_[a-zA-Z0-9\-_]{40,}'''
+  tags = ["supabase", "critical"]
+
+[[rules]]
+  id = "supabase-url"
+  description = "Supabase project URL with embedded credentials"
+  regex = '''postgresql://postgres:[^@\s]{8,}@db\.[a-z0-9]+\.supabase\.co'''
+  tags = ["supabase", "database", "high"]
+
+# ── Google / Gemini ───────────────────────────────────────────────────
+[[rules]]
+  id = "google-api-key"
+  description = "Google API key (Gemini, Maps, etc.)"
+  regex = '''AIza[0-9A-Za-z\-_]{35}'''
+  tags = ["google", "gemini", "high"]
+
+# ── EURI Unified Gateway ──────────────────────────────────────────────
+[[rules]]
+  id = "euri-api-key"
+  description = "EURI unified gateway API key (budget-controlled Gemini + KiMi access)"
+  regex = '''euri-[0-9a-f]{40,}'''
+  tags = ["euri", "critical"]
+
+# ── AWS ───────────────────────────────────────────────────────────────
+[[rules]]
+  id = "aws-access-key"
+  description = "AWS Access Key ID"
+  regex = '''AKIA[0-9A-Z]{16}'''
+  tags = ["aws", "critical"]
+
+[[rules]]
+  id = "aws-secret-key"
+  description = "AWS Secret Access Key"
+  regex = '''(?i)aws.{0,20}secret.{0,20}['\"][0-9a-zA-Z/+]{40}['\"]'''
+  tags = ["aws", "critical"]
+
+# ── Generic API Keys ──────────────────────────────────────────────────
+[[rules]]
+  id = "generic-api-key"
+  description = "Generic high-entropy API key pattern"
+  regex = '''(?i)(api[_-]?key|apikey|api[_-]?secret)\s*[=:]\s*['\"]?[0-9a-zA-Z\-_]{32,}['\"]?'''
+  tags = ["generic", "medium"]
+
+# ── Private Keys ──────────────────────────────────────────────────────
+[[rules]]
+  id = "private-key-header"
+  description = "Private key PEM header"
+  regex = '''-----BEGIN (RSA |EC |OPENSSH )?PRIVATE KEY-----'''
+  tags = ["private-key", "critical"]
+
+# ── Cohere ────────────────────────────────────────────────────────────
+[[rules]]
+  id = "cohere-api-key"
+  description = "Cohere API key"
+  regex = '''[a-zA-Z0-9]{40}'''
+  entropy = 4.5
+  tags = ["cohere", "medium"]
+  [rules.allowlist]
+    regexes = ['''[a-f0-9]{40}''']  # git SHAs are 40-char hex — exclude
+
+# ── Hardcoded Defaults (Rule 70 + D-20 audit finding) ─────────────────
+[[rules]]
+  id = "hardcoded-jwt-default"
+  description = "Hardcoded JWT secret placeholder in Python source — violates Rule 70 (D-20)"
+  regex = '''jwt[_-]?secret[_-]?key\s*[=:]\s*["']CHANGE_ME["']'''
+  tags = ["jwt", "hardcoded", "high"]
+
+[[rules]]
+  id = "hardcoded-grafana-password"
+  description = "Hardcoded Grafana admin password default in Python config — violates Rule 70 (D-20)"
+  regex = '''grafana[_-]?password\s*[=:]\s*["']admin["']'''
+  tags = ["grafana", "hardcoded", "medium"]
+
+[[rules]]
+  id = "hardcoded-postgres-password"
+  description = "Hardcoded PostgreSQL password default in Python config — violates Rule 70 (D-20)"
+  regex = '''postgres[_-]?password\s*[=:]\s*["']postgres["']'''
+  tags = ["postgres", "hardcoded", "medium"]

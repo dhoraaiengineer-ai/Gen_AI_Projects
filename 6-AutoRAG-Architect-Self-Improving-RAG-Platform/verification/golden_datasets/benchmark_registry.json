@@ -1,0 +1,18 @@
+{
+  "registry_version": "1.0.0",
+  "description": "Discoverable list of golden-dataset benchmark packages under evaluation/golden_datasets/. Each id maps to a package directory of the same name (evaluation/golden_datasets/<id>/) containing metadata.json, README.md, schema/, generated/, source/, and reports/.",
+  "datasets": [
+    {
+      "id": "autorag_docs",
+      "version": "1.0.0",
+      "default": true,
+      "path": "evaluation/golden_datasets/autorag_docs"
+    },
+    {
+      "id": "ardenmoor",
+      "version": "1.0.0",
+      "default": false,
+      "path": "evaluation/golden_datasets/ardenmoor"
+    }
+  ]
+}

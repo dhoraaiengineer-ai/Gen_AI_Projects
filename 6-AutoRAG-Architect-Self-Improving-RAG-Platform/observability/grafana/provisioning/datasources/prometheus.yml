@@ -1,0 +1,18 @@
+# Grafana datasource provisioning — AutoRAG Architect v4.0
+# Auto-loaded by Grafana on first boot via the provisioning mount.
+# No manual "Add datasource" step needed in the UI.
+#
+# Docs: https://grafana.com/docs/grafana/latest/administration/provisioning/#datasources
+
+apiVersion: 1
+
+datasources:
+  - name: Prometheus
+    type: prometheus
+    access: proxy
+    url: http://prometheus:9090       # container-to-container DNS (Docker network)
+    isDefault: true
+    editable: false                   # prevent accidental UI edits overriding this file
+    jsonData:
+      timeInterval: "15s"             # must match global.scrape_interval in prometheus.yml
+      httpMethod: POST

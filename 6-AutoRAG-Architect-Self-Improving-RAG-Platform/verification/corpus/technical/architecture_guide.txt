@@ -1,0 +1,69 @@
+AUTORAG ARCHITECT — SYSTEM ARCHITECTURE GUIDE
+Version 3.0 | Architecture Team | Updated: June 2026
+
+1. OVERVIEW
+
+AutoRAG Architect is a closed-loop autonomous platform that builds, evaluates, observes, diagnoses, improves, and deploys Retrieval-Augmented Generation (RAG) pipelines with minimal human intervention. The system uses deterministic LangGraph orchestration, human-in-the-loop approval gates, and an AI Control Tower for governance.
+
+The platform processes user queries through a 9-agent loop: Ingestion Agent, Query Rewriter, Builder Agent, Context Compressor, Evaluator Agent, Observer Agent, Diagnoser Agent, Improver Agent, and Deployer Agent. Each agent is a stateless async function that reads from and writes to a shared GraphState object.
+
+2. COMPONENT ARCHITECTURE
+
+Frontend Layer
+The Next.js 15 dashboard (App Router) serves as the primary user interface. Server Components handle data fetching and rendering; Client Components are used only for interactive elements. The dashboard communicates exclusively through the FastAPI backend — it never connects directly to Supabase or any agent service.
+
+API Gateway
+A FastAPI application running on AWS ECS Fargate handles all REST API traffic. The gateway validates JWTs, enforces organization scoping, generates X-Trace-IDs, and delegates work to LangGraph workers via Redis task queues. Route handlers are thin: they parse requests and return responses; all business logic lives in service classes.
+
+Agent Orchestration
+LangGraph workers run as separate ECS Fargate tasks subscribed to the Redis queue. Each agent node is a pure async function with signature: async def node_name(state: GraphState) -> dict. Nodes may only read their own input fields and write their own output fields as defined in the GraphState ownership map. The workflow graph is defined in app/core/workflow.py using the build_autorag_graph() function.
+
+State Persistence
+PostgresSaver checkpoints GraphState to Supabase PostgreSQL after each node completion. This enables crash recovery and mid-run resume. Checkpoints are keyed by (pipeline_id, run_id, node_name) and are retained for 90 days.
+
+3. DATA ARCHITECTURE
+
+Primary Database: Supabase PostgreSQL
+All relational data including pipeline configurations, evaluation results, deployment records, and audit logs are stored in Supabase PostgreSQL. All tables use UUID v7 primary keys for time-sortable ordering. Every table includes an organization_id column for multi-tenant isolation. Row-level security policies enforce that queries from one organization cannot access another organization's data.
+
+Vector Store: Supabase Vector (pgvector)
+Each pipeline version gets an isolated vector table named autorag_{pipeline_id}_{version}. The pgvector extension provides approximate nearest neighbor search using HNSW indexes. Embeddings are 768-dimensional vectors produced by Gemini Embedding 2. A metadata column stores source_uri, chunk_strategy, and page_number for each chunk.
+
+Object Storage: Supabase Storage
+Raw documents are stored in a private Supabase Storage bucket named raw-documents/{organization_id}/. Chunked artifacts are stored in chunks/{pipeline_id}/{version}/. Storage bucket policies restrict access to the authenticated organization.
+
+Cache and Queue: Redis
+Redis serves two roles: (1) task queue for dispatching work from the FastAPI gateway to LangGraph workers, and (2) short-term cache for frequently accessed pipeline metadata with a 5-minute TTL. Redis is deployed as a managed ElastiCache cluster in the same VPC as ECS.
+
+4. AI MODEL STACK
+
+Primary LLM: Gemini Flash 3.5 (via EURI API gateway)
+Fallback LLM: KiMi K2.6
+Emergency fallback: Gemini 3.5
+
+Embedding model: Gemini Embedding 2 (768 dimensions)
+Reranker: Cohere Rerank v3 (primary), BGE-Reranker (fallback)
+
+LLM failover is handled exclusively in app/services/llm_service.py. The failover sequence is triggered automatically when: the primary model returns a 429 (rate limit), 503 (service unavailable), or any response with latency greater than 30 seconds.
+
+5. SECURITY ARCHITECTURE
+
+PII masking is applied by a custom detection and masking function before any data enters the LangGraph state, Supabase Vector, or any LLM call. The masking function identifies: email addresses, phone numbers, national ID numbers, credit card numbers, and named entities classified as PERSON. Masked tokens use the format [MASKED_TYPE].
+
+JWT authentication is enforced at the API gateway. Tokens are issued by Supabase Auth and validated on every request. Token expiry is 1 hour with a 7-day refresh window. API rate limiting is enforced at 100 requests per minute per organization using a Redis sliding window counter.
+
+All secrets (database URLs, API keys, EURI credentials) are stored in AWS Secrets Manager and injected into ECS task definitions at launch time. No secrets are stored in environment files, container images, or source code.
+
+6. DEPLOYMENT ARCHITECTURE
+
+Blue/Green Deployment
+The Deployer Agent maintains two ECS service versions simultaneously. The blue service handles current production traffic; the green service runs the candidate version. Traffic shifts from blue to green over a 10-minute canary window. If during the canary window error_rate exceeds 1% or p95 latency exceeds 3 seconds or Unified Score drops by more than 0.10, automatic rollback to blue is triggered.
+
+CI/CD Pipeline
+An 8-stage GitHub Actions pipeline gates all changes: (1) Lint, (2) Unit Tests, (3) Integration Tests, (4) Docker Build and ECR Push, (5) ECS Staging Deploy, (6) Smoke Tests, (7) Manual Approval Gate, (8) ECS Production Promote. Docker images are tagged with immutable SHA digests. The latest tag is never used in ECS task definitions.
+
+7. OBSERVABILITY
+
+Prometheus scrapes metrics from FastAPI (/metrics) and LangGraph workers every 15 seconds. Grafana dashboards visualize: pipeline quality trends (Unified Score over time), retrieval latency distribution, LLM cost per query, agent error rates, and deployment health. Alert rules trigger PagerDuty notifications when: error_rate > 1%, p95 latency > 3s, or Unified Score drops below 0.80 for 3 consecutive evaluations.
+
+Structured logs are written in JSON format with mandatory fields: timestamp, level, x_trace_id, service, message. Logs are forwarded to AWS CloudWatch and retained for 30 days. X-Trace-ID is propagated from the API boundary through all agent nodes and into the audit log.

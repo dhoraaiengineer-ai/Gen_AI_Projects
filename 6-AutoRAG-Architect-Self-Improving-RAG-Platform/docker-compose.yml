@@ -1,0 +1,241 @@
+# 🛡️ AutoRAG ARCHITECT: 9-AGENT LOOP 🛡️
+# LOCAL DEV STACK v4.0 — CLOUD MODE (default)
+#
+# Backend connects to Supabase Cloud (DATABASE_URL from .env) — the same
+# database every developer's non-Docker `uvicorn --reload` session uses.
+# Redis is the only genuinely local infrastructure piece.
+#
+# For a fully offline stack (local Postgres, no Supabase Cloud dependency),
+# layer the local override instead:
+#   docker compose -f docker-compose.yml -f docker-compose.local.yml up
+# See .claude/docs/docker-guide.md for the full mode comparison.
+
+services:
+
+  # ─────────────────────────────────────────────────────────────────────────
+  # Infrastructure tier
+  # ─────────────────────────────────────────────────────────────────────────
+
+  # Redis — cache + rate limiting + short-lived coordination (genuinely local in both modes;
+  # NOT a task queue and NOT a LangGraph checkpoint store — no checkpoints table exists,
+  # see .claude/MEMORY.md L-015/L-020)
+  redis:
+    image: redis:7-alpine
+    container_name: autorag-redis
+
+    ports:
+      - "6379:6379"
+
+    volumes:
+      - redis_data:/data
+
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+    restart: unless-stopped
+
+  # Redis Exporter — exposes Redis metrics for Prometheus scraping
+  redis-exporter:
+    image: oliver006/redis_exporter:v1.62.0-alpine
+    container_name: autorag-redis-exporter
+
+    environment:
+      REDIS_ADDR: redis://redis:6379
+
+    ports:
+      - "9121:9121"
+
+    depends_on:
+      redis:
+        condition: service_healthy
+
+    restart: unless-stopped
+
+  # ─────────────────────────────────────────────────────────────────────────
+  # Application tier
+  # ─────────────────────────────────────────────────────────────────────────
+
+  # Backend — FastAPI + LangGraph workers
+  autorag-server:
+    build:
+      context: ./autorag-server
+      dockerfile: Dockerfile
+      target: final
+
+    container_name: autorag-server
+
+    ports:
+      - "8000:8000"
+
+    env_file:
+      - .env
+    # DATABASE_URL comes from .env (Supabase Cloud) — NOT overridden here.
+    # This is the key difference from docker-compose.local.yml.
+
+    environment:
+      REDIS_URL: redis://redis:6379/0
+      ENVIRONMENT: local
+
+    volumes:
+      - ./autorag-server:/app
+
+    depends_on:
+      redis:
+        condition: service_healthy
+
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8000/health')\""
+        ]
+      interval: 30s
+      timeout: 10s
+      start_period: 20s
+      retries: 3
+
+    restart: unless-stopped
+
+    command:
+      [
+        "uvicorn",
+        "app.main:app",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "8000",
+        "--reload"
+      ]
+
+  # Frontend — Next.js 15 dashboard
+  autorag-client:
+    build:
+      context: ./autorag-client
+      dockerfile: Dockerfile
+      target: prod
+
+      args:
+        NEXT_PUBLIC_API_URL: http://localhost:8000
+
+    container_name: autorag-client
+
+    ports:
+      - "3000:3000"
+
+    env_file:
+      - .env
+
+    environment:
+      NEXT_PUBLIC_API_URL: http://autorag-server:8000
+      NODE_ENV: production
+
+    depends_on:
+      autorag-server:
+        condition: service_healthy
+
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "wget -qO- http://localhost:3000/api/health || exit 1"
+        ]
+      interval: 30s
+      timeout: 10s
+      start_period: 30s
+      retries: 3
+
+    restart: unless-stopped
+
+  # ─────────────────────────────────────────────────────────────────────────
+  # Observability tier
+  # ─────────────────────────────────────────────────────────────────────────
+
+  prometheus:
+    image: prom/prometheus:v2.52.0
+    container_name: autorag-prometheus
+
+    ports:
+      - "9090:9090"
+
+    volumes:
+      - ./observability/prometheus/prometheus.local.yml:/etc/prometheus/prometheus.yml:ro
+      - ./observability/alerts/autorag-alerts.yml:/etc/prometheus/autorag-alerts.yml:ro
+      - prometheus_data:/prometheus
+
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+      - "--storage.tsdb.retention.time=7d"
+      - "--web.enable-lifecycle"
+
+    depends_on:
+      redis-exporter:
+        condition: service_started
+      autorag-server:
+        condition: service_started
+
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "wget -qO- http://localhost:9090/-/healthy || exit 1"
+        ]
+      interval: 30s
+      timeout: 10s
+      start_period: 15s
+      retries: 3
+
+    restart: unless-stopped
+
+  # Grafana — dashboards + alerting UI
+  grafana:
+    image: grafana/grafana:10.4.3
+    container_name: autorag-grafana
+
+    ports:
+      - "3001:3000"
+
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD:-changeme_in_env}  # set GRAFANA_PASSWORD in .env
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_SERVER_ROOT_URL: http://localhost:3001
+      GF_ANALYTICS_REPORTING_ENABLED: "false"
+
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./observability/grafana/provisioning/datasources:/etc/grafana/provisioning/datasources:ro
+      - ./observability/grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards:ro
+      - ./observability/grafana/dashboards:/var/lib/grafana/dashboards:ro
+
+    depends_on:
+      prometheus:
+        condition: service_healthy
+
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "wget -qO- http://localhost:3000/api/health || exit 1"
+        ]
+      interval: 30s
+      timeout: 10s
+      start_period: 20s
+      retries: 3
+
+    restart: unless-stopped
+
+volumes:
+  redis_data:
+    driver: local
+
+  prometheus_data:
+    driver: local
+
+  grafana_data:
+    driver: local

@@ -1,0 +1,30 @@
+﻿# 🛡️ AutoRAG ARCHITECT: 9-AGENT LOOP 🛡️
+# BACKEND GITIGNORE v3.0
+
+# Secrets — real env files (NEVER commit)
+.env
+.env.dev
+.env.staging
+.env.prod
+.env.local
+# Note: .env.*.example files ARE tracked (template docs with no real secrets)
+
+# Python artifacts
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+venv/
+.venv/
+env/
+
+# Data & Database
+*.db
+*.sqlite3
+qdrant_storage/
+logs/
+
+# Local migration artifacts (generated workarounds — not source of truth)
+migrations_init.sql

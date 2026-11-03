@@ -1,0 +1,74 @@
+PRODUCT REQUIREMENTS DOCUMENT — AUTORAG ARCHITECT v3.0
+Version 3.0 | Product Team | Status: Approved | Updated: June 2026
+
+1. PRODUCT VISION
+
+AutoRAG Architect elevates RAG from basic vector search to a production-grade self-improving pipeline platform. It allows enterprises to build, evaluate, observe, diagnose, improve, and deploy RAG pipelines with minimal manual intervention. The core value proposition is a weighted Unified Score gate that replaces weeks of manual hyperparameter tuning with automated quality optimization.
+
+2. TARGET USERS
+
+Retrieval Engineer: Uploads documents, configures chunking strategies, monitors evaluation metrics.
+Agent Lead: Manages LangGraph state transitions, reviews node execution traces, handles retry routing.
+Compliance Officer: Reviews PII masking reports, audits log entries, validates adversarial test results.
+Pipeline Deployer: Approves HITL deployment decisions, monitors canary deployments, triggers rollbacks.
+
+3. CORE FEATURES
+
+3.1 6-Step Configurator Wizard
+Users configure a new RAG pipeline through a guided 6-step process:
+  Step 1 — Document Upload: Upload up to 50 documents per pipeline (PDF, DOCX, TXT, MD, XLSX).
+  Step 2 — Chunking Strategy: Choose from semantic, hierarchical (parent/child), or late chunking. Configure chunk size and overlap.
+  Step 3 — Retrieval Configuration: Select dense or hybrid retrieval mode. Set top-k (1-20). Choose reranker (Cohere, BGE, or none).
+  Step 4 — LLM Configuration: Select primary model (Gemini Flash 3.5 or KiMi K2.6). Set temperature (0.0-1.0) and max_tokens (256-4096).
+  Step 5 — Evaluation Thresholds: Set minimum Unified Score (recommended: 0.85) and minimum Faithfulness (hard minimum: 0.50).
+  Step 6 — Review and Launch: Summary of all configuration choices with estimated cost and launch confirmation.
+
+3.2 Autonomous 9-Agent Loop
+Once launched, the pipeline runs through a deterministic LangGraph workflow:
+  - Ingestion Agent: Parses, PII-masks, chunks, and indexes documents into Supabase Vector.
+  - Query Rewriter: Improves vague queries using few-shot prompt templates before retrieval.
+  - Builder Agent: Creates and manages pgvector indexes for the pipeline's vector table.
+  - Context Compressor: Reduces retrieved context to fit within LLM token budget without losing critical information.
+  - Evaluator Agent: Computes Unified Score, RAGAS metrics, and adversarial test results.
+  - Observer Agent: Continuously monitors deployed pipelines for quality drift, latency, and cost anomalies.
+  - Diagnoser Agent: Classifies failures into 5 categories: Retrieval Miss, Context Overflow, Hallucination, Answer Incompleteness, Latency Spike.
+  - Improver Agent: Generates up to 3 alternative hyperparameter configurations for underperforming pipelines.
+  - Deployer Agent: Manages blue/green ECS deployments with automatic rollback capability.
+
+3.3 Unified Score Gate
+The deployment gate formula: Score = (0.25 x Recall@5) + (0.35 x Quality) + (0.25 x Faithfulness) - (0.10 x Latency) - (0.05 x Cost)
+
+Score >= 0.85: Automatic deployment promotion.
+Score 0.70 to 0.84: HITL approval required via SendGrid email + WhatsApp notification to designated approvers.
+Score < 0.70: Hard block; Diagnoser + Improver loop triggered automatically.
+Faithfulness < 0.50: Hard block regardless of total score. Non-bypassable.
+
+3.4 Human-in-the-Loop Approvals
+When HITL is triggered, the system sends an approval request to designated approvers including: Unified Score breakdown, RAGAS metric details, adversarial test results, and a one-click approve/reject link valid for 24 hours. Approvers can add written comments. All approval decisions are logged in the audit log.
+
+4. NON-FUNCTIONAL REQUIREMENTS
+
+Performance:
+  - API response time: p95 < 500ms for read endpoints, p95 < 2s for write endpoints
+  - Retrieval latency: p95 < 3 seconds for a 5-result retrieval query
+  - Ingestion throughput: at least 10 documents per minute per organization
+
+Security:
+  - PII masking mandatory before any LLM call or vector store write
+  - JWT authentication on all endpoints; 1-hour token expiry
+  - All secrets in AWS Secrets Manager; none in code or environment files
+  - Organization-level data isolation enforced by row-level security
+
+Reliability:
+  - Platform availability SLA: 99.5% monthly uptime
+  - Auto-recovery from agent node failures via LangGraph checkpoint replay
+  - Automatic rollback within 10-minute canary window on quality or error regression
+
+5. SUCCESS METRICS
+
+Launch criteria:
+  - Retrieval Recall@5 >= 0.85 on the 10-domain test corpus
+  - Faithfulness >= 0.80 on the adversarial benchmark
+  - 100% pass rate on the 10 adversarial unanswerable questions
+  - p95 retrieval latency < 3 seconds
+  - End-to-end pipeline build time (ingest to first evaluation) < 10 minutes for a 20-document corpus

@@ -1,0 +1,114 @@
+name: "Project 6 · Tests"
+
+on:
+  push:
+    branches: [main]
+    paths: ["6-AutoRAG-Architect-Self-Improving-RAG-Platform/**", ".github/workflows/p6-*.yml"]
+  pull_request:
+    paths: ["6-AutoRAG-Architect-Self-Improving-RAG-Platform/**", ".github/workflows/p6-*.yml"]
+  workflow_dispatch:
+
+defaults:
+  run:
+    working-directory: 6-AutoRAG-Architect-Self-Improving-RAG-Platform
+
+env:
+  PYTHON_VERSION: "3.11"
+  NODE_VERSION: "20"
+
+jobs:
+  backend-tests:
+    name: Backend Tests
+    runs-on: ubuntu-latest
+
+    services:
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+      # pgvector/pgvector:pg15 -- same image docker-compose.local.yml uses for
+      # local dev (Rule 80 / CLAUDE.md testing stack: "real Supabase PostgreSQL
+      # + real Supabase Vector", never mocked). Fixed 21-Jul-2026: this job
+      # previously set DATABASE_URL to sqlite:///:memory: with no Postgres
+      # service at all -- tests/conftest.py hard-requires an async
+      # postgresql+asyncpg:// engine (pgvector columns, JSONB, UUID v7 PKs),
+      # so the backend test job could never have actually run the real suite.
+      postgres:
+        image: pgvector/pgvector:pg15
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: autorag_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install UV
+        run: pip install uv
+
+      - name: Cache uv dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/uv
+          key: uv-${{ runner.os }}-${{ hashFiles('6-AutoRAG-Architect-Self-Improving-RAG-Platform/autorag-server/uv.lock') }}
+          restore-keys: uv-${{ runner.os }}-
+
+      - name: Install Backend Dependencies
+        run: |
+          cd autorag-server
+          uv sync --all-groups
+
+      - name: Apply Database Migrations
+        run: |
+          cd autorag-server
+          uv run alembic upgrade head
+        env:
+          DATABASE_URL: "postgresql+asyncpg://postgres:postgres@localhost:5432/autorag_test"
+
+      - name: Run Backend Tests
+        run: |
+          cd autorag-server
+          uv run pytest tests -q
+        env:
+          DATABASE_URL: "postgresql+asyncpg://postgres:postgres@localhost:5432/autorag_test"
+          REDIS_URL: "redis://localhost:6379"
+          # Required by app.core.config.Settings (fail-fast). CI-only throwaway value — never a real secret.
+          JWT_SECRET_KEY: "ci-test-jwt-secret-not-a-real-secret-0123456789"
+
+  frontend-tests:
+    name: Frontend Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "npm"
+          cache-dependency-path: 6-AutoRAG-Architect-Self-Improving-RAG-Platform/autorag-client/package-lock.json
+
+      - name: Install Frontend Dependencies
+        run: |
+          cd autorag-client
+          npm ci
+
+      - name: Run Frontend Tests
+        run: |
+          cd autorag-client
+          npm run test

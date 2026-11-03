@@ -1,0 +1,62 @@
+CLINICAL GUIDELINES FOR AI-ASSISTED DECISION SUPPORT SYSTEMS
+AutoRAG Health Division | Version 1.0 | Medical Advisory Board | June 2026
+Classification: Confidential — Synthetic Training Data Only
+
+NOTE: This document contains synthetic clinical content for AI system testing purposes.
+No real patient data. Not for clinical use.
+
+1. SCOPE AND PURPOSE
+
+These guidelines govern the deployment and operation of AI-assisted decision support systems in clinical environments. They apply to any AI system that ingests clinical documentation and provides recommendations, summaries, or answers to clinical queries. Systems operating under these guidelines must not replace clinical judgment but may augment it by surfacing relevant information from approved knowledge sources.
+
+2. APPROVED USE CASES
+
+2.1 Medication Reference Queries
+Clinical staff may query the AI system for: drug interaction checks (as a supplement to pharmacy verification, not a replacement), dosage information for standard formulary medications, contraindication summaries based on patient-reported conditions in the medical record, and drug-to-drug interaction summaries.
+
+Required caveat: All medication recommendations provided by the AI system must include the disclaimer "Verify with pharmacy before administration." The AI system must never issue dosing instructions without this caveat.
+
+2.2 Clinical Protocol Lookup
+The AI system may surface relevant clinical protocols from the approved protocol library in response to clinician queries. Examples: sepsis management protocol (SEPSIS-Q3-2025), venous thromboembolism prevention protocol (VTE-PREV-2024), and fall prevention protocol (FALL-PREV-2026).
+
+The AI system must always display the protocol version number and last review date. Protocols more than 24 months old without a documented review are flagged as "Pending Review" and must not be used as primary guidance.
+
+2.3 Discharge Summary Assistance
+The AI system may help clinical staff draft discharge summaries by surfacing relevant entries from the patient's documented clinical notes. It must not add clinical judgments not present in the source documentation. The generated summary must be reviewed and approved by the attending physician before inclusion in the medical record.
+
+3. PROHIBITED USE CASES
+
+The AI system must not:
+- Provide a diagnosis based on symptom descriptions alone
+- Generate medication prescriptions or prescription-equivalent dosing instructions
+- Summarize information from unapproved external sources (only the approved clinical knowledge base)
+- Process or output information from a patient record without documented clinical authorization
+- Be used as the sole basis for any clinical decision without physician review
+
+4. FAITHFULNESS REQUIREMENT FOR CLINICAL SYSTEMS
+
+For clinical AI systems, the minimum Faithfulness score is 0.90 (compared to the platform standard of 0.50). Any generated clinical content with a Faithfulness score below 0.90 must be suppressed from display and the system must return: "Insufficient confidence to provide a reliable answer — please consult the clinical reference directly."
+
+The rationale for the higher threshold: in clinical settings, a hallucinated or incorrect answer that appears authoritative may contribute to patient harm. The system is designed to surface and be silent when uncertain, not to guess.
+
+5. AUDIT AND OVERSIGHT
+
+All queries to the clinical AI system are logged with: timestamp, querying clinician ID, patient case ID (where applicable), query text, and system response. Logs are retained for 7 years in accordance with medical record retention requirements.
+
+A monthly audit is conducted by the Chief Medical Information Officer reviewing a random sample of 50 query-response pairs. Any query with a Faithfulness score below 0.90 that was erroneously displayed is classified as a clinical AI adverse event and triggers a root cause analysis within 48 hours.
+
+6. PATIENT DATA HANDLING
+
+No real patient data is ingested into the AI knowledge base. The knowledge base contains: approved clinical protocols, drug reference materials (sourced from the national formulary), and anonymized case study summaries where the anonymization has been independently verified.
+
+For AI systems operating in the full clinical environment, PII masking must be applied to all content before ingestion, with a minimum confidence threshold of 99.5% for personal identifiers. Any masked content must be reviewed by the Privacy Officer before the masked document is added to the knowledge base.
+
+7. CLINICAL AI GOVERNANCE BOARD
+
+A Clinical AI Governance Board (CAGB) comprising the Chief Medical Officer, Chief Information Officer, Chief Privacy Officer, and two independent clinical advisors reviews all proposed changes to:
+- Clinical knowledge base content
+- Faithfulness thresholds
+- Approved use cases
+- Audit procedures
+
+Changes must be approved by a majority of the CAGB and documented in the clinical AI change register before implementation.
